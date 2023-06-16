@@ -8,7 +8,8 @@ GDALRasterBand objects. See https://gdal.org/api/index.html for
 details of the GDAL API."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]--></head><body>
+<![endif]--><!-- Google tag (gtag.js) --><script async src="https://www.googletagmanager.com/gtag/js?id=G-FXCWWY5V2E"></script><script> window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());
+gtag('config', 'G-FXCWWY5V2E'); </script></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
     
 
@@ -31,6 +32,7 @@ details of the GDAL API."><!-- mathjax --><script src="https://cdnjs.cloudflare.
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/gdal-block-cache.html">GDAL Block Cache</a>
+    <a class="dropdown-item" href="../articles/raster-api-tutorial.html">Raster API Tutorial</a>
   </div>
 </li>
 <li class="nav-item">
@@ -89,15 +91,6 @@ opened dataset, and methods that operate on the dataset as described in
 Details.</p>
     </div>
     <div class="section level2">
-    <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
-    <p>As described above, the <code>$read()</code> method will perform automatic resampling
-if the specified output size (<code>out_xsize * out_ysize</code>) is different than
-the size of the region being read (<code>xsize * ysize</code>). In that case, the
-GDAL_RASTERIO_RESAMPLING configuration option could also be defined to
-override the default resampling to one of BILINEAR, CUBIC, CUBICSPLINE,
-LANCZOS, AVERAGE or MODE (see <code><a href="set_config_option.html">set_config_option()</a></code>).</p>
-    </div>
-    <div class="section level2">
     <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a></h2>
     
 
@@ -125,6 +118,7 @@ LANCZOS, AVERAGE or MODE (see <code><a href="set_config_option.html">set_config_
 <span></span>
 <span><span class="va">ds</span><span class="op">$</span><span class="fu">getRasterCount</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">ds</span><span class="op">$</span><span class="fu">getBlockSize</span><span class="op">(</span><span class="va">band</span><span class="op">)</span></span>
+<span><span class="va">ds</span><span class="op">$</span><span class="fu">getOverviewCount</span><span class="op">(</span><span class="va">band</span><span class="op">)</span></span>
 <span><span class="va">ds</span><span class="op">$</span><span class="fu">getDataTypeName</span><span class="op">(</span><span class="va">band</span><span class="op">)</span></span>
 <span><span class="va">ds</span><span class="op">$</span><span class="fu">getStatistics</span><span class="op">(</span><span class="va">band</span>, <span class="va">approx_ok</span>, <span class="va">force</span><span class="op">)</span></span>
 <span><span class="va">ds</span><span class="op">$</span><span class="fu">getNoDataValue</span><span class="op">(</span><span class="va">band</span><span class="op">)</span></span>
@@ -224,6 +218,8 @@ and block Ysize is 1. However, for tiled images block size will typically
 be the tile size. Note that the X and Y block sizes don't have to divide
 the image size evenly, meaning that right and bottom edge blocks may be
 incomplete.</p>
+<p><code>$getOverviewCount(band)</code>
+Returns the number of overview layers available for <code>band</code>.</p>
 <p><code>$getDataTypeName(band)</code>
 Returns the name of the pixel data type for <code>band</code>. The possible data
 types are:</p><table class="table table"><tr><td><code>Unknown</code></td><td>Unknown or unspecified type</td></tr><tr><td><code>Byte</code></td><td>8-bit unsigned integer</td></tr><tr><td><code>Int8</code></td><td>8-bit signed integer (GDAL &gt;= 3.7)</td></tr><tr><td><code>UInt16</code></td><td>16-bit unsigned integer</td></tr><tr><td><code>Int16</code></td><td>16-bit signed integer</td></tr><tr><td><code>UInt32</code></td><td>32-bit unsigned integer</td></tr><tr><td><code>Int32</code></td><td>32-bit signed integer</td></tr><tr><td><code>UInt64</code></td><td>64-bit unsigned integer (GDAL &gt;= 3.5)</td></tr><tr><td><code>Int64</code></td><td>64-bit signed integer (GDAL &gt;= 3.5)</td></tr><tr><td><code>Float32</code></td><td>32-bit floating point</td></tr><tr><td><code>Float64</code></td><td>64-bit floating point</td></tr><tr><td><code>CInt16</code></td><td>Complex Int16</td></tr><tr><td><code>CInt32</code></td><td>Complex Int32</td></tr><tr><td><code>CFloat32</code></td><td>Complex Float32</td></tr><tr><td><code>CFloat64</code></td><td>Complex Float64</td></tr></table><p>Some raster formats including GeoTIFF (<code>GTiff</code>) and Erdas Imagine .img
@@ -326,8 +322,12 @@ region will be read (typically the same value as ysize).
 Returns a numeric or complex vector containing the values that were read.
 It is organized in left to right, top to bottom pixel order.
 NA will be returned in place of the nodata value if the
-raster dataset has a nodata value defined for this band. No rescaling of the
-data is performed (see <code>$getScale()</code> and <code>$getOffset()</code> above).
+raster dataset has a nodata value defined for this band.
+Data are read as R <code>integer</code> type when possible for the raster data type
+(Byte, Int8, Int16, UInt16, Int32), otherwise as type <code>double</code> (UInt32,
+Float32, Float64).
+No rescaling of the data is performed (see <code>$getScale()</code> and
+<code>$getOffset()</code> above).
 An error is raised if the read operation fails.</p>
 <p><code>$write(band, xoff, yoff, xsize, ysize, rasterData)</code>
 Writes a region of raster data to <code>band</code>.
@@ -373,7 +373,13 @@ The dataset can be re-opened on the existing <code>filename</code> with
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Package overview in <code><a href="gdalraster-package.html">help("gdalraster-package")</a></code></p>
-<p><code><a href="create.html">create()</a></code>, <code><a href="createCopy.html">createCopy()</a></code>, <code><a href="rasterFromRaster.html">rasterFromRaster()</a></code>, <code><a href="rasterToVRT.html">rasterToVRT()</a></code>, <code><a href="warp.html">warp()</a></code></p></div>
+<p><code><a href="create.html">create()</a></code>, <code><a href="createCopy.html">createCopy()</a></code>, <code><a href="rasterFromRaster.html">rasterFromRaster()</a></code>, <code><a href="rasterToVRT.html">rasterToVRT()</a></code>, <code><a href="warp.html">warp()</a></code></p>
+<p>As described above, the <code>$read()</code> method will perform automatic resampling
+if the specified output size (<code>out_xsize * out_ysize</code>) is different than
+the size of the region being read (<code>xsize * ysize</code>). In that case, the
+GDAL_RASTERIO_RESAMPLING configuration option could also be defined to
+override the default resampling to one of BILINEAR, CUBIC, CUBICSPLINE,
+LANCZOS, AVERAGE or MODE (see <code><a href="set_config_option.html">set_config_option()</a></code>).</p></div>
     </div>
 
     <div class="section level2">
@@ -475,6 +481,8 @@ The dataset can be re-opened on the existing <code>filename</code> with
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 8</span>
 <span class="r-in"><span><span class="va">ds</span><span class="op">$</span><span class="fu">getBlockSize</span><span class="op">(</span>band<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 143   1</span>
+<span class="r-in"><span><span class="va">ds</span><span class="op">$</span><span class="fu">getOverviewCount</span><span class="op">(</span>band<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
 <span class="r-in"><span><span class="va">ds</span><span class="op">$</span><span class="fu">getDataTypeName</span><span class="op">(</span>band<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Int16"</span>
 <span class="r-in"><span><span class="va">ds</span><span class="op">$</span><span class="fu">getNoDataValue</span><span class="op">(</span>band<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
