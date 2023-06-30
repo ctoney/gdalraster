@@ -60,7 +60,7 @@
     
     <a class="navbar-brand me-2" href="index.html">gdalraster</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -76,6 +76,7 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="articles/gdal-block-cache.html">GDAL Block Cache</a>
+    <a class="dropdown-item" href="articles/raster-display.html">Raster Display</a>
     <a class="dropdown-item" href="articles/raster-api-tutorial.html">Raster API Tutorial</a>
   </div>
 </li>
@@ -129,6 +130,8 @@
 <code><a href="reference/combine.html">combine()</a></code> overlays multiple rasters so that a unique ID is assigned to each unique combination of input values. Pixel counts for each unique combination are obtained, and combination IDs are optionally written to an output raster.</li>
 <li>
 <code><a href="reference/calc.html">calc()</a></code> evaluates an R expression for each pixel in a raster layer or stack of layers. Individual pixel coordinates are available as variables in the R expression, as either x/y in the raster projected coordinate system or inverse projected longitude/latitude.</li>
+<li>
+<code><a href="reference/plot_raster.html">plot_raster()</a></code> displays raster data using base R graphics.</li>
 </ul>
 <p><code>gdalraster</code> may be suitable for applications that primarily need low-level raster I/O or prefer native GDAL-like calling. The additional functionality is somewhat aimed at thematic data analysis but may have other utility.</p>
 </div>
@@ -140,8 +143,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"gdalraster"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Or the development version from GitHub:</span></span>
-<span><span class="co"># install.packages("pak")</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="http://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"USDAForestService/gdalraster"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"USDAForestService/gdalraster"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
@@ -149,6 +151,7 @@
 <ul>
 <li><a href="https://usdaforestservice.github.io/gdalraster/reference/">Reference manual</a></li>
 <li><a href="https://usdaforestservice.github.io/gdalraster/articles/raster-api-tutorial.html">Raster API tutorial</a></li>
+<li><a href="https://usdaforestservice.github.io/gdalraster/articles/raster-display.html">Raster display</a></li>
 <li><a href="https://usdaforestservice.github.io/gdalraster/articles/gdal-block-cache.html">GDAL block caching</a></li>
 </ul>
 </div>

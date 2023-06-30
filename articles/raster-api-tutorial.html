@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">gdalraster</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,6 +42,7 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/gdal-block-cache.html">GDAL Block Cache</a>
+    <a class="dropdown-item" href="../articles/raster-display.html">Raster Display</a>
     <a class="dropdown-item" href="../articles/raster-api-tutorial.html">Raster API Tutorial</a>
   </div>
 </li>
@@ -251,6 +252,10 @@ size (<code>xsize</code>, <code>ysize</code>). However, to load a
 reduced resolution overview this could be set to smaller than the window
 on disk. In this case the read method will utilize overviews to do the
 I/O more efficiently if the overviews are suitable.</p>
+<p><code><a href="../reference/read_ds.html">read_ds()</a></code> is a convenience wrapper for
+<code>GDALRaster$read()</code>.</p>
+<p><code><a href="../reference/plot_raster.html">plot_raster()</a></code> can be used to display data that have been
+read into a vector.</p>
 </div>
 <div class="section level2">
 <h2 id="closing-the-dataset">Closing the dataset<a class="anchor" aria-label="anchor" href="#closing-the-dataset"></a>
