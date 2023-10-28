@@ -62,7 +62,7 @@
     
     <a class="navbar-brand me-2" href="index.html">gdalraster</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -113,7 +113,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><code>gdalraster</code> is an R interface to the Raster API of the Geospatial Data Abstraction Library (<a href="https://gdal.org/" class="external-link">GDAL</a>). Calling signatures resemble those of the native C, C++ and Python APIs provided by the GDAL project.</p>
+<p><strong>gdalraster</strong> is an R interface to the Raster API of the Geospatial Data Abstraction Library (<a href="https://gdal.org/" class="external-link">GDAL</a>). Calling signatures resemble those of the native C, C++ and Python APIs provided by the GDAL project.</p>
 <p>Bindings to GDAL are implemented in the exposed C++ class <a href="https://usdaforestservice.github.io/gdalraster/reference/GDALRaster-class.html"><code>GDALRaster</code></a> along with several <a href="https://usdaforestservice.github.io/gdalraster/reference/index.html#stand-alone-functions">stand-alone functions</a>, supporting:</p>
 <ul>
 <li>manual creation of uninitialized raster datasets</li>
@@ -140,17 +140,55 @@
 <li>
 <a href="https://usdaforestservice.github.io/gdalraster/reference/plot_raster.html"><code>plot_raster()</code></a> displays raster data using base R graphics.</li>
 </ul>
-<p><code>gdalraster</code> may be suitable for applications that primarily need low-level raster I/O or prefer a direct GDAL API. The additional functionality is somewhat aimed at thematic data analysis but may have other utility.</p>
+<p><strong>gdalraster</strong> may be suitable for applications that primarily need low-level raster I/O or prefer a direct GDAL API. The additional functionality is somewhat aimed at thematic data analysis but may have other utility.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
+<p>Install the released version from CRAN with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install the released version from CRAN</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"gdalraster"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Or the development version from GitHub:</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"gdalraster"</span><span class="op">)</span></span></code></pre></div>
+<p>CRAN provides pre-compiled binary packages for Windows and macOS. These do not require any separate installation of external libraries for GDAL and PROJ.</p>
+<div class="section level3">
+<h3 id="from-source-code">From source code<a class="anchor" aria-label="anchor" href="#from-source-code"></a>
+</h3>
+<div class="section level4">
+<h4 id="linux">Linux<a class="anchor" aria-label="anchor" href="#linux"></a>
+</h4>
+<p>GDAL (&gt;= 2.4.0, built against GEOS), PROJ (&gt;= 4.8.0), and sqlite3 are required.</p>
+<p>On Ubuntu, recent versions of geospatial libraries can be installed from the <a href="https://launchpad.net/~ubuntugis/+archive/ubuntu/ubuntugis-unstable" class="external-link">ubuntugis-unstable PPA</a> with the following commands:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sudo add<span class="sc">-</span>apt<span class="sc">-</span>repository ppa<span class="sc">:</span>ubuntugis<span class="sc">/</span>ubuntugis<span class="sc">-</span>unstable</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sudo apt update</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>sudo apt install libgdal<span class="sc">-</span>dev libgeos<span class="sc">-</span>dev libproj<span class="sc">-</span>dev libsqlite3<span class="sc">-</span>dev</span></code></pre></div>
+<p>The releases in ubuntugis-unstable generally work well and are more up-to-date, but less recent versions in the <a href="https://launchpad.net/~ubuntugis/+archive/ubuntu/ppa" class="external-link">ubuntugis-stable PPA</a> could be used instead.</p>
+<p>Package <strong>sf</strong> provides helpful <a href="https://github.com/r-spatial/sf#linux" class="external-link">instructions</a> for installing the geospatial libraries on other Linux distributions.</p>
+<p>With the dependent libraries available on the system, install <strong>gdalraster</strong> from CRAN:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"gdalraster"</span><span class="op">)</span></span></code></pre></div>
+<p>Or install the development version from GitHub using package <a href="https://CRAN.R-project.org/package=remotes" class="external-link">remotes</a>:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"USDAForestService/gdalraster"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="windows">Windows<a class="anchor" aria-label="anchor" href="#windows"></a>
+</h4>
+<p><a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">RTools</a> is needed to install from source on Windows. RTools since version 4.2 includes GDAL, PROJ and all other dependent libraries that are needed to compile <strong>gdalraster</strong>. Note that CRAN releases periodic revisions to RTools that often include updates to the libraries as new versions become available. For example, <a href="https://cran.r-project.org/bin/windows/Rtools/rtools43/news.html" class="external-link">revision 5863</a> of RTools 4.3 contains GDAL 3.7.2 and PROJ 9.3.0.</p>
+<p>With RTools installed:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Install the development version from GitHub</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"USDAForestService/gdalraster"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="macos">macOS<a class="anchor" aria-label="anchor" href="#macos"></a>
+</h4>
+<p>GDAL and PROJ can be installed with Homebrew:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>brew install pkg<span class="sc">-</span>config gdal proj</span></code></pre></div>
+<p>Then <code>configure.args</code> is needed:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Install the development version from GitHub</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"USDAForestService/gdalraster"</span>, configure.args <span class="op">=</span> <span class="st">"--with-proj-lib=$(brew --prefix)/lib/"</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
@@ -171,7 +209,6 @@
 <li><a href="https://app.codecov.io/gh/ctoney/gdalraster" class="external-link"><img src="https://codecov.io/gh/ctoney/gdalraster/branch/main/graph/badge.svg?token=MXIOPZQ2IU" alt="codecov"></a></li>
 <li><a href="https://CRAN.R-project.org/package=gdalraster" class="external-link"><img src="https://www.r-pkg.org/badges/version/gdalraster" alt="CRAN status"></a></li>
 <li><a href="https://cran.r-project.org/web/checks/check_results_gdalraster.html" class="external-link"><img src="https://badges.cranchecks.info/worst/gdalraster.svg" alt="cran checks"></a></li>
-<li><a href="https://usdaforestservice.r-universe.dev/gdalraster" class="external-link"><img src="https://usdaforestservice.r-universe.dev/badges/gdalraster" alt="r-universe status"></a></li>
 </ul>
 </div>
 
