@@ -17,7 +17,10 @@ calc(
   nodata_value = NULL,
   setRasterNodataValue = FALSE,
   usePixelLonLat = FALSE,
-  write_mode = "safe"
+  write_mode = "safe",
+  ncores = 1L,
+  cl_pkgs = NULL,
+  cl_exports = NULL
 )
 }
 \arguments{
@@ -63,6 +66,12 @@ One of:
 \item \code{update} - if \code{dstfile} exists, will attempt to open in update mode
 and write output to \code{out_band}
 }}
+
+\item{ncores}{Integer scalar.}
+
+\item{cl_pkgs}{Character vector.}
+
+\item{cl_exports}{Character vector.}
 }
 \value{
 Returns the output filename invisibly.

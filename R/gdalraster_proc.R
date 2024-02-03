@@ -772,6 +772,9 @@ rasterToVRT <- function(srcfile,
 #'   * `overwrite` - if `dstfile` exists if will be overwritten with a new file
 #'   * `update` - if `dstfile` exists, will attempt to open in update mode 
 #'   and write output to `out_band`
+#' @param ncores Integer scalar.
+#' @param cl_pkgs Character vector.
+#' @param cl_exports Character vector.
 #' @returns Returns the output filename invisibly.
 #'
 #' @seealso
@@ -886,21 +889,30 @@ rasterToVRT <- function(srcfile,
 #' # createCopy("LCP", "storml_edited.lcp", tif_file)
 #' @export
 calc <- function(expr, 
-					rasterfiles, 
-					bands = NULL, 
-					var.names = NULL,
-					dstfile = tempfile("rastcalc", fileext=".tif"),
-					fmt = NULL,
-					dtName = "Int16", 
-					out_band = NULL,
-					options = NULL,
-					nodata_value = NULL, 
-					setRasterNodataValue = FALSE,
-					usePixelLonLat = FALSE,
-					write_mode = "safe")
-{
+				rasterfiles, 
+				bands = NULL, 
+				var.names = NULL,
+				dstfile = tempfile("rastcalc", fileext=".tif"),
+				fmt = NULL,
+				dtName = "Int16", 
+				out_band = NULL,
+				options = NULL,
+				nodata_value = NULL, 
+				setRasterNodataValue = FALSE,
+				usePixelLonLat = FALSE,
+				write_mode = "safe",
+				ncores = 1L,
+				cl_pkgs = NULL,
+				cl_exports = NULL) {
+	
+	# WIP for parallel
 	
 	calc_expr <- parse(text=expr)
+	
+	if (ncores > 1) {
+		if (!isNamespaceLoaded("parallel"))
+			stop("ncores > 1 requires 'parallel' namespace")
+	}
 	
 	if (write_mode == "safe" && file.exists(dstfile))
 		stop("The output file already exists and write_mode is 'safe'.", 
@@ -928,7 +940,7 @@ calc <- function(expr,
 
 	if (!is.null(bands)) {
 		if (length(bands) != nrasters) {
-			stop("List of band numbers must be same length as raster list.",
+			stop("`bands` must be same length as `rasterfiles`.",
 				call. = FALSE)
 		}
 	}
@@ -938,7 +950,7 @@ calc <- function(expr,
 	
 	if (!is.null(var.names)) {
 		if (length(var.names) != nrasters) {
-			stop("List of variable names must be same length as raster list.",
+			stop("`var.names` must be same length as `rasterfiles`.",
 				call. = FALSE)
 		}
 	}
@@ -949,7 +961,7 @@ calc <- function(expr,
 	if (is.null(fmt)) {
 		fmt <- .getGDALformat(dstfile)
 		if (is.null(fmt)) {
-			stop("Use fmt argument to specify a GDAL raster format code.",
+			stop("Use `fmt` argument to specify a GDAL raster format name.",
 				call. = FALSE)
 		}
 	}
@@ -957,7 +969,7 @@ calc <- function(expr,
 	if (is.null(nodata_value)) {
 		nodata_value <- DEFAULT_NODATA[[dtName]]
 		if (is.null(nodata_value)) {
-			stop("Default nodata value unavailable for output data type.",
+			stop("No default nodata value available for the output data type.",
 				call. = FALSE)
 		}
 	}
@@ -978,7 +990,7 @@ calc <- function(expr,
 			ds <- new(GDALRaster, r, TRUE)
 			if(ds$getRasterYSize() != nrows || ds$getRasterXSize() != ncols) {
 				message(r)
-				stop("All input rasters must have the same dimensions.", 
+				stop("All input rasters must have the same xsize, ysize.", 
 					call. = FALSE)
 			}
 			ds$close()
@@ -1010,44 +1022,98 @@ calc <- function(expr,
 	for (r in 1:nrasters)
 		ds_list[[r]] <- new(GDALRaster, rasterfiles[r], read_only=TRUE)
 	
-	x <- seq(from = xmin + (cellsizeX/2), by = cellsizeX, length.out = ncols)
-	assign("pixelX", x)
+	# are pixelX and pixelY being used
+	if (length(grep("pixelX", expr, fixed = TRUE))) {
+		usePixelX <- TRUE
+	}
+	else {
+		usePixelX <- FALSE
+	}
+	if (length(grep("pixelY", expr, fixed = TRUE))) {
+		usePixelY <- TRUE
+	}
+	else {
+		usePixelY <- TRUE
+	}
 	
-	process_row <- function(row) {
-		y <- rep( (ymax - (cellsizeY/2) - (cellsizeY*row)), ncols )
-		assign("pixelY", y)
+	if (usePixelX || usePixelLonLat)
+		pixelX <- seq(from = xmin + (cellsizeX/2),
+					by = cellsizeX,
+					length.out = ncols)
+	
+	if (ncores > 1) {
+		cl = parallel::makeCluster(ncores)
+		.cl_assign <- function(.x, .nm) { assign(.nm, .x, envir = .GlobalEnv) }
+		environment(.cl_assign) <- .GlobalEnv
+		parallel::clusterExport(cl, "calc_expr", environment())
+		if (!is.null(cl_pkgs)) {
+			for (pkg in cl_pkgs)
+				parallel::clusterEvalQ(cl, library(pkg))
+		}
+		if (!is.null(cl_exports)) {
+			parallel::clusterExport(cl, cl_exports)
+		}
+		if (usePixelX) {
+			cl_pieces <- parallel::clusterSplit(cl, pixelX)
+			parallel::clusterApply(cl, cl_pieces, .cl_assign, "pixelX")
+		}
+	}
+	
+	process_chunk <- function(row, chunk_ysize) {
+		if (usePixelY || usePixelLonLat)
+			pixelY <- rep((ymax - (cellsizeY/2) - (cellsizeY*row)), ncols)
 		
 		if(usePixelLonLat) {
-			lonlat <- inv_project(cbind(x,y), srs)
+			lonlat <- inv_project(cbind(pixelX, pixelY), srs)
 			assign("pixelLon", lonlat[,1])
 			assign("pixelLat", lonlat[,2])
 		}
 		
 		for (r in 1:nrasters) {
-			inrow <- ds_list[[r]]$read(band = bands[r], 
+			in_data <- ds_list[[r]]$read(band = bands[r], 
 										xoff = 0,
 										yoff = row,
 										xsize = ncols,
-										ysize = 1,
+										ysize = chunk_ysize,
 										out_xsize = ncols,
-										out_ysize = 1)
-			assign(var.names[r], inrow)
+										out_ysize = chunk_ysize)
+			assign(var.names[r], in_data)
+		}
+
+		if (ncores == 1) {
+			out_data <- eval(calc_expr)
+		}
+		else {
+			if (usePixelY) {
+				cl_pieces <- parallel::clusterSplit(cl, pixelY)
+				parallel::clusterApply(cl, cl_pieces, .cl_assign, "pixelY")
+			}
+			if (usePixelLonLat) {
+				cl_pieces <- parallel::clusterSplit(cl, pixelLon)
+				parallel::clusterApply(cl, cl_pieces, .cl_assign, "pixelLon")
+				cl_pieces <- parallel::clusterSplit(cl, pixelLat)
+				parallel::clusterApply(cl, cl_pieces, .cl_assign, "pixelLat")
+			}
+			for (nm in var.names) {
+				cl_pieces <- parallel::clusterSplit(cl, get(nm))
+				parallel::clusterApply(cl, cl_pieces, .cl_assign, nm)
+			}
+			out_data <- unlist(parallel::clusterEvalQ(cl, eval(calc_expr)))
 		}
 		
-		outrow <- eval(calc_expr)
-		if (length(outrow) != ncols) {
+		if (length(out_data) != ncols) {
 			dst_ds$close()
 			for (r in 1:nrasters)
 				ds_list[[r]]$close()
 			stop("Result vector is the wrong size.", call. = FALSE)
 		}
-		outrow <- ifelse(is.na(outrow), nodata_value, outrow)
+		out_data <- ifelse(is.na(out_data), nodata_value, out_data)
 		dst_ds$write(band = out_band,
 					offx = 0,
 					offy = row,
 					xsize = ncols,
-					ysize = 1,
-					outrow)
+					ysize = chunk_ysize,
+					out_data)
 					
 		setTxtProgressBar(pb, row+1)
 		return()
@@ -1055,13 +1121,16 @@ calc <- function(expr,
 	
 	message(paste("Calculating from", nrasters, "input layer(s)..."))
 	pb <- txtProgressBar(min=0, max=nrows)
-	lapply(0:(nrows-1), process_row)
+	lapply(0:(nrows-1), process_chunk, 1)
 	close(pb)
 
 	message(paste("Output written to:", dstfile))
 	dst_ds$close()
 	for (r in 1:nrasters)
 		ds_list[[r]]$close()
+		
+	if (ncores > 1)
+		parallel::stopCluster(cl)
 		
 	return(invisible(dstfile))
 }
