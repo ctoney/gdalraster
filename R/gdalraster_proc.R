@@ -901,11 +901,12 @@ calc <- function(expr,
 				setRasterNodataValue = FALSE,
 				usePixelLonLat = FALSE,
 				write_mode = "safe",
-				ncores = 1L,
+				ncores = 1,
 				cl_pkgs = NULL,
 				cl_exports = NULL) {
 	
 	# WIP for parallel
+	MAX_CHUNK_MEM_SIZE = 1000 # in MB, make this an argument
 	
 	calc_expr <- parse(text=expr)
 	
@@ -1019,28 +1020,35 @@ calc <- function(expr,
 	
 	# list of GDALRaster objects for each raster layer
 	ds_list <- list()
-	for (r in 1:nrasters)
+	tot_dt_bytes <- 0
+	for (r in 1:nrasters) {
 		ds_list[[r]] <- new(GDALRaster, rasterfiles[r], read_only=TRUE)
-	
+		#TODO: expose GDALRaster::_readableAsInt()
+		#if (ds_list[[r]]$.readableAsInt(bands[r])
+			#tot_dt_bytes <- tot_dt_bytes + 4
+		#else
+			#tot_dt_bytes <- tot_dt_bytes + 8
+		#assume 8 for now
+		tot_dt_bytes <- tot_dt_bytes + 8
+	}
+		
 	# are pixelX and pixelY being used
-	if (length(grep("pixelX", expr, fixed = TRUE))) {
+	if (length(grep("pixelX", expr, fixed = TRUE)))
 		usePixelX <- TRUE
-	}
-	else {
+	else
 		usePixelX <- FALSE
-	}
-	if (length(grep("pixelY", expr, fixed = TRUE))) {
+		
+	if (length(grep("pixelY", expr, fixed = TRUE)))
 		usePixelY <- TRUE
-	}
-	else {
+	else
+		usePixelY <- TRUE
+	
+	if (usePixelLonLat) {
+		usePixelX <- TRUE
 		usePixelY <- TRUE
 	}
 	
-	if (usePixelX || usePixelLonLat)
-		pixelX <- seq(from = xmin + (cellsizeX/2),
-					by = cellsizeX,
-					length.out = ncols)
-	
+	rows_per_chunk <- 1
 	if (ncores > 1) {
 		cl = parallel::makeCluster(ncores)
 		.cl_assign <- function(.x, .nm) { assign(.nm, .x, envir = .GlobalEnv) }
@@ -1053,15 +1061,47 @@ calc <- function(expr,
 		if (!is.null(cl_exports)) {
 			parallel::clusterExport(cl, cl_exports)
 		}
-		if (usePixelX) {
+		
+		bytes_per_row <- tot_dt_bytes * ncols
+		rows_per_chunk <- trunc((MAX_CHUNK_MEM_SIZE*1000) / bytes_per_row)
+		rows_per_chunk <- min(rows_per_chunk, nrows)
+	}
+	
+	if (usePixelX) {
+		pixelX <- rep(
+					seq(from = xmin + (cellsizeX/2),
+						by = cellsizeX,
+						length.out = ncols),
+					times = rows_per_chunk)
+		if (ncores > 1) {
 			cl_pieces <- parallel::clusterSplit(cl, pixelX)
 			parallel::clusterApply(cl, cl_pieces, .cl_assign, "pixelX")
 		}
 	}
 	
-	process_chunk <- function(row, chunk_ysize) {
-		if (usePixelY || usePixelLonLat)
-			pixelY <- rep((ymax - (cellsizeY/2) - (cellsizeY*row)), ncols)
+	process_chunk <- function(row) {
+		this_ysize <- 1
+		
+		if (ncores > 1) {
+			this_ysize <- rows_per_chunk
+			if ((row + this_ysize) > nrows) {
+				# adjust ysize for last chunk
+				this_ysize <- nrows - row
+				if (usePixelX) {
+					pixelX <- pixelX[1:ncols*this_ysize]
+					cl_pieces <- parallel::clusterSplit(cl, pixelX)
+					parallel::clusterApply(cl, cl_pieces, .cl_assign, "pixelX")
+				}
+			}
+		}
+		
+		if (usePixelY) {
+			pixelY <- double()
+			for (y in seq(row, row + this_ysize -1)) {
+				pixelY <- c(pixelY,
+							rep(ymax - (cellsizeY/2) - (cellsizeY*y), ncols))
+			}
+		}
 		
 		if(usePixelLonLat) {
 			lonlat <- inv_project(cbind(pixelX, pixelY), srs)
@@ -1074,9 +1114,9 @@ calc <- function(expr,
 										xoff = 0,
 										yoff = row,
 										xsize = ncols,
-										ysize = chunk_ysize,
+										ysize = this_ysize,
 										out_xsize = ncols,
-										out_ysize = chunk_ysize)
+										out_ysize = this_ysize)
 			assign(var.names[r], in_data)
 		}
 
@@ -1101,7 +1141,7 @@ calc <- function(expr,
 			out_data <- unlist(parallel::clusterEvalQ(cl, eval(calc_expr)))
 		}
 		
-		if (length(out_data) != ncols) {
+		if (length(out_data) != ncols * this_ysize) {
 			dst_ds$close()
 			for (r in 1:nrasters)
 				ds_list[[r]]$close()
@@ -1112,16 +1152,17 @@ calc <- function(expr,
 					offx = 0,
 					offy = row,
 					xsize = ncols,
-					ysize = chunk_ysize,
+					ysize = this_ysize,
 					out_data)
 					
-		setTxtProgressBar(pb, row+1)
+		utils::setTxtProgressBar(pb, row+1)
 		return()
 	}
 	
 	message(paste("Calculating from", nrasters, "input layer(s)..."))
-	pb <- txtProgressBar(min=0, max=nrows)
-	lapply(0:(nrows-1), process_chunk, 1)
+	pb <- utils::txtProgressBar(min=0, max=nrows)
+	lapply(seq(0, (nrows-1), by=rows_per_chunk), process_chunk)
+	utils::setTxtProgressBar(pb, nrows)
 	close(pb)
 
 	message(paste("Output written to:", dstfile))
