@@ -16,9 +16,8 @@ calc(
   options = NULL,
   nodata_value = NULL,
   setRasterNodataValue = FALSE,
-  usePixelLonLat = FALSE,
   write_mode = "safe",
-  ncores = 1L,
+  ncores = 1,
   cl_pkgs = NULL,
   cl_exports = NULL
 )
@@ -54,10 +53,6 @@ during creation of a GTiff file).}
 format nodata value to \code{nodata_value}, or \code{FALSE} not to set a raster
 nodata value.}
 
-\item{usePixelLonLat}{Logical. If \code{TRUE}, \code{pixelX} and \code{pixelY} will be
-inverse projected to geographic coordinates and available as \code{pixelLon} and
-\code{pixelLat} in \code{expr} (adds computation time).}
-
 \item{write_mode}{Character. Name of the file write mode for output.
 One of:
 \itemize{
@@ -91,21 +86,21 @@ R expression, as either x/y in the raster projected coordinate system or
 inverse projected longitude/latitude.
 }
 \details{
-The variables in \code{expr} are vectors of length raster xsize
-(row vectors of the input raster layer(s)).
-The expression should return a vector also of length raster xsize
-(an output row).
-Two special variable names are available in \code{expr} by default:
+The variables in \code{expr} are vectors with length the size of a raster
+processing chunk (e.g., may be row vectors of the input raster layer(s)).
+The expression should accept vector inputs all of the same length,
+and return vector output of that length.
+Four special variable names are available in \code{expr}:
 \code{pixelX} and \code{pixelY} provide the pixel center coordinate in
-projection units. If \code{usePixelLonLat = TRUE}, the pixel x/y coordinates
-will also be inverse projected to longitude/latitude and available
-in \code{expr} as \code{pixelLon} and \code{pixelLat} (in the same geographic
-coordinate system used by the input projection, which is read from the
-first input raster).
+projection units. \code{pixelLon} and \code{pixelLat} can also be used. In that case,
+pixel x/y coordinates will be inverse projected to longitude/latitude
+in the same geographic coordinate system used by the input projection, which
+is read from the first input raster (adds computation time).
 
 To refer to specific bands in a multi-band file, repeat the filename in
 \code{rasterfiles} and specify corresponding band numbers in \code{bands}, along with
-optional variable names in \code{var.names}, for example,
+optional variable names in \code{var.names} (i.e, values are not recycled),
+for example,
 \preformatted{
 rasterfiles = c("multiband.tif", "multiband.tif")
 bands = c(4, 5)

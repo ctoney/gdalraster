@@ -719,21 +719,21 @@ rasterToVRT <- function(srcfile,
 #' inverse projected longitude/latitude.
 #'
 #' @details
-#' The variables in `expr` are vectors of length raster xsize 
-#' (row vectors of the input raster layer(s)).
-#' The expression should return a vector also of length raster xsize 
-#' (an output row). 
-#' Two special variable names are available in `expr` by default: 
+#' The variables in `expr` are vectors with length the size of a raster 
+#' processing chunk (e.g., may be row vectors of the input raster layer(s)).
+#' The expression should accept vector inputs all of the same length,
+#' and return vector output of that length.
+#' Four special variable names are available in `expr`: 
 #' `pixelX` and `pixelY` provide the pixel center coordinate in 
-#' projection units. If `usePixelLonLat = TRUE`, the pixel x/y coordinates 
-#' will also be inverse projected to longitude/latitude and available 
-#' in `expr` as `pixelLon` and `pixelLat` (in the same geographic 
-#' coordinate system used by the input projection, which is read from the 
-#' first input raster).
+#' projection units. `pixelLon` and `pixelLat` can also be used. In that case,
+#' pixel x/y coordinates will be inverse projected to longitude/latitude
+#' in the same geographic coordinate system used by the input projection, which
+#' is read from the first input raster (adds computation time).
 #'
 #' To refer to specific bands in a multi-band file, repeat the filename in 
 #' `rasterfiles` and specify corresponding band numbers in `bands`, along with
-#' optional variable names in `var.names`, for example,
+#' optional variable names in `var.names` (i.e, values are not recycled),
+#' for example,
 #' \preformatted{
 #' rasterfiles = c("multiband.tif", "multiband.tif")
 #' bands = c(4, 5)
@@ -763,9 +763,6 @@ rasterToVRT <- function(srcfile,
 #' @param setRasterNodataValue Logical. `TRUE` will attempt to set the raster 
 #' format nodata value to `nodata_value`, or `FALSE` not to set a raster 
 #' nodata value.
-#' @param usePixelLonLat Logical. If `TRUE`, `pixelX` and `pixelY` will be 
-#' inverse projected to geographic coordinates and available as `pixelLon` and 
-#' `pixelLat` in `expr` (adds computation time).
 #' @param write_mode Character. Name of the file write mode for output. 
 #' One of:
 #'   * `safe` - execution stops if `dstfile` already exists (no output written)
@@ -899,7 +896,6 @@ calc <- function(expr,
 				options = NULL,
 				nodata_value = NULL, 
 				setRasterNodataValue = FALSE,
-				usePixelLonLat = FALSE,
 				write_mode = "safe",
 				ncores = 1,
 				cl_pkgs = NULL,
@@ -986,7 +982,7 @@ calc <- function(expr,
 	srs <- ref$getProjectionRef()
 	ref$close()
 	
-	if(nrasters > 1) {
+	if (nrasters > 1) {
 		for(r in rasterfiles) {
 			ds <- new(GDALRaster, r, TRUE)
 			if(ds$getRasterYSize() != nrows || ds$getRasterXSize() != ncols) {
@@ -1017,7 +1013,6 @@ calc <- function(expr,
 		dst_ds <- new(GDALRaster, dstfile, read_only=FALSE)
 	}
 	
-	
 	# list of GDALRaster objects for each raster layer
 	ds_list <- list()
 	tot_dt_bytes <- 0
@@ -1032,7 +1027,7 @@ calc <- function(expr,
 		tot_dt_bytes <- tot_dt_bytes + 8
 	}
 		
-	# are pixelX and pixelY being used
+	# are pixel coordinates being used
 	if (length(grep("pixelX", expr, fixed = TRUE)))
 		usePixelX <- TRUE
 	else
@@ -1041,7 +1036,13 @@ calc <- function(expr,
 	if (length(grep("pixelY", expr, fixed = TRUE)))
 		usePixelY <- TRUE
 	else
-		usePixelY <- TRUE
+		usePixelY <- FALSE
+
+	if (length(grep("pixelLon", expr, fixed = TRUE)) ||
+			length(grep("pixelLat", expr, fixed = TRUE)))
+		usePixelLonLat <- TRUE
+	else
+		usePixelLonLat <- FALSE
 	
 	if (usePixelLonLat) {
 		usePixelX <- TRUE
@@ -1049,6 +1050,7 @@ calc <- function(expr,
 	}
 	
 	rows_per_chunk <- 1
+	
 	if (ncores > 1) {
 		cl = parallel::makeCluster(ncores)
 		.cl_assign <- function(.x, .nm) { assign(.nm, .x, envir = .GlobalEnv) }
