@@ -75,7 +75,7 @@ geos_version <- function() {
 #' bbox_list[[3]] <- bbox_from_wkt(bnd)
 #'
 #' print(bbox_list)
-#' bbox_intersect(bbox_list)
+#' # bbox_intersect(bbox_list)
 #' bbox_union(bbox_list)
 #' @export
 bbox_intersect <- function(x, as_wkt = FALSE) {

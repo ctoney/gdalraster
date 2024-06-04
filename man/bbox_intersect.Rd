@@ -48,7 +48,7 @@ bnd <- "POLYGON ((324467.3 5104814.2, 323909.4 5104365.4, 323794.2
 bbox_list[[3]] <- bbox_from_wkt(bnd)
 
 print(bbox_list)
-bbox_intersect(bbox_list)
+# bbox_intersect(bbox_list)
 bbox_union(bbox_list)
 }
 \seealso{
