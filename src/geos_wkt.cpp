@@ -686,23 +686,35 @@ std::string g_intersection(std::string this_geom, std::string other_geom) {
     OGRGeometryH hGeom_this = nullptr;
     OGRGeometryH hGeom_other = nullptr;
     OGRErr err = OGRERR_NONE;
-    char* pszWKT_this = (char*) this_geom.c_str();
-    char* pszWKT_other = (char*) other_geom.c_str();
+    const char *pszWKT_this = this_geom.c_str();
+    const char *pszWKT_other = other_geom.c_str();
 
-    err = OGR_G_CreateFromWkt(&pszWKT_this, nullptr, &hGeom_this);
-    if (err != OGRERR_NONE || hGeom_this == nullptr) {
-        if (hGeom_this != nullptr)
-            OGR_G_DestroyGeometry(hGeom_this);
-        Rcpp::stop("failed to create geometry object from first WKT string");
+    if (pszWKT_this) {
+        char *pszWKTTemp = const_cast<char *>(pszWKT_this);
+        err = OGR_G_CreateFromWkt(&pszWKTTemp, nullptr, &hGeom_this);
+        if (err != OGRERR_NONE || hGeom_this == nullptr) {
+            if (hGeom_this != nullptr)
+                OGR_G_DestroyGeometry(hGeom_this);
+            Rcpp::stop("failed to create geom object from first WKT string");
+        }
+    }
+    else {
+        Rcpp::stop("'this_geom' invalid");
     }
 
-    err = OGR_G_CreateFromWkt(&pszWKT_other, nullptr, &hGeom_other);
-    if (err != OGRERR_NONE || hGeom_other == nullptr) {
-        if (hGeom_this != nullptr)
-            OGR_G_DestroyGeometry(hGeom_this);
-        if (hGeom_other != nullptr)
-            OGR_G_DestroyGeometry(hGeom_other);
-        Rcpp::stop("failed to create geometry object from second WKT string");
+    if (pszWKT_other) {
+        char *pszWKTTemp = const_cast<char *>(pszWKT_other);
+        err = OGR_G_CreateFromWkt(&pszWKTTemp, nullptr, &hGeom_other);
+        if (err != OGRERR_NONE || hGeom_other == nullptr) {
+            if (hGeom_this != nullptr)
+                OGR_G_DestroyGeometry(hGeom_this);
+            if (hGeom_other != nullptr)
+                OGR_G_DestroyGeometry(hGeom_other);
+            Rcpp::stop("failed to create geom object from second WKT string");
+        }
+    }
+    else {
+        Rcpp::stop("'other_geom' invalid");
     }
 
     OGRGeometryH hGeom = nullptr;
@@ -721,11 +733,8 @@ std::string g_intersection(std::string this_geom, std::string other_geom) {
         CPLFree(pszWKT_out);
     }
     OGR_G_DestroyGeometry(hGeom_this);
-    hGeom_this = nullptr;
     OGR_G_DestroyGeometry(hGeom_other);
-    hGeom_other = nullptr;
     OGR_G_DestroyGeometry(hGeom);
-    hGeom = nullptr;
 
     return wkt_out;
 }
