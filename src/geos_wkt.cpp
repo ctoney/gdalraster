@@ -718,7 +718,7 @@ std::string g_intersection(std::string this_geom, std::string other_geom) {
     OGR_G_ExportToWkt(hGeom, &pszWKT_out);
     std::string wkt_out = "";
     if (pszWKT_out != nullptr) {
-        wkt_out = pszWKT_out;
+        wkt_out = std::string(pszWKT_out);
         CPLFree(pszWKT_out);
     }
     OGR_G_DestroyGeometry(hGeom);
