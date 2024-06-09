@@ -722,8 +722,8 @@ std::string g_intersection(std::string this_geom, std::string other_geom) {
         CPLFree(pszWKT_out);
     }
     OGR_G_DestroyGeometry(hGeom);
-    OGR_G_DestroyGeometry(hGeom_this);
     OGR_G_DestroyGeometry(hGeom_other);
+    OGR_G_DestroyGeometry(hGeom_this);
 
     return wkt_out;
 }
