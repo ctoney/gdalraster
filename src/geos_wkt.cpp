@@ -243,7 +243,8 @@ bool g_is_valid(std::string geom) {
 
     OGRGeometryH hGeom = nullptr;
     OGRErr err = OGRERR_NONE;
-    char* pszWKT = (char*) geom.c_str();
+    // char* pszWKT = (char*) geom.c_str();
+    char *pszWKT = CPLStrdup(geom.c_str());
 
     err = OGR_G_CreateFromWkt(&pszWKT, nullptr, &hGeom);
     if (err != OGRERR_NONE || hGeom == nullptr) {
@@ -255,6 +256,7 @@ bool g_is_valid(std::string geom) {
     bool ret = false;
     ret = OGR_G_IsValid(hGeom);
     OGR_G_DestroyGeometry(hGeom);
+    CPLFree(pszWKT);
     return ret;
 }
 
