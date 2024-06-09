@@ -47,9 +47,9 @@ ds$close()
 # 325298.1 5104929.4, 325298.1 5104929.4, 324467.3 5104814.2))"
 # bbox_list[[3]] <- bbox_from_wkt(bnd)
 
-print(bbox_list)
-bbox_intersect(bbox_list)
-bbox_union(bbox_list)
+# print(bbox_list)
+# bbox_intersect(bbox_list)
+# bbox_union(bbox_list)
 }
 \seealso{
 \code{\link[=bbox_from_wkt]{bbox_from_wkt()}}, \code{\link[=bbox_to_wkt]{bbox_to_wkt()}}

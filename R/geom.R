@@ -74,9 +74,9 @@ geos_version <- function() {
 #' # 325298.1 5104929.4, 325298.1 5104929.4, 324467.3 5104814.2))"
 #' # bbox_list[[3]] <- bbox_from_wkt(bnd)
 #'
-#' print(bbox_list)
-#' bbox_intersect(bbox_list)
-#' bbox_union(bbox_list)
+#' # print(bbox_list)
+#' # bbox_intersect(bbox_list)
+#' # bbox_union(bbox_list)
 #' @export
 bbox_intersect <- function(x, as_wkt = FALSE) {
     n <- length(x)
