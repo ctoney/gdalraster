@@ -5,6 +5,8 @@
    Copyright (c) 2023-2024 gdalraster authors
 */
 
+#include <cstdlib>
+
 #include "cpl_conv.h"
 #include "ogr_api.h"
 #include "ogr_spatialref.h"
@@ -639,9 +641,12 @@ std::string g_buffer(std::string geom, double dist, int quad_segs = 30) {
     OGRGeometryH hGeom = nullptr;
     OGRGeometryH hBufferGeom = nullptr;
     OGRErr err = OGRERR_NONE;
-    char *pszWKT = const_cast<char *>(geom.c_str());
 
-    err = OGR_G_CreateFromWkt(&pszWKT, nullptr, &hGeom);
+    char *pszWKT = static_cast<char *>(CPLMalloc(geom.size() + 1));
+    std::memcpy(pszWKT, geom.data(), geom.size());
+    pszWKT[geom.size()] = '\0';
+    char *pszWKTParam = pszWKT;
+    err = OGR_G_CreateFromWkt(&pszWKTParam, nullptr, &hGeom);
     if (err != OGRERR_NONE || hGeom == nullptr) {
         if (hGeom != nullptr)
             OGR_G_DestroyGeometry(hGeom);
@@ -661,6 +666,8 @@ std::string g_buffer(std::string geom, double dist, int quad_segs = 30) {
         wkt_out = pszWKT_out;
         CPLFree(pszWKT_out);
     }
+
+    CPLFree(pszWKT);
     OGR_G_DestroyGeometry(hBufferGeom);
     OGR_G_DestroyGeometry(hGeom);
 
