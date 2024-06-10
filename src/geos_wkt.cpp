@@ -661,8 +661,8 @@ std::string g_buffer(std::string geom, double dist, int quad_segs = 30) {
         wkt_out = pszWKT_out;
         CPLFree(pszWKT_out);
     }
-    OGR_G_DestroyGeometry(hGeom);
     OGR_G_DestroyGeometry(hBufferGeom);
+    OGR_G_DestroyGeometry(hGeom);
 
     return wkt_out;
 }
