@@ -7,9 +7,10 @@
 
 #include "geos_wkt.h"
 
+#include "cpl_port.h"
 #include "cpl_conv.h"
 #include "ogr_api.h"
-#include "ogrsf_frmts.h"
+#include "ogr_core.h"
 #include "ogr_spatialref.h"
 #include "ogr_srs_api.h"
 
