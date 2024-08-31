@@ -643,10 +643,7 @@ std::string g_buffer(std::string geom, double dist, int quad_segs = 30) {
     OGRGeometryH hBufferGeom = nullptr;
     OGRErr err = OGRERR_NONE;
 
-    auto wkt = std::make_unique<char[]>(geom.size() + 1);
-    std::strcpy(wkt.get(), geom.c_str());
-    char *pszWKT = wkt.get();
-
+    char *pszWKT = const_cast<char *>(geom.c_str());
     err = OGR_G_CreateFromWkt(&pszWKT, nullptr, &hGeom);
     if (err != OGRERR_NONE || hGeom == nullptr) {
         if (hGeom != nullptr)
@@ -662,17 +659,17 @@ std::string g_buffer(std::string geom, double dist, int quad_segs = 30) {
 
     char *pszWKT_out = nullptr;
     OGR_G_ExportToWkt(hBufferGeom, &pszWKT_out);
-    std::string wkt_out = "";
-    if (pszWKT_out != nullptr) {
-        wkt_out = pszWKT_out;
-        CPLFree(pszWKT_out);
-    }
-
-    CPLFree(pszWKT);
     OGR_G_DestroyGeometry(hBufferGeom);
     OGR_G_DestroyGeometry(hGeom);
 
-    return wkt_out;
+    if (pszWKT_out != nullptr) {
+        std::string wkt_out(pszWKT_out);
+        CPLFree(pszWKT_out);
+        return wkt_out;
+    }
+    else {
+        return "";
+    }
 }
 
 
