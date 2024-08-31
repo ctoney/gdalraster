@@ -643,7 +643,10 @@ std::string g_buffer(std::string geom, double dist, int quad_segs = 30) {
     OGRErr err = OGRERR_NONE;
 
     char *pszWKT = const_cast<char *>(geom.c_str());
-    err = OGR_G_CreateFromWkt(&pszWKT, nullptr, &hGeom);
+
+    OGRSpatialReferenceH ref = OSRNewSpatialReference(nullptr);
+    OSRSetAxisMappingStrategy(ref, OAMS_TRADITIONAL_GIS_ORDER);
+    err = OGR_G_CreateFromWkt(&pszWKT, ref, &hGeom);
     if (err != OGRERR_NONE || hGeom == nullptr) {
         if (hGeom != nullptr)
             OGR_G_DestroyGeometry(hGeom);
@@ -660,6 +663,8 @@ std::string g_buffer(std::string geom, double dist, int quad_segs = 30) {
     OGR_G_ExportToWkt(hBufferGeom, &pszWKT_out);
     OGR_G_DestroyGeometry(hBufferGeom);
     OGR_G_DestroyGeometry(hGeom);
+    if (ref != nullptr)
+        OSRDestroySpatialReference(ref);
 
     if (pszWKT_out != nullptr) {
         std::string wkt_out(pszWKT_out);
