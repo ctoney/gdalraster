@@ -5,15 +5,14 @@
    Copyright (c) 2023-2024 gdalraster authors
 */
 
-#include <cstring>
-#include <memory>
+#include "geos_wkt.h"
 
 #include "cpl_conv.h"
+#include "ogr_core.h"
 #include "ogr_api.h"
+// #include "ogr_geometry.h"
 #include "ogr_spatialref.h"
 #include "ogr_srs_api.h"
-
-#include "geos_wkt.h"
 
 //' get GEOS version
 //' @noRd
