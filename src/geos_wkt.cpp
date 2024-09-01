@@ -11,6 +11,7 @@
 #include "cpl_conv.h"
 #include "ogr_api.h"
 #include "ogr_core.h"
+#include "ogr_geometry.h"
 #include "ogr_spatialref.h"
 #include "ogr_srs_api.h"
 
@@ -624,7 +625,7 @@ bool g_overlaps(std::string this_geom, std::string other_geom) {
 
 //' @noRd
 // [[Rcpp::export(name = ".g_buffer")]]
-std::string g_buffer(Rcpp::CharacterVector geom, double dist, int quad_segs = 30) {
+std::string g_buffer(std::string geom, double dist, int quad_segs = 30) {
 // Compute buffer of geometry.
 
 // Builds a new geometry containing the buffer region around the geometry on
@@ -638,38 +639,31 @@ std::string g_buffer(Rcpp::CharacterVector geom, double dist, int quad_segs = 30
 // numbers of vertices in the resulting buffer geometry while small numbers
 // reduce the accuracy of the result.
 
-    OGRGeometryH hGeom = nullptr;
-    OGRGeometryH hBufferGeom = nullptr;
+    // OGRGeometryH hGeom = nullptr;
+    // OGRGeometryH hBufferGeom = nullptr;
+    OGRGeometry *poGeom = nullptr;
+    OGRGeometry *poBufferGeom = nullptr;
     OGRErr err = OGRERR_NONE;
 
-    char *pszWKT = geom[0];
-
-    err = OGR_G_CreateFromWkt(&pszWKT, nullptr, &hGeom);
-    if (err != OGRERR_NONE || hGeom == nullptr) {
-        if (hGeom != nullptr)
-            OGR_G_DestroyGeometry(hGeom);
+    err = OGRGeometryFactory::createFromWkt(geom.c_str(), nullptr, &poGeom);
+    if (err != OGRERR_NONE || poGeom == nullptr) {
+        if (poGeom != nullptr)
+            OGRGeometryFactory::destroyGeometry(poGeom);
         Rcpp::stop("failed to create geometry object from WKT string");
     }
 
-    hBufferGeom = OGR_G_Buffer(hGeom, dist, quad_segs);
-    if (hBufferGeom == nullptr) {
-        OGR_G_DestroyGeometry(hGeom);
+    poBufferGeom = poGeom->Buffer(dist, quad_segs);
+    if (poBufferGeom == nullptr) {
+        OGRGeometryFactory::destroyGeometry(poGeom);
         Rcpp::stop("failed to create buffer geometry");
     }
 
-    char *pszWKT_out = nullptr;
-    OGR_G_ExportToWkt(hBufferGeom, &pszWKT_out);
-    OGR_G_DestroyGeometry(hBufferGeom);
-    OGR_G_DestroyGeometry(hGeom);
+    std::string wkt_out = "";
+    wkt_out = poBufferGeom->exportToWkt();
+    OGRGeometryFactory::destroyGeometry(poBufferGeom);
+    OGRGeometryFactory::destroyGeometry(poGeom);
 
-    if (pszWKT_out != nullptr) {
-        std::string wkt_out(pszWKT_out);
-        CPLFree(pszWKT_out);
-        return wkt_out;
-    }
-    else {
-        return "";
-    }
+    return wkt_out;
 }
 
 

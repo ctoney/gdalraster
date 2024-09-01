@@ -32,7 +32,7 @@ bool g_within(std::string this_geom, std::string other_geom);
 bool g_crosses(std::string this_geom, std::string other_geom);
 bool g_overlaps(std::string this_geom, std::string other_geom);
 
-std::string g_buffer(Rcpp::CharacterVector geom, double dist, int quad_segs);
+std::string g_buffer(std::string geom, double dist, int quad_segs);
 
 std::string g_intersection(std::string this_geom, std::string other_geom);
 std::string g_union(std::string this_geom, std::string other_geom);

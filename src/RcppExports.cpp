@@ -954,12 +954,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // g_buffer
-std::string g_buffer(Rcpp::CharacterVector geom, double dist, int quad_segs);
+std::string g_buffer(std::string geom, double dist, int quad_segs);
 RcppExport SEXP _gdalraster_g_buffer(SEXP geomSEXP, SEXP distSEXP, SEXP quad_segsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type geom(geomSEXP);
+    Rcpp::traits::input_parameter< std::string >::type geom(geomSEXP);
     Rcpp::traits::input_parameter< double >::type dist(distSEXP);
     Rcpp::traits::input_parameter< int >::type quad_segs(quad_segsSEXP);
     rcpp_result_gen = Rcpp::wrap(g_buffer(geom, dist, quad_segs));
