@@ -639,13 +639,12 @@ std::string g_buffer(std::string geom, double dist, int quad_segs = 30) {
 // numbers of vertices in the resulting buffer geometry while small numbers
 // reduce the accuracy of the result.
 
-    // OGRGeometryH hGeom = nullptr;
-    // OGRGeometryH hBufferGeom = nullptr;
     OGRGeometry *poGeom = nullptr;
     OGRGeometry *poBufferGeom = nullptr;
     OGRErr err = OGRERR_NONE;
 
-    err = OGRGeometryFactory::createFromWkt(geom.c_str(), nullptr, &poGeom);
+    std::string geom_in(geom);
+    err = OGRGeometryFactory::createFromWkt(geom_in.c_str(), nullptr, &poGeom);
     if (err != OGRERR_NONE || poGeom == nullptr) {
         if (poGeom != nullptr)
             OGRGeometryFactory::destroyGeometry(poGeom);
