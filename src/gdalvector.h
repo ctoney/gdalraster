@@ -8,6 +8,8 @@
 #ifndef SRC_GDALVECTOR_H_
 #define SRC_GDALVECTOR_H_
 
+#include <ogr_recordbatch.h>
+
 #include <string>
 #include <vector>
 
@@ -39,6 +41,7 @@ class GDALVector {
     std::string m_layer_name {""};  // layer name or sql statement
     bool m_is_sql {false};
     std::string m_dialect {""};
+    struct ArrowArrayStream m_stream;
 
     // exposed read/write fields
     std::string defaultGeomFldName {"geometry"};
@@ -100,6 +103,8 @@ class GDALVector {
     bool setMetadata(const Rcpp::CharacterVector metadata);
     std::string getMetadataItem(std::string mdi_name) const;
 
+    void getArrowStream(Rcpp::RObject stream_xptr);
+
     bool layerIntersection(
             GDALVector method_layer,
             GDALVector result_layer,
@@ -158,6 +163,17 @@ class GDALVector {
                               const std::string &geom_format) const;
 
     OGRFeatureH OGRFeatureFromList_(const Rcpp::RObject &feature) const;
+
+    int arrow_get_schema(struct ArrowSchema* out);
+    int arrow_get_next(struct ArrowArray* out);
+    const char* arrow_get_last_error();
+    static int arrow_get_schema_wrap(struct ArrowArrayStream* stream,
+                                     struct ArrowSchema* out);
+    static int arrow_get_next_wrap(struct ArrowArrayStream* stream,
+                                   struct ArrowArray* out);
+    static const char* arrow_get_last_error_wrap(
+            struct ArrowArrayStream* stream);
+    static void arrow_release_wrap(struct ArrowArrayStream* stream);
 
  private:
     std::string m_dsn {""};

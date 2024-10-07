@@ -1620,6 +1620,38 @@ std::string GDALVector::getMetadataItem(std::string mdi_name) const {
     return mdi;
 }
 
+void GDALVector::getArrowStream(Rcpp::RObject stream_xptr) {
+    /*
+    Exposes an Arrow C stream to be consumed by {nanoarrow}
+
+    This is a proof-of-concept implementation based on GDALStreamWrapper by
+    Dewey Dunnington in:
+    https://github.com/r-spatial/sf/blob/main/src/gdal_read_stream.cpp
+
+    as suggested by Michael Sumner in:
+    https://github.com/USDAForestService/gdalraster/issues/545
+
+    From GDAL documentation for OGR_L_GetArrowStream():
+    Changing filter state, ignored columns, modifying the schema or using
+    ResetReading()/GetNextFeature() while using a ArrowArrayStream is strongly
+    discouraged and may lead to unexpected results.
+    */
+
+    checkAccess_(GA_ReadOnly);
+
+    if (!OGR_L_GetArrowStream(m_hLayer, &m_stream, nullptr))
+        Rcpp::stop("OGR_L_GetArrowStream() failed");
+
+    auto stream_out = reinterpret_cast<struct ArrowArrayStream*>(
+            R_ExternalPtrAddr(stream_xptr));
+
+    stream_out->get_schema = &arrow_get_schema_wrap;
+    stream_out->get_next = &arrow_get_next_wrap;
+    stream_out->get_last_error = &arrow_get_last_error_wrap;
+    stream_out->release = &arrow_release_wrap;
+    stream_out->private_data = this;
+}
+
 bool GDALVector::layerIntersection(
         GDALVector method_layer,
         GDALVector result_layer,
@@ -2927,6 +2959,43 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(
     return hFeat;
 }
 
+int GDALVector::arrow_get_schema(struct ArrowSchema* out) {
+    return m_stream.get_schema(&m_stream, out);
+}
+
+int GDALVector::arrow_get_next(struct ArrowArray* out) {
+    return m_stream.get_next(&m_stream, out);
+}
+
+const char* GDALVector::arrow_get_last_error() {
+    return m_stream.get_last_error(&m_stream);
+}
+
+int GDALVector::arrow_get_schema_wrap(struct ArrowArrayStream* stream,
+                                      struct ArrowSchema* out) {
+
+    return reinterpret_cast<GDALVector*>(
+            stream->private_data)->arrow_get_schema(out);
+}
+
+int GDALVector::arrow_get_next_wrap(struct ArrowArrayStream* stream,
+                                    struct ArrowArray* out) {
+
+    return reinterpret_cast<GDALVector*>(
+            stream->private_data)->arrow_get_next(out);
+}
+
+const char* GDALVector::arrow_get_last_error_wrap(
+        struct ArrowArrayStream* stream) {
+
+    return reinterpret_cast<GDALVector*>(
+            stream->private_data)->arrow_get_last_error();
+}
+
+void GDALVector::arrow_release_wrap(struct ArrowArrayStream* stream) {
+    stream->release = nullptr;
+}
+
 
 // ****************************************************************************
 
@@ -3045,6 +3114,8 @@ RCPP_MODULE(mod_GDALVector) {
         "Set metadata from a list of name=value")
     .const_method("getMetadataItem", &GDALVector::getMetadataItem,
         "Return the value of a metadata item")
+    .method("getArrowStream", &GDALVector::getArrowStream,
+        "Expose an Arrow C stream on the layer")
     .method("layerIntersection", &GDALVector::layerIntersection,
         "Intersection of this layer with a method layer")
     .method("layerUnion", &GDALVector::layerUnion,
