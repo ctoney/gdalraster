@@ -41,7 +41,6 @@ class GDALVector {
     std::string m_layer_name {""};  // layer name or sql statement
     bool m_is_sql {false};
     std::string m_dialect {""};
-    struct ArrowArrayStream m_stream;
 
     // exposed read/write fields
     std::string defaultGeomFldName {"geometry"};
@@ -186,6 +185,7 @@ class GDALVector {
     GDALAccess m_eAccess {GA_ReadOnly};
     OGRLayerH m_hLayer {nullptr};
     int64_t m_last_write_fid {NA_INTEGER64};
+    struct ArrowArrayStream m_stream;
 };
 
 RCPP_EXPOSED_CLASS(GDALVector)
