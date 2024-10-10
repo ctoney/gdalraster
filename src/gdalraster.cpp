@@ -447,19 +447,18 @@ Rcpp::IntegerMatrix GDALRaster::get_pixel_line(const Rcpp::RObject& xy) const {
 }
 
 Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
-                                              int band, int krnl_size) const {
+                                              int band, int krnl_dim) const {
 
     // undocumented internal method intended to be wrapped from R
     // extract pixel values at geospatial point locations
     // xy:        geospatial xy coordinates in the same projection as the
     //            raster, a 2-column data frame or matrix
     // band:      band number, or 0 to extract from all bands
-    // krnl_size: 1 for single-pixel extract at xy,
+    // krnl_dim:  1 for single-pixel extract at xy,
     //            2 for bilinear interpolation at xy (2x2 kernel),
     //            or the size of a square kernel to extract all pixels for,
-    //            e.g., krnl_size = 3 to return the values of the 9 pixels
+    //            e.g., krnl_dim = 3 to return the values of the 9 pixels
     //            in a 3x3 kernel centered on the pixel containing xy
-    //            (krnl_size > 2 must be an odd number)
     // the returned matrix has named columns indicating band number, e.g., "b1"
 
     checkAccess_(GA_ReadOnly);
@@ -491,6 +490,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
         bands_in = Rcpp::seq(1, getRasterCount());
     else
         bands_in = Rcpp::wrap(band);
+    R_xlen_t num_bands = bands_in.size();
 
     Rcpp::CharacterVector band_names = Rcpp::CharacterVector::create();
     for (auto& b : bands_in) {
@@ -505,11 +505,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
         band_names.push_back(nm);
     }
 
-    if (krnl_size < 1)
-        Rcpp::stop("'krnl_size' must be a positive number");
-
-    if (krnl_size > 2 && !(krnl_size % 2))
-        Rcpp::stop("'krnl_size' > 2 must be an odd number");
+    if (krnl_dim < 1)
+        Rcpp::stop("'krnl_dim' must be a positive number");
 
     Rcpp::NumericVector inv_gt = inv_geotransform(getGeoTransform());
     if (Rcpp::any(Rcpp::is_na(inv_gt)))
@@ -527,98 +524,139 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
     GDALProgressFunc pfnProgress = GDALTermProgressR;
     uint64_t pts_outside = 0;
 
-    if (krnl_size == 1 || krnl_size == 2) {
-        Rcpp::NumericMatrix values = Rcpp::no_init(num_pts, bands_in.size());
+    int krnl_size = krnl_dim * krnl_dim;
+    int raster_xsize = getRasterXSize();
+    int raster_ysize = getRasterYSize();
+
+    Rcpp::NumericMatrix values;
+    if (krnl_dim == 1 || krnl_dim == 2) {
+        values = Rcpp::no_init(num_pts, num_bands);
         Rcpp::colnames(values) = band_names;
-
-        for (R_xlen_t band_idx = 0; band_idx < bands_in.size(); ++band_idx) {
-            if (!quiet) {
-                Rcpp::Rcout << "extracting from band " << bands_in[band_idx]
-                        << "...\n";
-                pfnProgress(0, nullptr, nullptr);
-            }
-            for (R_xlen_t row_idx = 0; row_idx < num_pts; ++row_idx) {
-                if (krnl_size == 1) {
-                    int x_off = std::floor(x_offsets[row_idx]);
-                    int y_off = std::floor(y_offsets[row_idx]);
-
-                    if (x_off < 0 || x_off > getRasterXSize() ||
-                        y_off < 0 || y_off > getRasterYSize()) {
-
-                        if (band_idx == 0)
-                            pts_outside += 1;
-
-                        values(row_idx, band_idx) = NA_REAL;
-                        continue;
-                    }
-
-                    Rcpp::NumericVector v = read(bands_in[band_idx],
-                                                 x_off, y_off, 1, 1, 1, 1);
-
-                    values(row_idx, band_idx) = v[0];
-                }
-                else {
-                    // bilinear interpolation
-                    int x_off = std::floor(x_offsets[row_idx] - 0.5);
-                    int y_off = std::floor(y_offsets[row_idx] - 0.5);
-
-                    if (x_off < 0 || (x_off + 1) > getRasterXSize() ||
-                        y_off < 0 || (y_off + 1) > getRasterYSize()) {
-
-                        if (band_idx == 0)
-                            pts_outside += 1;
-
-                        values(row_idx, band_idx) = NA_REAL;
-                        continue;
-                    }
-
-                    Rcpp::NumericVector v = read(bands_in[band_idx],
-                                                 x_off, y_off, 2, 2, 2, 2);
-
-                    if (Rcpp::any(Rcpp::is_na(v))) {
-                        values(row_idx, band_idx) = NA_REAL;
-                        continue;
-                    }
-
-                    // convert to unit square coordinates for the 2x2 kernel
-                    // the center of the lower left pixel in the kernel is 0,0
-                    double x = x_offsets[row_idx] - (x_off + 0.5);
-                    double y = (y_off + 1.5) - y_offsets[row_idx];
-
-                    // pixels in v are left to right, top to bottom
-                    // pixel values in the square:
-                    // 0,0: v[2]
-                    // 1,0: v[3]
-                    // 0,1: v[0]
-                    // 1,1: v[1]
-                    values(row_idx, band_idx) = (v[2] * (1.0 - x) * (1.0 - y) +
-                                                 v[3] * x * (1.0 - y) +
-                                                 v[0] * (1.0 - x) * y +
-                                                 v[1] * x * y);
-                }
-                if (!quiet) {
-                    pfnProgress(row_idx / (num_pts - 1.0), nullptr, nullptr);
-                }
-            }
-        }
-
-        if (pts_outside > 0 && !quiet) {
-            std::string msg;
-            if (krnl_size == 1)
-                msg = "point(s) were outside the raster extent, NA returned";
-            else
-                msg = "point(s) or part of their kernel were outside the raster extent, NA returned";
-
-            Rcpp::warning(std::to_string(pts_outside) + " " + msg);
-        }
-
-        return values;
     }
-
     else {
-        // pixel values in kernel
-        Rcpp::stop("kernal extract not implemented yet");
+        Rcpp::CharacterVector col_names{};
+        values = Rcpp::no_init(num_pts, num_bands * krnl_size);
+        for (R_xlen_t i = 0; i < num_bands; ++i) {
+            for (int j = 0; j < krnl_size; ++j) {
+                col_names.push_back(
+                        std::string(band_names[i]) + "_" + std::to_string(j));
+            }
+        }
+        Rcpp::colnames(values) = col_names;
     }
+
+    for (R_xlen_t band_idx = 0; band_idx < num_bands; ++band_idx) {
+        if (!quiet) {
+            Rcpp::Rcout << "extracting from band " << bands_in[band_idx]
+                    << "...\n";
+            pfnProgress(0, nullptr, nullptr);
+        }
+        for (R_xlen_t row_idx = 0; row_idx < num_pts; ++row_idx) {
+            if (krnl_dim == 1) {
+                // single pixel
+                int x_off = std::floor(x_offsets[row_idx]);
+                int y_off = std::floor(y_offsets[row_idx]);
+
+                if (x_off < 0 || x_off > raster_xsize ||
+                    y_off < 0 || y_off > raster_ysize) {
+
+                    if (band_idx == 0)
+                        pts_outside += 1;
+
+                    values(row_idx, band_idx) = NA_REAL;
+                    continue;
+                }
+
+                Rcpp::NumericVector v = read(bands_in[band_idx],
+                                             x_off, y_off, 1, 1, 1, 1);
+
+                values(row_idx, band_idx) = v[0];
+            }
+            else if (krnl_dim == 2) {
+                // bilinear interpolation
+                int x_off = std::floor(x_offsets[row_idx] - 0.5);
+                int y_off = std::floor(y_offsets[row_idx] - 0.5);
+
+                if (x_off < 0 || (x_off + 1) > raster_xsize ||
+                    y_off < 0 || (y_off + 1) > raster_ysize) {
+
+                    if (band_idx == 0)
+                        pts_outside += 1;
+
+                    values(row_idx, band_idx) = NA_REAL;
+                    continue;
+                }
+
+                Rcpp::NumericVector v = read(bands_in[band_idx],
+                                             x_off, y_off, 2, 2, 2, 2);
+
+                if (Rcpp::any(Rcpp::is_na(v))) {
+                    values(row_idx, band_idx) = NA_REAL;
+                    continue;
+                }
+
+                // convert to unit square coordinates for the 2x2 kernel
+                // the center of the lower left pixel in the kernel is 0,0
+                double x = x_offsets[row_idx] - (x_off + 0.5);
+                double y = (y_off + 1.5) - y_offsets[row_idx];
+
+                // pixels in v are left to right, top to bottom
+                // pixel values in the square:
+                // 0,0: v[2]
+                // 1,0: v[3]
+                // 0,1: v[0]
+                // 1,1: v[1]
+                values(row_idx, band_idx) = (v[2] * (1.0 - x) * (1.0 - y) +
+                                                v[3] * x * (1.0 - y) +
+                                                v[0] * (1.0 - x) * y +
+                                                v[1] * x * y);
+            }
+            else {
+                // pixel values for kernel
+                int x_off = std::floor(x_offsets[row_idx] -
+                                       (krnl_dim / 2.0) - 0.5);
+
+                int y_off = std::floor(y_offsets[row_idx] -
+                                       (krnl_dim / 2.0) - 0.5);
+
+                if (x_off < 0 || (x_off + krnl_dim - 1) > raster_xsize ||
+                    y_off < 0 || (y_off + krnl_dim - 1) > raster_ysize) {
+
+                    if (band_idx == 0)
+                        pts_outside += 1;
+
+                    Rcpp::NumericVector row = values.row(row_idx);
+                    auto it = row.begin() + band_idx;
+                    std::fill_n(it, krnl_size, NA_REAL);
+                    continue;
+                }
+
+                Rcpp::NumericVector v = read(bands_in[band_idx],
+                                             x_off, y_off,
+                                             krnl_dim, krnl_dim,
+                                             krnl_dim, krnl_dim);
+
+                Rcpp::NumericVector row = values.row(row_idx);
+                std::copy_n(v.cbegin(), krnl_size, row.begin() + band_idx);
+            }
+
+            if (!quiet) {
+                pfnProgress(row_idx / (num_pts - 1.0), nullptr, nullptr);
+            }
+        }
+    }
+
+    if (pts_outside > 0 && !quiet) {
+        std::string msg;
+        if (krnl_dim == 1)
+            msg = "point(s) were outside the raster extent, NA returned";
+        else
+            msg = "point(s) or part of their kernel were outside the raster extent, NA returned";
+
+        Rcpp::warning(std::to_string(pts_outside) + " " + msg);
+    }
+
+    return values;
 }
 
 std::vector<int> GDALRaster::getBlockSize(int band) const {
