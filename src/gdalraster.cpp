@@ -447,10 +447,11 @@ Rcpp::IntegerMatrix GDALRaster::get_pixel_line(const Rcpp::RObject& xy) const {
 }
 
 Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
-                                              int band, int krnl_dim) const {
+                                              int band, int krnl_dim,
+                                              bool bilinear) const {
 
     // undocumented internal method intended to be wrapped from R
-    // extract pixel values at geospatial point locations
+    // extract pixel values at point locations
     // xy:        geospatial xy coordinates in the same projection as the
     //            raster, a 2-column data frame or matrix
     // band:      band number, or 0 to extract from all bands
@@ -507,6 +508,9 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
 
     if (krnl_dim < 1)
         Rcpp::stop("'krnl_dim' must be a positive number");
+
+    if (bilinear && krnl_dim != 2)
+        Rcpp::stop("'krnl_dim' must be `2` for bilinear interpolation");
 
     Rcpp::NumericVector inv_gt = inv_geotransform(getGeoTransform());
     if (Rcpp::any(Rcpp::is_na(inv_gt)))
@@ -572,8 +576,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
 
                 values(row_idx, band_idx) = v[0];
             }
-            else if (krnl_dim == 2) {
-                // bilinear interpolation
+            else if (bilinear) {
                 int x_off = std::floor(x_offsets[row_idx] - 0.5);
                 int y_off = std::floor(y_offsets[row_idx] - 0.5);
 
@@ -607,9 +610,9 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
                 // 0,1: v[0]
                 // 1,1: v[1]
                 values(row_idx, band_idx) = (v[2] * (1.0 - x) * (1.0 - y) +
-                                                v[3] * x * (1.0 - y) +
-                                                v[0] * (1.0 - x) * y +
-                                                v[1] * x * y);
+                                             v[3] * x * (1.0 - y) +
+                                             v[0] * (1.0 - x) * y +
+                                             v[1] * x * y);
             }
             else {
                 // pixel values for kernel
