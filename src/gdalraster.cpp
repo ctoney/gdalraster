@@ -519,21 +519,12 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
     if (Rcpp::any(Rcpp::is_na(inv_gt)))
         Rcpp::stop("failed to get inverse geotransform");
 
-    Rcpp::NumericVector x_offsets = Rcpp::no_init(num_pts);
-    Rcpp::NumericVector y_offsets = Rcpp::no_init(num_pts);
-    for (R_xlen_t i = 0; i < num_pts; ++i) {
-        double geo_x = xy_in(i, 0);
-        double geo_y = xy_in(i, 1);
-        x_offsets[i] = inv_gt[0] + inv_gt[1] * geo_x + inv_gt[2] * geo_y;
-        y_offsets[i] = inv_gt[3] + inv_gt[4] * geo_x + inv_gt[5] * geo_y;
-    }
-
-    GDALProgressFunc pfnProgress = GDALTermProgressR;
-    uint64_t pts_outside = 0;
-
     int krnl_size = krnl_dim * krnl_dim;
     int raster_xsize = getRasterXSize();
     int raster_ysize = getRasterYSize();
+
+    GDALProgressFunc pfnProgress = GDALTermProgressR;
+    uint64_t pts_outside = 0;
 
     Rcpp::NumericMatrix values;
     if (krnl_dim == 1 || bilinear) {
@@ -542,7 +533,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
     }
     else {
         Rcpp::CharacterVector col_names{};
-        values = Rcpp::no_init(num_pts, num_bands * krnl_size);
+        values = Rcpp::no_init(num_pts, krnl_size);
         for (int i = 0; i < krnl_size; ++i) {
             col_names.push_back(
                     std::string(band_names[0]) + "_" + std::to_string(i + 1));
@@ -556,14 +547,19 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
                     << "...\n";
             pfnProgress(0, nullptr, nullptr);
         }
-        for (R_xlen_t row_idx = 0; row_idx < num_pts; ++row_idx) {
-            if (krnl_dim == 1) {
-                // single pixel
-                int x_off = std::floor(x_offsets[row_idx]);
-                int y_off = std::floor(y_offsets[row_idx]);
 
-                if (x_off < 0 || x_off > raster_xsize ||
-                    y_off < 0 || y_off > raster_ysize) {
+        for (R_xlen_t row_idx = 0; row_idx < num_pts; ++row_idx) {
+            double geo_x = xy_in(row_idx, 0);
+            double geo_y = xy_in(row_idx, 1);
+            double grid_x = inv_gt[0] + inv_gt[1] * geo_x + inv_gt[2] * geo_y;
+            double grid_y = inv_gt[3] + inv_gt[4] * geo_x + inv_gt[5] * geo_y;
+
+            if (krnl_dim == 1) {
+                int x_off = std::floor(grid_x);
+                int y_off = std::floor(grid_y);
+
+                if (x_off < 0 || x_off + 1 > raster_xsize ||
+                    y_off < 0 || y_off + 1 > raster_ysize) {
 
                     if (band_idx == 0)
                         pts_outside += 1;
@@ -580,8 +576,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
                 values(row_idx, band_idx) = v[0];
             }
             else if (bilinear) {
-                int x_off = std::floor(x_offsets[row_idx] - 0.5);
-                int y_off = std::floor(y_offsets[row_idx] - 0.5);
+                int x_off = std::floor(grid_x - 0.5);
+                int y_off = std::floor(grid_y - 0.5);
 
                 if (x_off < 0 || (x_off + 2) > raster_xsize ||
                     y_off < 0 || (y_off + 2) > raster_ysize) {
@@ -605,8 +601,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
 
                 // convert to unit square coordinates for the 2x2 kernel
                 // the center of the lower left pixel in the kernel is 0,0
-                double x = x_offsets[row_idx] - (x_off + 0.5);
-                double y = (y_off + 1.5) - y_offsets[row_idx];
+                double x = grid_x - (x_off + 0.5);
+                double y = (y_off + 1.5) - grid_y;
 
                 // pixels in v are left to right, top to bottom
                 // pixel values in the square:
@@ -621,11 +617,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
             }
             else {
                 // pixel values for kernel
-                int x_off = std::floor(x_offsets[row_idx] -
-                                        ((krnl_dim / 2.0) - 0.5));
-
-                int y_off = std::floor(y_offsets[row_idx] -
-                                       ((krnl_dim / 2.0) - 0.5));
+                int x_off = std::floor(grid_x - ((krnl_dim / 2.0) - 0.5));
+                int y_off = std::floor(grid_y - ((krnl_dim / 2.0) - 0.5));
 
                 if (x_off < 0 || (x_off + krnl_dim) > raster_xsize ||
                     y_off < 0 || (y_off + krnl_dim) > raster_ysize) {
