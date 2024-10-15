@@ -133,8 +133,9 @@ class GDALRaster {
     std::vector<int> dim() const;
     Rcpp::NumericMatrix apply_geotransform(const Rcpp::RObject& col_row) const;
     Rcpp::IntegerMatrix get_pixel_line(const Rcpp::RObject& xy) const;
-    Rcpp::NumericMatrix pixel_extract(const Rcpp::RObject& xy, int band,
-                                      int krnl_size, bool bilinear) const;
+    Rcpp::NumericMatrix pixel_extract(const Rcpp::RObject& xy,
+                                      Rcpp::IntegerVector bands, int krnl_size,
+                                      bool bilinear) const;
 
     std::vector<int> getBlockSize(int band) const;
     std::vector<int> getActualBlockSize(int band, int xblockoff,

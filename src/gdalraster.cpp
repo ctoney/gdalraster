@@ -447,14 +447,15 @@ Rcpp::IntegerMatrix GDALRaster::get_pixel_line(const Rcpp::RObject& xy) const {
 }
 
 Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
-                                              int band, int krnl_dim,
+                                              Rcpp::IntegerVector bands,
+                                              int krnl_dim,
                                               bool bilinear) const {
 
     // undocumented internal method intended to be wrapped from R
     // extract pixel values at point locations
     // xy:        geospatial xy coordinates in the same projection as the
     //            raster, a 2-column data frame or matrix
-    // band:      band number, or 0 to extract from all bands
+    // bands:     band number(s), or 0 to extract from all bands
     // krnl_dim:  1 for single-pixel extract at xy,
     //            2 for bilinear interpolation at xy (2x2 kernel),
     //            or the size of a square kernel to extract all pixels for,
@@ -487,10 +488,10 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
         Rcpp::stop("input matrix must have 2 columns");
 
     Rcpp::IntegerVector bands_in;
-    if (band == 0)
+    if (bands[0] == 0)
         bands_in = Rcpp::seq(1, getRasterCount());
     else
-        bands_in = Rcpp::wrap(band);
+        bands_in = bands;
     R_xlen_t num_bands = bands_in.size();
 
     Rcpp::CharacterVector band_names = Rcpp::CharacterVector::create();
@@ -512,8 +513,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
     if (bilinear && krnl_dim != 2)
         Rcpp::stop("'krnl_dim' must be `2` for bilinear interpolation");
 
-    if (krnl_dim > 2 && band == 0)
-        Rcpp::stop("'krnl_dim' > 2 is only supported for one band at a time");
+    if (!bilinear && krnl_dim > 1 && num_bands > 1)
+        Rcpp::stop("must specifiy one band to extract pixel values for kernel");
 
     Rcpp::NumericVector inv_gt = inv_geotransform(getGeoTransform());
     if (Rcpp::any(Rcpp::is_na(inv_gt)))
@@ -579,8 +580,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
                 int x_off = std::floor(grid_x - 0.5);
                 int y_off = std::floor(grid_y - 0.5);
 
-                if (x_off < 0 || (x_off + 2) > raster_xsize ||
-                    y_off < 0 || (y_off + 2) > raster_ysize) {
+                if (x_off < 0 || x_off + 2 > raster_xsize ||
+                    y_off < 0 || y_off + 2 > raster_ysize) {
 
                     if (band_idx == 0)
                         pts_outside += 1;
@@ -620,8 +621,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
                 int x_off = std::floor(grid_x - ((krnl_dim / 2.0) - 0.5));
                 int y_off = std::floor(grid_y - ((krnl_dim / 2.0) - 0.5));
 
-                if (x_off < 0 || (x_off + krnl_dim) > raster_xsize ||
-                    y_off < 0 || (y_off + krnl_dim) > raster_ysize) {
+                if (x_off < 0 || x_off + krnl_dim > raster_xsize ||
+                    y_off < 0 || y_off + krnl_dim > raster_ysize) {
 
                     if (band_idx == 0)
                         pts_outside += 1;
@@ -644,7 +645,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
         }
     }
 
-    if (pts_outside > 0 && !quiet) {
+    if (!quiet && pts_outside > 0) {
         std::string msg;
         if (krnl_dim == 1)
             msg = "point(s) were outside the raster extent, NA returned";
