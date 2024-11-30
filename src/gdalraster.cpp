@@ -448,19 +448,23 @@ Rcpp::IntegerMatrix GDALRaster::get_pixel_line(const Rcpp::RObject& xy) const {
 
 Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
                                               Rcpp::IntegerVector bands,
-                                              int krnl_dim,
-                                              bool bilinear) const {
+                                              std::string interp_method,
+                                              int krnl_dim) const {
 
     // undocumented internal method intended to be wrapped from R
     // extract pixel values at point locations
-    // xy:        geospatial xy coordinates in the same projection as the
-    //            raster, a 2-column data frame or matrix
-    // bands:     band number(s), or 0 to extract from all bands
-    // krnl_dim:  1 for single-pixel extract at xy,
-    //            2 for bilinear interpolation at xy (2x2 kernel),
-    //            or the size of a square kernel to extract all pixels for,
-    //            e.g., krnl_dim = 3 to return the values of the 9 pixels
-    //            in a 3x3 kernel centered on the pixel containing xy
+    // xy:              geospatial xy coordinates in the same projection as the
+    //                  raster, a 2-column data frame or matrix
+    // bands:           band number(s), or 0 to extract from all bands
+    // interp_method:   one of "near", "bilinear" (2x2 kernel),
+    //                  "cubic" (4x4 kernel) or "cubicspline" (4x4 kernel)
+    // krnl_dim:        1 for single-pixel extract at xy (with
+    //                  interp_method = "near"),
+    //                  or the size of a square kernel to extract all pixels,
+    //                  e.g., krnl_dim = 3 to return the values of the 9 pixels
+    //                  in a 3x3 kernel centered on the pixel containing xy,
+    //                  ignored if interp_method is not "near" (will use the
+    //                  kernel implied by the given interpolation method)
     // the returned matrix has named columns indicating band number, e.g., "b1"
 
     checkAccess_(GA_ReadOnly);
@@ -507,14 +511,27 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
         band_names.push_back(nm);
     }
 
+    GDALRIOResampleAlg eResampleAlg;
+    if (EQUAL(interp_method.c_str(), "near"))
+        eResampleAlg = GRIORA_NearestNeighbour;
+    if (EQUAL(interp_method.c_str(), "bilinear"))
+        eResampleAlg = GRIORA_Bilinear;
+    else if (EQUAL(interp_method.c_str(), "cubic"))
+        eResampleAlg = GRIORA_Cubic;
+    else if (EQUAL(interp_method.c_str(), "cubicspline"))
+        eResampleAlg = GRIORA_CubicSpline;
+    else
+        Rcpp::stop("'interp_method' is invalid");
+
+
     if (krnl_dim < 1)
         Rcpp::stop("'krnl_dim' must be a positive number");
 
-    if (bilinear && krnl_dim != 2)
-        Rcpp::stop("'krnl_dim' must be `2` for bilinear interpolation");
+    if (eResampleAlg == GRIORA_NearestNeighbour &&
+            krnl_dim > 1 && num_bands > 1) {
 
-    if (!bilinear && krnl_dim > 1 && num_bands > 1)
         Rcpp::stop("must specifiy one band to extract pixel values for kernel");
+    }
 
     Rcpp::NumericVector inv_gt = inv_geotransform(getGeoTransform());
     if (Rcpp::any(Rcpp::is_na(inv_gt)))
@@ -528,7 +545,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
     uint64_t pts_outside = 0;
 
     Rcpp::NumericMatrix values;
-    if (krnl_dim == 1 || bilinear) {
+    if (krnl_dim == 1 || eResampleAlg != GRIORA_NearestNeighbour) {
         values = Rcpp::no_init(num_pts, num_bands);
         Rcpp::colnames(values) = band_names;
     }
@@ -555,7 +572,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
             double grid_x = inv_gt[0] + inv_gt[1] * geo_x + inv_gt[2] * geo_y;
             double grid_y = inv_gt[3] + inv_gt[4] * geo_x + inv_gt[5] * geo_y;
 
-            if (krnl_dim == 1) {
+            if (eResampleAlg == GRIORA_NearestNeighbour && krnl_dim == 1) {
                 int x_off = std::floor(grid_x);
                 int y_off = std::floor(grid_y);
 
@@ -576,7 +593,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject& xy,
 
                 values(row_idx, band_idx) = v[0];
             }
-            else if (bilinear) {
+            else if (eResampleAlg == GRIORA_Bilinear) {
                 int x_off = std::floor(grid_x - 0.5);
                 int y_off = std::floor(grid_y - 0.5);
 

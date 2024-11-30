@@ -1412,6 +1412,35 @@ dem_proc <- function(mode,
 }
 
 
+pixel_extract <- function(raster, xy, bands = NULL, krnl_dim = 1L,
+                          bilinear = FALSE) {
+
+    ds <- NULL
+    close_ds <- FALSE
+    if (is(raster, "Rcpp_GDALRaster")) {
+        ds <- raster
+        if (!ds$isOpen()) {
+            stop("raster dataset is not open", call. = FALSE)
+        }
+    } else if (is.character(raster) && length(raster) == 1) {
+        ds <- new(GDALRaster, raster)
+        close_ds <- TRUE
+    } else {
+        stop("'raster' must be a character string or GDALRaster object",
+             call. = FALSE)
+    }
+
+    if (is.null(bands))
+        bands <- 0
+
+    ret <- ds$pixel_extract(xy, bands, krnl_dim, bilinear)
+    if (close_ds)
+        ds$close()
+
+    return(ret)
+}
+
+
 #' Create a polygon feature layer from raster data
 #'
 #' @description
