@@ -1,4 +1,8 @@
-# gdalraster 1.11.1.9501 (dev)
+# gdalraster 1.11.1.9515 (dev)
+
+* add `inspectDataset()`: obtain information about a GDAL raster or vector dataset (2024-12-05)
+
+* add `identifyDriver()`: identify the format driver that can open a dataset, wrapper of `GDALIdentifyDriverEx()` in the GDAL C API (2024-11-30)
 
 * `GDALVector`: add a `BBOX` option for the per-object setting `$returnGeomAs` (2024-10-03)
 
@@ -122,7 +126,7 @@
 
 * add `vsi_get_signed_url()`: return a signed URL for a supplied VSI filename, wrapper of `VSIGetSignedURL()` in the GDAL API (2024-06-20)
 
-* Documentation: additions to the section on Azure (/vsiaz/) in [GDAL Config Quick Reference](https://usdaforestservice.github.io/gdalraster/articles/gdal-config-quick-ref.html); update [Raster API Tutorial](https://usdaforestservice.github.io/gdalraster/articles/raster-api-tutorial.html) to use argument `return_obj` with `create()` and `createCopy()`; document `$fillRaster()` method in `GDALRaster-class`; add the `-srcband` and `-dstband` command-line options in the documentation for `warp()`; add [Development practices](https://usdaforestservice.github.io/gdalraster/CONTRIBUTING.html#development-practices) in CONTRIBUTING.md; add the OpenSSF best practices badge in README; add `fig.alt` text to articles for web accessibility; add the OpenSSF Scorecard badge in README; add example in `ogr2ogr()` for dissolve features based on an attribute value; cleanup code that removes temp files in the examples is wrapped in `\dontshow{}`
+* Documentation: additions to the section on Azure (/vsiaz/) in [GDAL Config Quick Reference](https://usdaforestservice.github.io/gdalraster/articles/gdal-config-quick-ref.html); update [Raster API Tutorial](https://usdaforestservice.github.io/gdalraster/articles/raster-api-tutorial.html) to use argument `return_obj` with `create()` and `createCopy()`; document `$fillRaster()` method in `GDALRaster-class`; add the `-srcband` and `-dstband` command-line options in the documentation for `warp()`; add [Development practices](https://usdaforestservice.github.io/gdalraster/CONTRIBUTING.html#development-practices) in CONTRIBUTING.md; add the OpenSSF best practices badge in README; add `fig.alt` text to articles for web accessibility; add the OpenSSF Scorecard badge in README; add example in `ogr2ogr()` for dissolve features based on an attribute value; cleanup code that removes temp files in the examples is wrapped in `\dontshow{}`; fix example for `VSIFile-class` that needs w+ access
 
 # gdalraster 1.11.1
 
