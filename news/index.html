@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.12.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.12.0.9001</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,8 +48,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.12.0.9000" id="gdalraster-11209000-dev">gdalraster 1.12.0.9000 (dev)<a class="anchor" aria-label="anchor" href="#gdalraster-11209000-dev"></a></h2>
-<ul><li><p><code>GDALVector</code>: add a <code>BBOX</code> option for the per-object setting <code>$returnGeomAs</code> (2024-10-03)</p></li>
+<h2 class="pkg-version" data-toc-text="1.12.0.9001" id="gdalraster-11209001-dev">gdalraster 1.12.0.9001 (dev)<a class="anchor" aria-label="anchor" href="#gdalraster-11209001-dev"></a></h2>
+<ul><li><p><code>GDALVector::createDF_()</code>: avoid clang-asan undefined-behavior error from <code>RcppInt64::wrap()</code> when called on a <code>std::vector&lt;int64_t&gt;</code> of size <code>0</code> (2025-01-19)</p></li>
+<li><p><code>GDALVector</code>: add a <code>BBOX</code> option for the per-object setting <code>$returnGeomAs</code> (2024-10-03)</p></li>
 <li><p>add minimal S3 classes <code>OGRFeature</code> and <code>OGRFeatureSet</code> with methods for <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> (2024-09-28)</p></li>
 <li><p>add <code><a href="../reference/g_summary.html">g_summary()</a></code>: obtain text summaries of WKB/WKT geometries (GDAL &gt;= 3.7) (2024-09-24)</p></li>
 <li><p>update <code><a href="../reference/g_is_valid.html">g_is_valid()</a></code>, <code><a href="../reference/g_is_empty.html">g_is_empty()</a></code>, <code><a href="../reference/g_name.html">g_name()</a></code> and <code><a href="../reference/g_buffer.html">g_buffer()</a></code> to the new style geometry API: the OGR GEOS wrappers now operate on input of WKB raw vector, list of WKB, or character vector of WKT strings, with return as either WKB raw vector (or list of) / WKT character string (vector of) (2024-09-22)</p></li>
@@ -103,7 +104,7 @@
 <li><p>Documentation: additions to the section on Azure (/vsiaz/) in <a href="https://usdaforestservice.github.io/gdalraster/articles/gdal-config-quick-ref.html">GDAL Config Quick Reference</a>; update <a href="https://usdaforestservice.github.io/gdalraster/articles/raster-api-tutorial.html">Raster API Tutorial</a> to use argument <code>return_obj</code> with <code><a href="../reference/create.html">create()</a></code> and <code><a href="../reference/createCopy.html">createCopy()</a></code>; add the <code>-srcband</code> and <code>-dstband</code> command-line options in the documentation for <code><a href="../reference/warp.html">warp()</a></code>; add <a href="https://usdaforestservice.github.io/gdalraster/CONTRIBUTING.html#development-practices">Development practices</a> in CONTRIBUTING.md; add the OpenSSF best practices badge in README; add <code>fig.alt</code> text to articles for web accessibility; add the OpenSSF Scorecard badge in README; add example in <code><a href="../reference/ogr2ogr.html">ogr2ogr()</a></code> for dissolve features based on an attribute value; code that cleans up temp files in the examples is wrapped in <code>\dontshow{}</code></p></li>
 </ul></div>
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.12.0" id="gdalraster-1120">gdalraster 1.12.0<a class="anchor" aria-label="anchor" href="#gdalraster-1120"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.12.0" id="gdalraster-1120">gdalraster 1.12.0<a class="anchor" aria-label="anchor" href="#gdalraster-1120"></a></h2><p class="text-muted">CRAN release: 2025-01-19</p>
 <div class="section level3">
 <h3 id="features--enhancements-1-12-0">Features / enhancements<a class="anchor" aria-label="anchor" href="#features--enhancements-1-12-0"></a></h3>
 <ul><li>add <code><a href="../reference/inspectDataset.html">inspectDataset()</a></code>: obtain information about a GDAL raster or vector dataset (<a href="https://github.com/USDAForestService/gdalraster/issues/552" class="external-link">#552</a>)</li>
