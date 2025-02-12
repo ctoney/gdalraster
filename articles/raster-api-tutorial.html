@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.12.0.9156</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.12.0.9160</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,13 +112,13 @@ and its associated raster band objects. Methods of the class are
 accessed in R using the <code>$</code> operator:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ds</span></span>
-<span><span class="co">#&gt; C++ object &lt;0x55eb7da3bc80&gt; of class 'GDALRaster' &lt;0x55eb78cf5100&gt;</span></span>
+<span><span class="co">#&gt; C++ object &lt;0x556b66e06e20&gt; of class 'GDALRaster' &lt;0x556b66a47990&gt;</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">ds</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Reference class 'Rcpp_GDALRaster' [package "gdalraster"] with 3 fields</span></span>
 <span><span class="co">#&gt;  $ infoOptions  : chr(0) </span></span>
 <span><span class="co">#&gt;  $ quiet        : logi FALSE</span></span>
 <span><span class="co">#&gt;  $ readByteAsRaw: logi FALSE</span></span>
-<span><span class="co">#&gt;  and 81 methods, of which 67 are  possibly relevant:</span></span>
+<span><span class="co">#&gt;  and 82 methods, of which 68 are  possibly relevant:</span></span>
 <span><span class="co">#&gt;    addBand, apply_geotransform, bbox, buildOverviews, clearColorTable,</span></span>
 <span><span class="co">#&gt;    clearStatistics, close, deleteNoDataValue, dim, fillRaster, finalize,</span></span>
 <span><span class="co">#&gt;    flushCache, get_pixel_line, getActualBlockSize, getBlockSize, getChecksum,</span></span>
@@ -129,9 +129,9 @@ accessed in R using the <code>$</code> operator:</p>
 <span><span class="co">#&gt;    getNoDataValue, getOffset, getOverviewCount, getPaletteInterp,</span></span>
 <span><span class="co">#&gt;    getProjection, getProjectionRef, getRasterColorInterp, getRasterCount,</span></span>
 <span><span class="co">#&gt;    getRasterXSize, getRasterYSize, getScale, getStatistics, getUnitType, info,</span></span>
-<span><span class="co">#&gt;    infoAsJSON, initialize, isOpen, open, read, res, setColorTable,</span></span>
-<span><span class="co">#&gt;    setDefaultRAT, setDescription, setFilename, setGeoTransform, setMetadata,</span></span>
-<span><span class="co">#&gt;    setMetadataItem, setNoDataValue, setOffset, setProjection,</span></span>
+<span><span class="co">#&gt;    infoAsJSON, initialize, isOpen, open, pixel_extract, read, res,</span></span>
+<span><span class="co">#&gt;    setColorTable, setDefaultRAT, setDescription, setFilename, setGeoTransform,</span></span>
+<span><span class="co">#&gt;    setMetadata, setMetadataItem, setNoDataValue, setOffset, setProjection,</span></span>
 <span><span class="co">#&gt;    setRasterColorInterp, setScale, setUnitType, write</span></span></code></pre></div>
 </div>
 <div class="section level2">
