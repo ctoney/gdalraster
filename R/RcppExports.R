@@ -2417,7 +2417,7 @@ bbox_to_wkt <- function(bbox, extend_x = 0, extend_y = 0) {
 #' Create a layer in a vector dataset
 #'
 #' @noRd
-.ogr_layer_create <- function(dsn, layer, layer_defn = NULL, geom_type = "UNKNOWN", srs = "", options = NULL) {
+.ogr_layer_create <- function(dsn, layer, layer_defn, geom_type, srs, options) {
     .Call(`_gdalraster_ogr_layer_create`, dsn, layer, layer_defn, geom_type, srs, options)
 }
 
