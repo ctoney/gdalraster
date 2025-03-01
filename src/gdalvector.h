@@ -8,6 +8,7 @@
 #ifndef SRC_GDALVECTOR_H_
 #define SRC_GDALVECTOR_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -173,7 +174,12 @@ class GDALVector {
                               const Rcpp::CharacterVector &geom_col_srs,
                               const std::string &geom_format) const;
 
-    OGRFeatureH OGRFeatureFromList_(const Rcpp::RObject &feature) const;
+    std::vector<std::map<R_xlen_t, int>> validateFeatInput_(
+            const Rcpp::RObject &feature) const;
+
+    OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::RObject &feature,
+            std::map<R_xlen_t, int> map_flds,
+            std::map<R_xlen_t, int> map_geom_flds) const;
 
 #if __has_include("ogr_recordbatch.h")
     int arrow_get_schema(struct ArrowSchema* out);
