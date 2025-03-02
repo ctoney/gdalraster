@@ -653,8 +653,8 @@ test_that("feature write methods work", {
     feat6$int64_fld <- bit64::NA_integer64_
     feat6$real_fld <- NA_real_
     feat6$str_fld <- NA_character_
-    feat6$date_fld <- NA_real_
-    feat6$datetime_fld <- NA_real_
+    feat6$date_fld <- as.Date(NA_real_)
+    feat6$datetime_fld <- as.POSIXct(NA_real_)
     feat6$time_fld <- NA_character_
     feat6$binary_fld <- raw(0)
     feat6[[geom_fld]] <- "POINT (6 6)"

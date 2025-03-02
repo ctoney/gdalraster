@@ -177,7 +177,8 @@ class GDALVector {
     std::vector<std::map<R_xlen_t, int>> validateFeatInput_(
             const Rcpp::RObject &feature) const;
 
-    OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::RObject &feature,
+    OGRFeatureH OGRFeatureFromList_(
+            const Rcpp::RObject &feature,
             std::map<R_xlen_t, int> map_flds,
             std::map<R_xlen_t, int> map_geom_flds) const;
 
