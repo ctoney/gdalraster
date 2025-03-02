@@ -28,6 +28,8 @@
     typedef void *OGRFeatureH;
 #endif
 
+// value for marking FID when used along with regular attribute field indexes
+const int FID_MARKER = -999;
 
 class GDALVector {
  public:
@@ -102,6 +104,7 @@ class GDALVector {
 
     bool setFeature(const Rcpp::RObject &feature);
     bool createFeature(const Rcpp::RObject &feature);
+    bool batchCreateFeature(const Rcpp::RObject &feature_set);
     bool upsertFeature(const Rcpp::RObject &feature);
     SEXP getLastWriteFID() const;
     bool deleteFeature(const Rcpp::RObject &fid);
@@ -178,9 +181,9 @@ class GDALVector {
             const Rcpp::RObject &feature) const;
 
     OGRFeatureH OGRFeatureFromList_(
-            const Rcpp::RObject &feature,
-            std::map<R_xlen_t, int> map_flds,
-            std::map<R_xlen_t, int> map_geom_flds) const;
+            const Rcpp::RObject &feature, R_xlen_t row_idx,
+            const std::map<R_xlen_t, int> &map_flds,
+            const std::map<R_xlen_t, int> &map_geom_flds) const;
 
 #if __has_include("ogr_recordbatch.h")
     int arrow_get_schema(struct ArrowSchema* out);
