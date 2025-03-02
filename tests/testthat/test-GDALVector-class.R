@@ -639,7 +639,7 @@ test_that("feature write methods work", {
     feat5$date_fld <- NA
     feat5$datetime_fld <- NA
     feat5$time_fld <- NA
-    feat5$binary_fld <- NA
+    feat5$binary_fld <- raw()
     feat5[[geom_fld]] <- "POINT (5 5)"
 
     expect_true(lyr$createFeature(feat5))

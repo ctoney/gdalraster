@@ -102,10 +102,10 @@ class GDALVector {
     SEXP getArrowStream();
     void releaseArrowStream();
 
-    bool setFeature(const Rcpp::RObject &feature);
-    bool createFeature(const Rcpp::RObject &feature);
-    bool batchCreateFeature(const Rcpp::RObject &feature_set);
-    bool upsertFeature(const Rcpp::RObject &feature);
+    bool setFeature(const Rcpp::List &feature);
+    bool createFeature(const Rcpp::List &feature);
+    bool batchCreateFeature(const Rcpp::DataFrame &feature_set);
+    bool upsertFeature(const Rcpp::List &feature);
     SEXP getLastWriteFID() const;
     bool deleteFeature(const Rcpp::RObject &fid);
     bool syncToDisk() const;
@@ -156,7 +156,7 @@ class GDALVector {
 
     void close();
 
-    void OGRFeatureFromList_dumpReadble(const Rcpp::RObject &feat) const;
+    void OGRFeatureFromList_dumpReadble(const Rcpp::List &feat) const;
 
     void show() const;
 
@@ -178,10 +178,10 @@ class GDALVector {
                               const std::string &geom_format) const;
 
     std::vector<std::map<R_xlen_t, int>> validateFeatInput_(
-            const Rcpp::RObject &feature) const;
+            const Rcpp::List &feature) const;
 
     OGRFeatureH OGRFeatureFromList_(
-            const Rcpp::RObject &feature, R_xlen_t row_idx,
+            const Rcpp::List &feature, R_xlen_t row_idx,
             const std::map<R_xlen_t, int> &map_flds,
             const std::map<R_xlen_t, int> &map_geom_flds) const;
 

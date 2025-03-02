@@ -56,7 +56,7 @@ Imports:
     utils,
     wk,
     xml2
-LinkingTo: nanoarrow, Rcpp, RcppInt64
+LinkingTo: nanoarrow, Rcpp, RcppClock, RcppInt64
 Suggests:
     gt,
     knitr,
