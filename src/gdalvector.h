@@ -183,8 +183,7 @@ class GDALVector {
     OGRFeatureH OGRFeatureFromList_(
             const Rcpp::List &feature, R_xlen_t row_idx,
             const std::map<R_xlen_t, int> &map_flds,
-            const std::map<R_xlen_t, int> &map_geom_flds,
-            const Rcpp::CharacterVector &names) const;
+            const std::map<R_xlen_t, int> &map_geom_flds) const;
 
 #if __has_include("ogr_recordbatch.h")
     int arrow_get_schema(struct ArrowSchema* out);
