@@ -110,6 +110,7 @@
 #'
 #' lyr$setFeature(feature)
 #' lyr$createFeature(feature)
+#' lyr$batchCreateFeature(feature_set)
 #' lyr$upsertFeature(feature)
 #' lyr$getLastWriteFID()
 #' lyr$deleteFeature(fid)
@@ -219,7 +220,7 @@
 #' No return value, called for side effects.
 #'
 #' \code{$isOpen()}\cr
-#' Returns a `logical` scalar indicating whether the vector dataset is open.
+#' Returns a `logical` value indicating whether the vector dataset is open.
 #'
 #' \code{$getDsn()}\cr
 #' Returns a character string containing the `dsn` associated with this
@@ -427,7 +428,7 @@
 #'
 #' \code{$getFeature(fid)}\cr
 #' Returns a feature by its identifier. The value of `fid` must be a numeric
-#' scalar, optionally carrying the `bit64::integer64` class attribute.
+#' value, optionally carrying the `bit64::integer64` class attribute.
 #' Success or failure of this operation is unaffected by any spatial or
 #' attribute filters that may be in effect.
 #' The `RandomRead` element in the list returned by `$testCapability()` can
@@ -541,13 +542,14 @@
 #'
 #' \code{$createFeature(feature)}\cr
 #' Creates and writes a new feature within the layer. The `feature` argument is
-#' a named list of fields and their values.
+#' a named list of fields and their values (might be one row of a data frame).
 #' The passed feature is written to the layer as a new feature, rather than
-#' overwriting an existing one. If the feature has a `$FID` element other than
-#' `NA`, then the vector format driver may use that as the feature id of the
-#' new feature, but not necessarily. The FID of the last feature written
-#' to the layer may be obtained with the method `$getLastWriteFID()` (see
-#' below).
+#' overwriting an existing one. If the feature has a `$FID` element with other
+#' than `NA` (i.e., a numeric value, optionally carrying the `bit64::integer64`
+#' class attribute and assumed to be a whole number), then the format
+#' driver may use that as the feature id of the new feature, but not
+#' necessarily. The FID of the last feature written to the layer may be
+#' obtained with the method `$getLastWriteFID()` (see below).
 #' Returns logical `TRUE` upon successful completion, or `FALSE` if creating
 #' the feature did not succeed. To create a feature, but set it if it already
 #' exists see the `$upsertFeature()` method.
@@ -573,12 +575,12 @@
 #' formats. This is the case if a FID has not been assigned yet, and generally
 #' does not indicate an error (e.g., formats that do not store a persistent FID
 #' and assign FIDs upon a sequential read operation). The returned FID is a
-#' numeric scalar carrying the `bit64::integer64` class attribute.
+#' numeric value carrying the `bit64::integer64` class attribute.
 #'
 #' \code{$deleteFeature(fid)}\cr
 #' Deletes a feature from the layer. The feature with the indicated feature ID
 #' is deleted from the layer if supported by the format driver. The value of
-#' `fid` must be a numeric scalar, optionally carrying the `bit64::integer64`
+#' `fid` must be a numeric value, optionally carrying the `bit64::integer64`
 #' class attribute (should be a whole number, will be truncated).
 #' The `DeleteFeature` element in the list returned by `$testCapability()` can
 #' be checked to establish if this layer has delete feature capability. Returns

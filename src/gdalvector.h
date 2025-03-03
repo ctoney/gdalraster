@@ -104,7 +104,7 @@ class GDALVector {
 
     bool setFeature(const Rcpp::List &feature);
     bool createFeature(const Rcpp::List &feature);
-    bool batchCreateFeature(const Rcpp::DataFrame &feature_set);
+    Rcpp::LogicalVector batchCreateFeature(const Rcpp::DataFrame &feature_set);
     bool upsertFeature(const Rcpp::List &feature);
     SEXP getLastWriteFID() const;
     bool deleteFeature(const Rcpp::RObject &fid);

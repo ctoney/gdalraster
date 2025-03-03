@@ -1714,11 +1714,20 @@ void GDALVector::releaseArrowStream() {
 bool GDALVector::setFeature(const Rcpp::List &feature) {
     checkAccess_(GA_Update);
 
+    if (Rcpp::is<Rcpp::DataFrame>(feature)) {
+        Rcpp::DataFrame df = feature;
+        if (df.nrows() > 1)
+            Rcpp::stop("this method does not support multi-row input");
+    }
+
     std::vector<std::map<R_xlen_t, int>> fld_maps =
             validateFeatInput_(feature);
 
     OGRFeatureH hFeat = OGRFeatureFromList_(feature, 0, fld_maps[0],
                                             fld_maps[1]);
+
+    if (!hFeat)
+        return false;
 
     OGRErr err = OGR_L_SetFeature(m_hLayer, hFeat);
      if (err != OGRERR_NONE) {
@@ -1736,11 +1745,20 @@ bool GDALVector::setFeature(const Rcpp::List &feature) {
 bool GDALVector::createFeature(const Rcpp::List &feature) {
     checkAccess_(GA_Update);
 
+    if (Rcpp::is<Rcpp::DataFrame>(feature)) {
+        Rcpp::DataFrame df = feature;
+        if (df.nrows() > 1)
+            Rcpp::stop("this method does not support multi-row input");
+    }
+
     std::vector<std::map<R_xlen_t, int>> fld_maps =
             validateFeatInput_(feature);
 
     OGRFeatureH hFeat = OGRFeatureFromList_(feature, 0, fld_maps[0],
                                             fld_maps[1]);
+
+    if (!hFeat)
+        return false;
 
     OGRErr err = OGR_L_CreateFeature(m_hLayer, hFeat);
      if (err != OGRERR_NONE) {
@@ -1755,16 +1773,20 @@ bool GDALVector::createFeature(const Rcpp::List &feature) {
      }
 }
 
-bool GDALVector::batchCreateFeature(const Rcpp::DataFrame &feature_set) {
+Rcpp::LogicalVector GDALVector::batchCreateFeature(
+                                const Rcpp::DataFrame &feature_set) {
+
     checkAccess_(GA_Update);
 
-    if (feature_set.isNULL() || !Rcpp::is<Rcpp::DataFrame>(feature_set))
-        Rcpp::stop("'feature_set' must be a data frame");
+    // if (feature_set.isNULL() || !Rcpp::is<Rcpp::DataFrame>(feature_set))
+    //     Rcpp::stop("'feature_set' must be a data frame");
 
     std::vector<std::map<R_xlen_t, int>> fld_maps =
             validateFeatInput_(feature_set);
 
     R_xlen_t num_rows = feature_set.nrows();
+    Rcpp::LogicalVector out = Rcpp::no_init(num_rows);
+
     GDALProgressFunc pfnProgress = nullptr;
     if (!quiet && num_rows > 1)
         pfnProgress = GDALTermProgressR;
@@ -1773,13 +1795,20 @@ bool GDALVector::batchCreateFeature(const Rcpp::DataFrame &feature_set) {
         OGRFeatureH hFeat = OGRFeatureFromList_(feature_set, i, fld_maps[0],
                                                 fld_maps[1]);
 
+        if (!hFeat) {
+            out[i] = FALSE;
+            continue;
+        }
+
         OGRErr err = OGR_L_CreateFeature(m_hLayer, hFeat);
         if (err != OGRERR_NONE) {
             Rcpp::Rcerr << CPLGetLastErrorMsg() << std::endl;
             OGR_F_Destroy(hFeat);
-            return false;
+            out[i] = FALSE;
+            continue;
         }
         else {
+            out[i] = TRUE;
             m_last_write_fid = OGR_F_GetFID(hFeat);
             OGR_F_Destroy(hFeat);
         }
@@ -1787,7 +1816,7 @@ bool GDALVector::batchCreateFeature(const Rcpp::DataFrame &feature_set) {
             pfnProgress(i / (num_rows - 1.0), nullptr, nullptr);
     }
 
-    return true;
+    return out;
 }
 
 bool GDALVector::upsertFeature(const Rcpp::List &feature) {
@@ -1796,11 +1825,20 @@ bool GDALVector::upsertFeature(const Rcpp::List &feature) {
 #else
     checkAccess_(GA_Update);
 
+    if (Rcpp::is<Rcpp::DataFrame>(feature)) {
+        Rcpp::DataFrame df = feature;
+        if (df.nrows() > 1)
+            Rcpp::stop("this method does not support multi-row input");
+    }
+
     std::vector<std::map<R_xlen_t, int>> fld_maps =
             validateFeatInput_(feature);
 
     OGRFeatureH hFeat = OGRFeatureFromList_(feature, 0, fld_maps[0],
                                             fld_maps[1]);
+
+    if (!hFeat)
+        return false;
 
     OGRErr err = OGR_L_UpsertFeature(m_hLayer, hFeat);
      if (err != OGRERR_NONE) {
@@ -2285,6 +2323,7 @@ void GDALVector::OGRFeatureFromList_dumpReadble(
 
     if (hFeat == nullptr)
         Rcpp::stop("`OGRFeatureFromList_()` returned `nullptr`");
+
     std::vector<const char *> options = {"DISPLAY_GEOMETRY=SUMMARY", nullptr};
     char *out = nullptr;
     out = OGR_F_DumpReadableAsString(hFeat, options.data());
@@ -2644,8 +2683,9 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
                                         const Rcpp::List &feature) const {
 
     // This function is always called before OGRFeatureFromList_() and does
-    // most of the input validation, and provides the field name to field index
-    // mappings. It must be kept consistent with OGRFeatureFromList_().
+    // most of the input validation, and provides the field name-to-field index
+    // mappings.
+    // *It must be kept consistent with OGRFeatureFromList_()*.
 
     if (feature.size() == 0)
         Rcpp::stop("feature input is empty");
@@ -2735,8 +2775,8 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
         // Allow a column to be NULL.
         // Allow any column to be a LogicalVector to support a column having
         // all `NA` which is logical type (if not specified in R as a typed
-        // NA like NA_integer_, NA_real_, etc.). Currently, these need to be
-        // handled accordingly in OGRFeatureFromList_().
+        // NA like `NA_integer_`, `NA_real_`, etc.). These need to be handled
+        // accordingly in OGRFeatureFromList_().
         if (feature[col_idx] == R_NilValue) {
             continue;
         }
@@ -2798,7 +2838,8 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
             {
                 if (!Rcpp::is<Rcpp::NumericVector>(feature[col_idx])) {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop("OFTDate field requires 'numeric' data ('Date')");
+                        Rcpp::stop(
+                            "OFTDate field requires 'numeric' data ('Date')");
                 }
                 Rcpp::NumericVector v = feature[col_idx];
                 Rcpp::CharacterVector attr{};
@@ -2806,7 +2847,8 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
                     attr = Rcpp::wrap(v.attr("class"));
                 if (std::find(attr.begin(), attr.end(), "Date") == attr.end()) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("values for OFTDate field must be of class 'Date'");
+                    Rcpp::stop(
+                        "value for OFTDate field must be of class 'Date'");
                 }
             }
             break;
@@ -2815,7 +2857,8 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
             {
                 if (!Rcpp::is<Rcpp::NumericVector>(feature[col_idx])) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("OFTDateTime requires 'numeric' data ('POSIXct')");
+                    Rcpp::stop(
+                        "OFTDateTime requires 'numeric' data ('POSIXct')");
                 }
                 Rcpp::NumericVector v = feature[col_idx];
                 Rcpp::CharacterVector attr{};
@@ -2825,7 +2868,8 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
                         attr.end()) {
 
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("values for OFTDateTime field must be of class 'POSIXct'");
+                    Rcpp::stop(
+                        "value for OFTDateTime field must be of class 'POSIXct'");
                 }
             }
             break;
@@ -2860,7 +2904,8 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
 
                 if (type_mismatch) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("OFTIntegerList field requires a compatible data type");
+                    Rcpp::stop(
+                        "OFTIntegerList field requires a compatible data type");
                 }
             }
             break;
@@ -2880,7 +2925,8 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
 
                 if (type_mismatch) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("OFTInteger64List field requires 'numeric' vectors ('integer64')");
+                    Rcpp::stop(
+                        "OFTInteger64List field requires 'numeric' vectors ('integer64')");
                 }
             }
             break;
@@ -2920,7 +2966,8 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
 
                 if (type_mismatch) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("OFTStringList field requires 'character' vectors");
+                    Rcpp::stop(
+                        "OFTStringList field requires 'character' vectors");
                 }
             }
             break;
@@ -2962,9 +3009,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
 
     // Returns an OGRFeature object from input given as R named list, which
     // might be a row of a data frame specified with row_idx.
+
     // Most of the input validation is done in validateFeatInput_(), which
-    // must always be called first and provides the field name to field index
-    // mappings, and must be kept consistent with OGRFeatureFromList_().
+    // must always be called first and provides the field name-to-field index
+    // mappings, and *must be kept consistent with OGRFeatureFromList_()*.
 
     // The returned feature must be destroyed with OGR_F_Destroy().
 
@@ -2998,10 +3046,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
         if (set_fid) {
             if (OGR_F_SetFID(hFeat, fid) != OGRERR_NONE) {
                 OGR_F_Destroy(hFeat);
-                Rcpp::Rcerr << "failed to set FID: " << Rcpp::wrap(fid)
-                        << std::endl;
+                Rcpp::Rcerr << "failed to set FID: " << Rcpp::wrap(fid) <<
+                    " (row index " << row_idx << ")" << std::endl;
 
-                Rcpp::stop("failed to set FID with the given input value");
+                return nullptr;
             }
         }
     }
@@ -3019,7 +3067,7 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
 
         OGRFieldDefnH hFieldDefn = OGR_F_GetFieldDefnRef(hFeat, fld_idx);
 
-        // check for NULL and NA in the input for this field
+        // partial checks for NULL and NA in the input for this field
         bool set_field_null = false;
         if (feature[col_idx] == R_NilValue) {
             set_field_null = true;
@@ -3041,10 +3089,11 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
             }
             else {
                 OGR_F_Destroy(hFeat);
-                Rcpp::Rcerr << "`NA` or `NULL` in column index: " << col_idx
-                        << std::endl;
+                Rcpp::Rcerr <<
+                    "`NA` or `NULL` for non-nullable field with column index: "
+                    << col_idx << " (row index " << row_idx << ")" << std::endl;
 
-                Rcpp::stop("`NA` or `NULL` given but field is not nullable");
+                return nullptr;
             }
         }
 
@@ -3069,7 +3118,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                         }
                         else {
                             OGR_F_Destroy(hFeat);
-                            Rcpp::stop(msg_not_nullable);
+                            Rcpp::Rcerr << msg_not_nullable << " (row index "
+                                << row_idx << ")" << std::endl;
+
+                            return nullptr;
                         }
                     }
                     else {
@@ -3097,7 +3149,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
             }
@@ -3112,7 +3167,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else {
@@ -3132,7 +3190,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else {
@@ -3151,7 +3212,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else {
@@ -3177,7 +3241,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else {
@@ -3211,7 +3278,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
 
@@ -3224,8 +3294,11 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                 }
                 else {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop(
-                        "value for OFTTime field requires format 'HH:MM:SS'");
+                    Rcpp::Rcerr <<
+                        "value for OFTTime field requires format 'HH:MM:SS'"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
             }
             break;
@@ -3250,8 +3323,11 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                 }
                 else {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop(
-                        "OFTIntegerList field requires a compatible data type");
+                    Rcpp::Rcerr <<
+                        "OFTIntegerList field requires a compatible data type"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
 
                 if (iv.size() == 0 ||
@@ -3262,7 +3338,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else {
@@ -3286,8 +3365,11 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                 }
                 else {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop(
-                        "OFTInteger64List field requires a 'numeric' vector");
+                    Rcpp::Rcerr <<
+                        "OFTInteger64List field requires a 'numeric' vector"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
 
                 if (nv.size() == 0) {
@@ -3296,7 +3378,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else if (Rcpp::isInteger64(nv)) {
@@ -3327,8 +3412,11 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                 }
                 else {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop(
-                        "OFTRealList field requires a 'numeric' vector");
+                    Rcpp::Rcerr <<
+                        "OFTRealList field requires a 'numeric' vector"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
 
                 if (nv.size() == 0 ||
@@ -3339,7 +3427,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else {
@@ -3365,8 +3456,11 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                 }
                 else {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop(
-                        "OFTStringList field requires a 'character' vector");
+                    Rcpp::Rcerr <<
+                        "OFTStringList field requires a 'character' vector"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
 
                 if (cv.size() == 0 ||
@@ -3377,7 +3471,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else {
@@ -3401,7 +3498,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                 }
                 else {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("OFTBinary field requires a 'raw' vector");
+                    Rcpp::Rcerr << "OFTBinary field requires a 'raw' vector"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
 
                 if (rv.size() == 0) {
@@ -3410,7 +3510,10 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     }
                     else {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop(msg_not_nullable);
+                        Rcpp::Rcerr << msg_not_nullable << " (row index "
+                            << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else {
@@ -3420,8 +3523,12 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
             break;
 
             default:
+                OGR_F_Destroy(hFeat);
                 Rcpp::Rcerr << "unhandled OGRFieldType: " << fld_type
-                        << std::endl;
+                    << std::endl;
+
+                return nullptr;
+
                 break;
         }
     }
@@ -3486,13 +3593,20 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                 err = OGR_F_SetGeomField(hFeat, gfld_idx, nullptr);
                 if (err != OGRERR_NONE) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("failed to set geometry field as NULL");
+                    Rcpp::Rcerr << "failed to set geometry field as NULL"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
                 continue;
             }
             else {
                 OGR_F_Destroy(hFeat);
-                Rcpp::stop("geometry must be `raw` (WKB) or `character` (WKT)");
+                Rcpp::Rcerr <<
+                    "geometry must be `raw` (WKB) or `character` (WKT)"
+                    << " (row index " << row_idx << ")" << std::endl;
+
+                return nullptr;
             }
             // code below will also check for raw(0) and character NA
         }
@@ -3514,20 +3628,32 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                 err = OGR_F_SetGeomFieldDirectly(hFeat, gfld_idx, hGeom);
                 if (err != OGRERR_NONE) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("failed to set geometry field");
+                    Rcpp::Rcerr << "failed to set geometry field"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
             }
             else if (err == OGRERR_NOT_ENOUGH_DATA) {
                 OGR_F_Destroy(hFeat);
-                Rcpp::stop("OGRERR_NOT_ENOUGH_DATA, failed to create geom");
+                Rcpp::Rcerr << "OGRERR_NOT_ENOUGH_DATA, failed to create geom"
+                    << " (row index " << row_idx << ")" << std::endl;
+
+                return nullptr;
             }
             else if (err == OGRERR_UNSUPPORTED_GEOMETRY_TYPE) {
                 OGR_F_Destroy(hFeat);
-                Rcpp::stop("OGRERR_UNSUPPORTED_GEOMETRY_TYPE");
+                Rcpp::Rcerr << "OGRERR_UNSUPPORTED_GEOMETRY_TYPE"
+                    << " (row index " << row_idx << ")" << std::endl;
+
+                return nullptr;
             }
             else if (err == OGRERR_CORRUPT_DATA) {
                 OGR_F_Destroy(hFeat);
-                Rcpp::stop("OGRERR_CORRUPT_DATA, failed to create geom");
+                Rcpp::Rcerr << "OGRERR_CORRUPT_DATA, failed to create geom"
+                    << " (row index " << row_idx << ")" << std::endl;
+
+                return nullptr;
             }
         }
         else {
@@ -3546,25 +3672,42 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
                     err = OGR_F_SetGeomFieldDirectly(hFeat, gfld_idx, hGeom);
                     if (err != OGRERR_NONE) {
                         OGR_F_Destroy(hFeat);
-                        Rcpp::stop("failed to set geometry field");
+                        Rcpp::Rcerr << "failed to set geometry field"
+                            << " (row index " << row_idx << ")" << std::endl;
+
+                        return nullptr;
                     }
                 }
                 else if (err == OGRERR_NOT_ENOUGH_DATA) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("OGRERR_NOT_ENOUGH_DATA, failed to create geom");
+                    Rcpp::Rcerr <<
+                        "OGRERR_NOT_ENOUGH_DATA, failed to create geom"
+                            << " (row index " << row_idx << ")" << std::endl;
+
+                        return nullptr;
                 }
                 else if (err == OGRERR_NOT_ENOUGH_DATA) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("OGRERR_UNSUPPORTED_GEOMETRY_TYPE");
+                    Rcpp::Rcerr  << "OGRERR_UNSUPPORTED_GEOMETRY_TYPE"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
                 else if (err == OGRERR_CORRUPT_DATA) {
                     OGR_F_Destroy(hFeat);
-                    Rcpp::stop("OGRERR_CORRUPT_DATA, failed to create geom");
+                    Rcpp::Rcerr  << "OGRERR_CORRUPT_DATA, failed to create geom"
+                        << " (row index " << row_idx << ")" << std::endl;
+
+                    return nullptr;
                 }
             }
             else {
                 OGR_F_Destroy(hFeat);
-                Rcpp::stop("WKT geometry must be a length-1 character vector");
+                Rcpp::Rcerr <<
+                    "WKT geometry must be a length-1 character vector"
+                    << " (row index " << row_idx << ")" << std::endl;
+
+                return nullptr;
             }
         }
     }

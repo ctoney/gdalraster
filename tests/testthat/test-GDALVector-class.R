@@ -815,13 +815,13 @@ test_that("feature write methods work", {
     # not character or raw vector for geom field
     orig <- feat[[geom_fld]]
     feat[[geom_fld]] <- integer(10)
-    expect_error(lyr$setFeature(feat))
+    expect_false(lyr$setFeature(feat))
     feat[[geom_fld]] <- orig
 
     # not character or raw vector for geom field, in list
     orig <- feat[[geom_fld]]
     feat[[geom_fld]] <- list(numeric(10))
-    expect_error(lyr$setFeature(feat))
+    expect_false(lyr$setFeature(feat))
     feat[[geom_fld]] <- orig
 
     # multi-row data frame
