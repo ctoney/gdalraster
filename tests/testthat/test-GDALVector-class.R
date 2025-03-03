@@ -971,6 +971,61 @@ test_that("feature write methods work", {
     rm(dsn5)
 })
 
+test_that("feature batch writing works", {
+    f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package="gdalraster")
+    dsn <- file.path(tempdir(), basename(f))
+    file.copy(f, dsn, overwrite = TRUE)
+
+    sql <- "SELECT incid_name, burn_bnd_ac, ig_date, geom
+            FROM mtbs_perims WHERE ig_year > 2010"
+    lyr <- new(GDALVector, dsn, sql)
+
+    # define new layer by modifying the source definition
+    defn <- lyr$getLayerDefn()
+    # define new attribute field
+    defn$burn_bnd_ha <- ogr_def_field("OFTInteger64")
+    # redefine geom field
+    defn$geom <- ogr_def_geom_field("POINT", srs = defn$geom$srs)
+
+    dst_dsn <- tempfile(fileext = ".gpkg")
+    new_lyr <- ogr_ds_create("GPKG", dst_dsn, "mtbs_centroids",
+                             layer_defn = defn, overwrite = TRUE,
+                             return_obj = TRUE)
+
+    d <- lyr$fetch(-1)
+    # create a new data frame of point features
+    d_new <- data.frame(d[, c("FID", "incid_name", "burn_bnd_ac", "ig_date")])
+    # add new calculated attribute field
+    d_new$burn_bnd_ha <- d_new$burn_bnd_ac / 2.471
+    # add a geom field with the centroids
+    perim_centroids <- g_centroid(d$geom)
+    d_new$geom <- g_create("POINT", perim_centroids)
+
+    # batch write
+    expect_no_error(ret <- new_lyr$batchCreateFeature(d_new))
+    expect_vector(ret, logical(), size = 15)
+    expect_true(all(ret))
+
+    # read back
+    new_lyr$open(read_only = TRUE)
+    expect_equal(new_lyr$getName(), "mtbs_centroids")
+    d_new_out <- new_lyr$fetch(-1)
+    expect_equal(nrow(d_new_out), 15)
+    expect_equal(d_new_out$incid_name, d$incid_name)
+    expect_equal(d_new_out$ig_date, d$ig_date)
+    expect_equal(sum(d_new_out$burn_bnd_ha - (d$burn_bnd_ac / 2.471)), 0,
+                 tolerance = 0.01)
+
+    pt_coords <- g_coords(d_new_out$geom)
+    expect_equal(cbind(pt_coords$x, pt_coords$y), perim_centroids,
+                 ignore_attr = TRUE)
+
+    lyr$close()
+    unlink(dsn)
+    new_lyr$close()
+    unlink(dst_dsn)
+})
+
 test_that("get/set metadata works", {
     f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package="gdalraster")
     dsn <- file.path(tempdir(), basename(f))

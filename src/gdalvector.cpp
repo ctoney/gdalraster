@@ -3548,18 +3548,19 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
             robj = feature[col_idx];
         }
         else if (Rcpp::is<Rcpp::RawVector>(feature[col_idx])) {
+            robj = feature[col_idx];
             have_geom = true;
             is_raw = true;
-            robj = feature[col_idx];
         }
         else if (Rcpp::is<Rcpp::CharacterVector>(feature[col_idx])) {
+            Rcpp::CharacterVector cv = feature[col_idx];
+            robj = cv[row_idx];
             have_geom = true;
             is_raw = false;
-            robj = feature[col_idx];
         }
         else if (Rcpp::is<Rcpp::List>(feature[col_idx])) {
             Rcpp::List list_tmp = feature[col_idx];
-            robj = list_tmp[0];
+            robj = list_tmp[row_idx];
             if (!robj.isNULL()) {
                 if (Rcpp::is<Rcpp::RawVector>(robj)) {
                     have_geom = true;
