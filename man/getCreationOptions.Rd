@@ -12,16 +12,12 @@ getCreationOptions(format, filter = NULL)
 \item{filter}{Optional character vector of creation option names.}
 }
 \value{
-Invisibly, an XML string that describes the full list of creation
-options or empty string \code{""} (full output of
-\code{GDALGetDriverCreationOptionList()} in the GDAL API).
+List ... TODO
 }
 \description{
 \code{getCreationOptions()} returns the list of creation options supported by a
-GDAL format driver as an XML string (invisibly).
+GDAL format driver.
 Wrapper for \code{GDALGetDriverCreationOptionList()} in the GDAL API.
-Information about the available creation options is also printed to the
-console by default.
 }
 \examples{
 getCreationOptions("GTiff", filter="COMPRESS")

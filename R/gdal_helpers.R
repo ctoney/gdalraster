@@ -236,16 +236,12 @@ addFilesInZip <- function(
 #' Return the list of creation options of a GDAL driver
 #'
 #' `getCreationOptions()` returns the list of creation options supported by a
-#' GDAL format driver as an XML string (invisibly).
+#' GDAL format driver.
 #' Wrapper for `GDALGetDriverCreationOptionList()` in the GDAL API.
-#' Information about the available creation options is also printed to the
-#' console by default.
 #'
 #' @param format Raster format short name (e.g., "GTiff").
 #' @param filter Optional character vector of creation option names.
-#' @returns Invisibly, an XML string that describes the full list of creation
-#' options or empty string `""` (full output of
-#' `GDALGetDriverCreationOptionList()` in the GDAL API).
+#' @returns List ... TODO
 #'
 #' @seealso
 #' [`GDALRaster-class`][GDALRaster], [create()], [createCopy()]
@@ -258,14 +254,11 @@ getCreationOptions <- function(format, filter = NULL) {
     if (!is.character(format) || length(format) > 1)
         stop("'format' must be a character string", call. = FALSE)
 
-    if (is.null(filter)) {
+    if (is.null(filter) || filter == "") {
         filter <- "_all_"
     } else {
         filter <- toupper(filter)
     }
-
-    if (filter[1] == "")
-        return(invisible(.getCreationOptions(format)))
 
     if (.getCreationOptions(format) == "") {
         message("no creation options found for ", format)
@@ -283,10 +276,10 @@ getCreationOptions <- function(format, filter = NULL) {
             if (filter[1] == "_all_" || toupper(a["name"]) %in% filter) {
                 v <- xml_children(el[[i]]) |> as_list() |> unlist()
                 out[[unname(a["name"])]] <- list(
-                    type = unname(a["type"]),
-                    description = unname(a["description"]),
-                    default = unname(a["default"]),
-                    values = v)
+                                        type = unname(a["type"]),
+                                        description = unname(a["description"]),
+                                        default = unname(a["default"]),
+                                        values = v)
             }
         }
     }
