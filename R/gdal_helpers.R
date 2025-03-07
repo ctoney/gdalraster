@@ -242,10 +242,7 @@ addFilesInZip <- function(
 #' console by default.
 #'
 #' @param format Raster format short name (e.g., "GTiff").
-#' @param filter Optional character vector of creation option names. Controls
-#' only the amount of information printed to the console.
-#' By default, information for all creation options is printed. Can be set to
-#' empty string `""` to disable printing information to the console.
+#' @param filter Optional character vector of creation option names.
 #' @returns Invisibly, an XML string that describes the full list of creation
 #' options or empty string `""` (full output of
 #' `GDALGetDriverCreationOptionList()` in the GDAL API).
@@ -256,13 +253,16 @@ addFilesInZip <- function(
 #' @examples
 #' getCreationOptions("GTiff", filter="COMPRESS")
 #' @export
-getCreationOptions <- function(format, filter=NULL) {
+getCreationOptions <- function(format, filter = NULL) {
 
     if (!is.character(format) || length(format) > 1)
         stop("'format' must be a character string", call. = FALSE)
 
-    if (is.null(filter))
+    if (is.null(filter)) {
         filter <- "_all_"
+    } else {
+        filter <- toupper(filter)
+    }
 
     if (filter[1] == "")
         return(invisible(.getCreationOptions(format)))
@@ -272,15 +272,26 @@ getCreationOptions <- function(format, filter=NULL) {
         return(invisible(.getCreationOptions(format)))
     }
 
-    x <- xml2::read_xml(.getCreationOptions(format))
-    opt_list <- xml2::xml_find_all(x, xpath = "//Option")
-    for (n in seq_along(opt_list)) {
-        if (filter[1] == "_all_" ||
-                xml2::xml_attr(opt_list[[n]], "name") %in% filter) {
-            print(opt_list[[n]])
+    xml <- xml2::read_xml(.getCreationOptions(format))
+    el <- xml2::xml_children(xml)
+    out <- list()
+    if (length(el) == 0) {
+        return(NULL)
+    } else {
+        for (i in seq_along(el)) {
+            a <- xml_attrs(el[[i]])
+            if (filter[1] == "_all_" || toupper(a["name"]) %in% filter) {
+                v <- xml_children(el[[i]]) |> as_list() |> unlist()
+                out[[unname(a["name"])]] <- list(
+                    type = unname(a["type"]),
+                    description = unname(a["description"]),
+                    default = unname(a["default"]),
+                    values = v)
+            }
         }
     }
-    return(invisible(.getCreationOptions(format)))
+
+    return(out)
 }
 
 

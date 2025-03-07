@@ -9,10 +9,7 @@ getCreationOptions(format, filter = NULL)
 \arguments{
 \item{format}{Raster format short name (e.g., "GTiff").}
 
-\item{filter}{Optional character vector of creation option names. Controls
-only the amount of information printed to the console.
-By default, information for all creation options is printed. Can be set to
-empty string \code{""} to disable printing information to the console.}
+\item{filter}{Optional character vector of creation option names.}
 }
 \value{
 Invisibly, an XML string that describes the full list of creation
