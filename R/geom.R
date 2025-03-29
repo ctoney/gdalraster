@@ -203,7 +203,7 @@ bbox_transform <- function(bbox, srs_from, srs_to,
     if (!(is.character(srs_from) && length(srs_from) == 1))
         stop("'srs_from' must be a character string", call. = FALSE)
     if (!(is.character(srs_to) && length(srs_to) == 1))
-        stop("'srs_from' must be a character string", call. = FALSE)
+        stop("'srs_to' must be a character string", call. = FALSE)
 
     if (use_transform_bounds) {
         return(transform_bounds(bbox, srs_from, srs_to))
@@ -1726,6 +1726,14 @@ g_sym_difference <- function(this_geom, other_geom, as_wkb = TRUE,
 #' vector, having length equal to the number of input geometries, containing
 #' computed length or '0' if undefined.
 #'
+#' `g_geodesic_area()` computes geometry area, considered as a surface on the
+#' underlying ellipsoid of the SRS attached to the geometry. The returned area
+#' will always be in square meters, and assumes that polygon edges describe
+#' geodesic lines on the ellipsoid. If the geometry SRS is not a geographic
+#' one, geometries are reprojected to the underlying geographic SRS.
+#' The geographic data axis to SRS axis mapping is honored.
+#' Requires GDAL >= 3.9.
+#'
 #' @param geom Either a raw vector of WKB or list of raw vectors, or a
 #' character vector containing one or more WKT strings.
 #' @param other_geom Either a raw vector of WKB or list of raw vectors, or a
@@ -1765,7 +1773,6 @@ g_sym_difference <- function(this_geom, other_geom, as_wkb = TRUE,
 #' lyr$close()
 #' @export
 g_area <- function(geom, quiet = FALSE) {
-    # quiet
     if (is.null(quiet))
         quiet <- FALSE
     if (!is.logical(quiet) || length(quiet) > 1)
@@ -1793,7 +1800,6 @@ g_area <- function(geom, quiet = FALSE) {
 #' @name g_measures
 #' @export
 g_centroid <- function(geom, quiet = FALSE) {
-    # quiet
     if (is.null(quiet))
         quiet <- FALSE
     if (!is.logical(quiet) || length(quiet) > 1)
@@ -1871,7 +1877,6 @@ g_distance <- function(geom, other_geom, quiet = FALSE) {
 #' @name g_measures
 #' @export
 g_length <- function(geom, quiet = FALSE) {
-    # quiet
     if (is.null(quiet))
         quiet <- FALSE
     if (!is.logical(quiet) || length(quiet) > 1)
@@ -1887,6 +1892,35 @@ g_length <- function(geom, quiet = FALSE) {
             ret <- .g_length(g_wk2wk(geom), quiet)
         } else {
             ret <- sapply(g_wk2wk(geom), .g_length, quiet)
+        }
+    } else {
+        stop("'geom' must be a character vector, raw vector, or list",
+             call. = FALSE)
+    }
+
+    return(ret)
+}
+
+#' @name g_measures
+#' @export
+g_geodesic_area <- function(geom, srs, quiet = FALSE) {
+    if (!(is.character(srs) && length(srs) == 1))
+        stop("'srs' must be a character string", call. = FALSE)
+    if (is.null(quiet))
+        quiet <- FALSE
+    if (!is.logical(quiet) || length(quiet) > 1)
+        stop("'quiet' must be a logical scalar", call. = FALSE)
+
+    ret <- 0
+    if (is.raw(geom)) {
+        ret <- .g_geodesic_area(geom, srs, quiet)
+    } else if (is.list(geom) && is.raw(geom[[1]])) {
+        ret <- sapply(geom, .g_geodesic_area, srs, quiet)
+    } else if (is.character(geom)) {
+        if (length(geom) == 1) {
+            ret <- .g_geodesic_area(g_wk2wk(geom), srs, quiet)
+        } else {
+            ret <- sapply(g_wk2wk(geom), .g_geodesic_area, srs, quiet)
         }
     } else {
         stop("'geom' must be a character vector, raw vector, or list",
@@ -2043,6 +2077,10 @@ g_transform <- function(geom, srs_from, srs_to, wrap_date_line = FALSE,
                         date_line_offset = 10L, as_wkb = TRUE,
                         as_iso = FALSE, byte_order = "LSB", quiet = FALSE) {
 
+    if (!(is.character(srs_from) && length(srs_from) == 1))
+        stop("'srs_from' must be a character string", call. = FALSE)
+    if (!(is.character(srs_to) && length(srs_to) == 1))
+        stop("'srs_to' must be a character string", call. = FALSE)
     # as_wkb
     if (is.null(as_wkb))
         as_wkb <- TRUE

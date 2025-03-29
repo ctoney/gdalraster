@@ -1396,6 +1396,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// g_geodesic_area
+double g_geodesic_area(const Rcpp::RawVector& geom, const std::string& srs, bool quiet);
+RcppExport SEXP _gdalraster_g_geodesic_area(SEXP geomSEXP, SEXP srsSEXP, SEXP quietSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::RawVector& >::type geom(geomSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type srs(srsSEXP);
+    Rcpp::traits::input_parameter< bool >::type quiet(quietSEXP);
+    rcpp_result_gen = Rcpp::wrap(g_geodesic_area(geom, srs, quiet));
+    return rcpp_result_gen;
+END_RCPP
+}
 // g_centroid
 Rcpp::NumericVector g_centroid(const Rcpp::RawVector& geom, bool quiet);
 RcppExport SEXP _gdalraster_g_centroid(SEXP geomSEXP, SEXP quietSEXP) {
@@ -2075,6 +2088,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_g_distance", (DL_FUNC) &_gdalraster_g_distance, 3},
     {"_gdalraster_g_length", (DL_FUNC) &_gdalraster_g_length, 2},
     {"_gdalraster_g_area", (DL_FUNC) &_gdalraster_g_area, 2},
+    {"_gdalraster_g_geodesic_area", (DL_FUNC) &_gdalraster_g_geodesic_area, 3},
     {"_gdalraster_g_centroid", (DL_FUNC) &_gdalraster_g_centroid, 2},
     {"_gdalraster_g_transform", (DL_FUNC) &_gdalraster_g_transform, 8},
     {"_gdalraster_bbox_from_wkt", (DL_FUNC) &_gdalraster_bbox_from_wkt, 3},

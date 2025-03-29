@@ -1685,6 +1685,53 @@ double g_area(const Rcpp::RawVector &geom, bool quiet = false) {
 }
 
 //' @noRd
+// [[Rcpp::export(name = ".g_geodesic_area")]]
+double g_geodesic_area(const Rcpp::RawVector &geom, const std::string &srs,
+                       bool quiet) {
+// Compute geometry area, considered as a surface on the underlying ellipsoid
+// of the SRS attached to the geometry.
+// The returned area will always be in square meters, and assumes that polygon
+// edges describe geodesic lines on the ellipsoid.
+// Requires GDAL >= 3.9
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 9, 0)
+    Rcpp::stop("g_geodesic_area() requires GDAL >= 3.9");
+
+#else
+    OGRSpatialReferenceH hSRS = OSRNewSpatialReference(nullptr);
+
+    if (OSRSetFromUserInput(hSRS, srs.c_str()) != OGRERR_NONE) {
+        if (hSRS != nullptr)
+            OSRDestroySpatialReference(hSRS);
+        Rcpp::stop("error importing SRS from user input");
+    }
+
+    if ((geom.size() == 0))
+        Rcpp::stop("'geom' is empty");
+
+    OGRGeometryH hGeom = createGeomFromWkb(geom);
+
+    if (hGeom == nullptr) {
+        if (!quiet) {
+            Rcpp::warning(
+                    "failed to create geometry object from WKB, NA returned");
+        }
+        return NA_REAL;
+    }
+
+    OGR_G_AssignSpatialReference(hGeom, hSRS);
+
+    double ret = -1.0;
+    ret = OGR_G_GeodesicArea(hGeom);
+    OGR_G_DestroyGeometry(hGeom);
+    if (ret < 0)
+        return NA_REAL;
+    else
+        return ret;
+#endif
+}
+
+//' @noRd
 // [[Rcpp::export(name = ".g_centroid")]]
 Rcpp::NumericVector g_centroid(const Rcpp::RawVector &geom,
                                bool quiet = false) {

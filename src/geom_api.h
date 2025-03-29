@@ -116,6 +116,8 @@ double g_distance(const Rcpp::RawVector &this_geom,
 
 double g_length(const Rcpp::RawVector &geom, bool quiet);
 double g_area(const Rcpp::RawVector &geom, bool quiet);
+double g_geodesic_area(const Rcpp::RawVector &geom, const std::string &srs,
+                       bool quiet);
 Rcpp::NumericVector g_centroid(const Rcpp::RawVector &geom, bool quiet);
 
 SEXP g_transform(const Rcpp::RawVector &geom, const std::string &srs_from,

@@ -2310,6 +2310,11 @@ has_geos <- function() {
 }
 
 #' @noRd
+.g_geodesic_area <- function(geom, srs, quiet) {
+    .Call(`_gdalraster_g_geodesic_area`, geom, srs, quiet)
+}
+
+#' @noRd
 .g_centroid <- function(geom, quiet = FALSE) {
     .Call(`_gdalraster_g_centroid`, geom, quiet)
 }

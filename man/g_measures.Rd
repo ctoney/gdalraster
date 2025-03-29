@@ -6,6 +6,7 @@
 \alias{g_centroid}
 \alias{g_distance}
 \alias{g_length}
+\alias{g_geodesic_area}
 \title{Compute measurements for WKB/WKT geometries}
 \usage{
 g_area(geom, quiet = FALSE)
@@ -15,6 +16,8 @@ g_centroid(geom, quiet = FALSE)
 g_distance(geom, other_geom, quiet = FALSE)
 
 g_length(geom, quiet = FALSE)
+
+g_geodesic_area(geom, srs, quiet = FALSE)
 }
 \arguments{
 \item{geom}{Either a raw vector of WKB or list of raw vectors, or a
@@ -60,6 +63,14 @@ occurs.
 Undefined for all other geometry types (returns zero). Returns a numeric
 vector, having length equal to the number of input geometries, containing
 computed length or '0' if undefined.
+
+\code{g_geodesic_area()} computes geometry area, considered as a surface on the
+underlying ellipsoid of the SRS attached to the geometry. The returned area
+will always be in square meters, and assumes that polygon edges describe
+geodesic lines on the ellipsoid. If the geometry SRS is not a geographic
+one, geometries are reprojected to the underlying geographic SRS.
+The geographic data axis to SRS axis mapping is honored.
+Requires GDAL >= 3.9.
 }
 \note{
 For \code{g_distance()}, \code{geom} and \code{other_geom} must contain the same number of
