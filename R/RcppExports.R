@@ -1346,6 +1346,15 @@ validateCreationOptions <- function(format, options) {
     .Call(`_gdalraster_addFileInZip`, zip_filename, overwrite, archive_filename, in_filename, options, quiet)
 }
 
+#' Get pointer address of R data as character string
+#'
+#' @param x Object of type numeric, integer or raw.
+#' @returns Character string pointer address  with format suitable for use
+#' as DATAPOINTER for GDAL MEM.
+get_data_ptr <- function(x) {
+    .Call(`_gdalraster_get_data_ptr`, x)
+}
+
 #' Copy a source file to a target filename
 #'
 #' `vsi_copy_file()` is a wrapper for `VSICopyFile()` in the GDAL Common
