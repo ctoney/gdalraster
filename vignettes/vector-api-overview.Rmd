@@ -1,0 +1,75 @@
+---
+title: "Vector API Overview"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vector API Overview}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+Beginning at version 2.0, **gdalraster** includes bindings to a substantial subset of the GDAL Vector API. The vector bindings provide an R implementation of the [GDAL Vector Data Model](https://gdal.org/en/stable/user/vector_data_model.html). Readers are encouraged to first review that document for background on the underlying object model and how it relates to usage of the API in **gdalraster**.
+
+The prefix [OGR](https://gdal.org/en/stable/faq.html#what-is-this-ogr-stuff) is used in GDAL with class names, command-line utilities, etc., that refer to vector-specific components of the library. In **gdalraster**, OGR will be used throughout the documentation and as a prefix on function names, consistent with the style of the source library. There is also a certain amount of unification of the raster and vector APIs in GDAL. In **gdalraster**, we will also refer to the "GDAL Vector API" and use `GDALVector` as a class name. To support the vector API, **gdalraster** 2.0 also builds on its already existing bindings to portions of GDAL's Spatial Reference System and Geometry APIs.
+
+## Contents
+
+* Organization of the vector components in **gdalraster**: linking to sections of the package documentation that provide extended text on specific topics.
+
+* High-level workflow for using **gdalraster** with vector data: distinguishing among phases that involve creation and management of vector data sources, schema management, layer access and data retrieval, writing/modifying data at the individual feature level, and vector geoprocessing on whole layers.
+
+* Code examples for common tasks such as: creating a new data source, defining and creating a new layer from scratch, connecting to a layer in an existing data source, reading feature data, writing new data, etc.
+
+## Vector API components
+
+### Core bindings
+
+Core functionality for vector is provided by an exposed C++ class `GDALVector`, along with a set of stand-along functions having the `ogr_()` prefix.
+
+`GDALVector` is a C++ class exposed in R via [**Rcpp** modules](https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-modules.pdf). It encapsulates a single OGRLayer and the GDALDataset that contains it. An object of class `GDALVector` persists an open connection to the dataset, and exposes methods to: retrieve layer information, set attribute and spatial filters, traverse and read feature data by traditional row-based cursor (including an analog of `DBI::dbFetch()`), read via column-oriented Arrow Array stream, write new features in a layer, edit/overwrite existing features, upsert, and delete features, and perform data manipulation within transactions.
+
+The stand-alone `ogr_()` functions are mainly grouped under two separate documentation topics: `?ogr_manage` and `?ogr_define`. The `ogr_manage` functions can be used to create new vector datasets from scratch, test existence of dataset/layer/field, test dataset and layer capabilities, create new layers in an existing dataset, delete layers, create new attribute and geometry fields on an existing layer, rename and delete fields, and edit data with SQL statements. The `ogr_define` topic contains documentation and helper functions for defining an OGR feature class: a named list containing zero or more attribute field definitions, along with one or more geometry field definitions, comprise an OGR feature class definition (a.k.a. layer definition). The documentation under `ogr_define` provides detailed specifications of a layer definition, attribute field definition, and geometry field definition. The helper functions make it easy to create new layer definitions from scratch or modify an existing layer definition. Using a layer definition can be a convenient way (but not required) to create a new vector dataset, or new layer within an existing dataset, using the `ogr_manage` functions `ogr_ds_create()` and `ogr_layer_create()`.
+
+`ogr_proc()` provides an interface to OGR API facilities for vector geoprocessing. This function can perform the following GIS overlay operations for vector datasets: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (see https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically a port of the [`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) utility in the GDAL Python bindings.
+
+Two additional functions with an OGR prefix, `ogrinfo()` and `ogr2ogr()`, provide R wrappers of the GDAL command-line utilities [`ogrinfo`](https://gdal.org/en/stable/programs/ogrinfo.html) and [`ogr2ogr`](https://gdal.org/en/stable/programs/ogr2ogr.html), respectively. These functions support all of the command-line arguments described in the GDAL documentation, providing a powerful range of capabilities for obtaining information about an OGR-supported data source, editing data with SQL statements, and converting vector data between file formats.
+
+### Supporting APIs
+
+Bindings to a subset of GDAL's Spatial Reference System API are provided by a set of stand-alone `srs_()` functions. These support conversion of spatial reference system definitions in various formats to OGC Well Known Text (WKT) representation as used by GDAL internally (e.g., EPSG codes, well known names such as NAD27, NAD83, WGS84, etc., PROJ.4 definitions, PROJJSON, and others, as well as between different versions of OGC WKT, see `?srs_convert`). Several functions under the `?srs_query` topic provide various information about a given SRS definition and allow checking two definitions for equality.
+
+Bindings to a significant subset of GDAL's Geometry API are provided by a set of functions prefixed `g_()`. Many of these functions are built on the [GEOS library](https://libgeos.org/) (i.e., they use GEOS via GDAL headers). The geometry functions in **gdalraster** are flexible in that the input geomteries, and corresponding output specification, may be given as either a single [WKT string](https://libgeos.org/specifications/wkt/), a character vector of WKT strings, a single `raw` vector of [WKB](https://libgeos.org/specifications/wkb/), or a list of WKB `raw` vectors. The convenience function `g_wk2wk()` will convert its input accordingly. Factory functions (`?g_factory`) support creating basic geometry types from point data (vertices) and building container geometry types from sub-geometries. Capabilities of the geometry bindings include inspection (`?g_query`), binary predicates (`?g_binary_pred`), binary operations (`?g_binary_op`), unary operations (e.g., `g_buffer()`, `g_simplify()`), measurements (`?g_measures`), and several utilities (e.g., `g_coords()`, `g_make_valid()`, `g_swap_xy()`, `g_transform()`). Convenience functions for working with bounding boxes are also provided (e.g., to/from WKT, intersect/union, and `bbox_transform()` to a different projection).
+
+Several existing data management functions in **gdalraster** also operate on vector data sources. These include `addFilesInZip()` (create/append to a potentially [Seek-Optimized ZIP](https://github.com/sozip/sozip-spec) file), `copyDatasetFiles()`, `deleteDataset()`, `inspectDataset()` and `renameDataset()`.
+
+Bindings to the GDAL's Virtual Systems Interface (VSI) are also included to support a full range of standard file system operations, generalized to URLs, cloud storage services, Zip/GZip/7z/RAR, and in-memory files (/vsimem/), as well as regular file systems. Note that the `vsi_()` functions have general utility not limited to operating on spatial data sources.
+
+## Workflow
+
+
+
+
+OGR field types are returned as the following R types (`NA` for OGR NULL values). When retrieving a batch of features as a data frame (`"OGRFeatureSet"`), some field types will be contained in a data frame list column as denoted:
+* `OFTInteger`: `integer` value
+* `OFTInteger` subtype `OFSTBoolean`: `logical` value
+* `OFTIntegerList`: vector of `integer` (list column)
+* `OFTInteger64`: `numeric` value carrying the `"integer64"` class attribute
+* `OFTInteger64` subtype `OFSTBoolean`: `logical` value
+* `OFTInteger64List`: vector of `bit64::integer64` (list column)
+* `OFTReal`: `numeric` value
+* `OFTRealList`: vector of `numeric` (list column)
+* `OFTString`: `character` string
+* `OFTStringList`: vector of `character` strings (list column)
+* `OFTDate`: `numeric` value of class `"Date"`
+* `OFTDateTime`: `numeric` value of class `"POSIXct"` (millisecond accuracy)
+* `OFTTime`: `character` string (`"HH:MM:SS"`)
+* `OFTBinary`: `raw` vector (list column, `NULL` entries for OGR NULL values)
+
