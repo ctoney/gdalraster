@@ -34,7 +34,7 @@ The prefix [OGR](https://gdal.org/en/stable/faq.html#what-is-this-ogr-stuff) is 
 
 Core functionality for vector is provided by an exposed C++ class `GDALVector`, along with a set of stand-along functions having the `ogr_()` prefix.
 
-`GDALVector` is a C++ class exposed in R via [**Rcpp** modules](https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-modules.pdf). It encapsulates a single OGRLayer and the GDALDataset that contains it. An object of class `GDALVector` persists an open connection to the dataset, and exposes methods to: retrieve layer information, set attribute and spatial filters, traverse and read feature data by traditional row-based cursor (including an analog of `DBI::dbFetch()`), read via column-oriented Arrow Array stream, write new features in a layer, edit/overwrite existing features, upsert, and delete features, and perform data manipulation within transactions.
+`GDALVector` is a C++ class exposed in R via [**Rcpp** modules](https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-modules.pdf). It encapsulates a single OGRLayer and the GDALDataset that contains it. An object of class `GDALVector` persists an open connection to the dataset, and exposes methods to: retrieve layer information, set attribute and spatial filters, traverse and read feature data by traditional row-based cursor (including an analog of `DBI::dbFetch()`), read via column-oriented Arrow Array stream, write new features in a layer, edit/overwrite existing features, upsert, and delete features, and perform data manipulation within transactions. The `?GDALVector` documentation gives a full list of object methods under Usage, and descriptions of each under Details.
 
 The stand-alone `ogr_()` functions are mainly grouped under two separate documentation topics: `?ogr_manage` and `?ogr_define`. The `ogr_manage` functions can be used to create new vector datasets from scratch, test existence of dataset/layer/field, test dataset and layer capabilities, create new layers in an existing dataset, delete layers, create new attribute and geometry fields on an existing layer, rename and delete fields, and edit data with SQL statements. The `ogr_define` topic contains documentation and helper functions for defining an OGR feature class: a named list containing zero or more attribute field definitions, along with one or more geometry field definitions, comprise an OGR feature class definition (a.k.a. layer definition). The documentation under `ogr_define` provides detailed specifications of a layer definition, attribute field definition, and geometry field definition. The helper functions make it easy to create new layer definitions from scratch or modify an existing layer definition. Using a layer definition can be a convenient way (but not required) to create a new vector dataset, or new layer within an existing dataset, using the `ogr_manage` functions `ogr_ds_create()` and `ogr_layer_create()`.
 
@@ -50,14 +50,15 @@ Bindings to a significant subset of GDAL's Geometry API are provided by a set of
 
 Several existing data management functions in **gdalraster** also operate on vector data sources. These include `addFilesInZip()` (create/append to a potentially [Seek-Optimized ZIP](https://github.com/sozip/sozip-spec) file), `copyDatasetFiles()`, `deleteDataset()`, `inspectDataset()` and `renameDataset()`.
 
-Bindings to the GDAL's Virtual Systems Interface (VSI) are also included to support a full range of standard file system operations, generalized to URLs, cloud storage services, Zip/GZip/7z/RAR, and in-memory files (/vsimem/), as well as regular file systems. Note that the `vsi_()` functions have general utility not limited to operating on spatial data sources.
+Bindings to the GDAL's Virtual Systems Interface (VSI) are also included which support a full range of standard file system operations, abstracted to URLs, cloud storage services, Zip/GZip/7z/RAR, and in-memory files (/vsimem/), as well as regular file systems. Note that the `vsi_()` functions have general utility not limited to operating on spatial data sources.
 
 ## Workflow
 
 
 
 
-OGR field types are returned as the following R types (`NA` for OGR NULL values). When retrieving a batch of features as a data frame (`"OGRFeatureSet"`), some field types will be contained in a data frame list column as denoted:
+
+OGR field types are returned as the following R types (`NA` for OGR NULL values). When retrieving a batch of features as a data frame (`"OGRFeatureSet"`), some field types will be contained in a data frame list column as indicated:
 * `OFTInteger`: `integer` value
 * `OFTInteger` subtype `OFSTBoolean`: `logical` value
 * `OFTIntegerList`: vector of `integer` (list column)
@@ -73,3 +74,4 @@ OGR field types are returned as the following R types (`NA` for OGR NULL values)
 * `OFTTime`: `character` string (`"HH:MM:SS"`)
 * `OFTBinary`: `raw` vector (list column, `NULL` entries for OGR NULL values)
 
+By default, geometries are returned as WKB `raw` vectors in a data frame list column. The per-object setting `$returnGeomAs` may also be set to one of `"WKB_ISO"`, `"WKT"`, `"WKT_ISO"`, or `"NONE"`. Omitting the geometries (e.g., by setting `lyr$returnGeomAs <- "NONE"`) may be beneficial for performance and memory usage when access only to feature attributes is needed.
