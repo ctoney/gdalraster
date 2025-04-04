@@ -40,7 +40,7 @@ The stand-alone `ogr_()` functions are mainly grouped under two separate documen
 
 `ogr_proc()` provides an interface to OGR API facilities for vector geoprocessing. This function can perform the following GIS overlay operations for vector datasets: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (see https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically a port of the [`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) utility in the GDAL Python bindings.
 
-Two additional functions with an OGR prefix, `ogrinfo()` and `ogr2ogr()`, provide R wrappers of the GDAL command-line utilities [`ogrinfo`](https://gdal.org/en/stable/programs/ogrinfo.html) and [`ogr2ogr`](https://gdal.org/en/stable/programs/ogr2ogr.html), respectively. These functions support all of the command-line arguments described in the GDAL documentation, providing a powerful range of capabilities for obtaining information about an OGR-supported data source, editing data with SQL statements, and converting vector data between file formats.
+`ogrinfo()` and `ogr2ogr()`, provide R wrappers of the GDAL command-line utilities [`ogrinfo`](https://gdal.org/en/stable/programs/ogrinfo.html) and [`ogr2ogr`](https://gdal.org/en/stable/programs/ogr2ogr.html), respectively. These functions support all of the command-line arguments described in the GDAL documentation, providing a powerful range of capabilities for obtaining information about an OGR-supported data source, editing data with SQL statements, and converting vector data between file formats. `ogr_reproject()` implements reprojection for vector layers.
 
 ### Supporting APIs
 
