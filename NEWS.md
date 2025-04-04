@@ -1,4 +1,12 @@
-# gdalraster 1.12.0.9274 (dev)
+# gdalraster 1.12.0.9281 (dev)
+
+* add default xy labels in S3 methods `plot.OGRFeature` and `plot.OGRFeatureSet` (#685) (2025-04-03)
+
+* add `ogr_reproject()`: reproject a vector layer (#684) (2025-04-03)
+
+* fix `VSIFile::read()`: the `nbytes` argument should accept values carrying the integer64 class attribute (fix #677 thanks to @mdsumner) (2025-03-31)
+
+* add `GDALVector::getIgnoredFields()` (#676) (2025-03-31)
 
 * geom api: add `g_simplify()`, simplify WKB/WKT geometries, optionally preserving topology (#675) (2025-03-30)
 
