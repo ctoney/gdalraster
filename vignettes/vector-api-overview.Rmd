@@ -44,7 +44,7 @@ Several of the stand-alone `ogr_()` functions are grouped under the documentatio
 
 The `ogr_define` topic provides documentation and helper functions for defining feature classes. An OGR feature class definition (a.k.a. layer definition) is modeled in R as a named list containing zero or more attribute field definitions, along with one or more geometry field definitions. Specification of the the list structures for these definitions are given in `ogr_define`. The associated helper functions make it easy to create new layer definitions from scratch or modify an existing definition. A layer definition is convenient (but not required) for creating a new vector dataset, and/or a new layer within an existing dataset, using `ogr_ds_create()` / `ogr_layer_create()`.
 
-OGR facilities for vector geoprocessing are available in `ogr_proc()`. This function performs GIS overlay operations: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (see https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically an R port of the Python command-line utility[`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) inlcuded with GDAL, but note that both of these are interfaces to library capabilities via OGR API calls.
+OGR facilities for vector geoprocessing are available in `ogr_proc()`. This function performs GIS overlay operations: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (see https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically an R port of the command-line utility[`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) inlcuded in the GDAL Python bindings. Both of these are interfaces to library functions via OGR API calls.
 
 `ogrinfo()` and `ogr2ogr()`, provide R wrappers of the GDAL command-line utilities [`ogrinfo`](https://gdal.org/en/stable/programs/ogrinfo.html) and [`ogr2ogr`](https://gdal.org/en/stable/programs/ogr2ogr.html), respectively. These functions support all of the command-line arguments described in the GDAL documentation, providing a powerful set of capabilities for obtaining information about an OGR-supported data source, converting vector data between file formats, and potentially editing data with SQL statements. `ogr_reproject()` is a convenience wrapper around `ogr2ogr()` for reprojection of vector layers with user friendly interface and comprehensive documentation.
 
@@ -58,7 +58,7 @@ Several existing data management functions in **gdalraster** operate on both ras
 
 Bindings to the GDAL's Virtual Systems Interface (VSI) implement standard file system operations abstracted for URLs, cloud storage services, Zip/GZip/7z/RAR, in-memory files, as well as "regular" local file systems. This provides a single interface for operating on file system objects, that works the same for any storage backend. The `vsi_()` functions have general utility not limited to operating on spatial data sources.
 
-## Workflow considerations
+## Workflow
 
 
 High-level workflow for using **gdalraster** with vector data: distinguishing among phases that involve creation and management of vector data sources, schema management, layer access and data retrieval, writing/modifying data at the individual feature level, and vector geoprocessing on whole layers.
