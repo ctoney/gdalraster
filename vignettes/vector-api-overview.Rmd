@@ -20,7 +20,7 @@ Beginning at version 2.0, **gdalraster** includes bindings to a substantial subs
 
 The prefix [OGR](https://gdal.org/en/stable/faq.html#what-is-this-ogr-stuff) is used in GDAL with class names, command-line utilities, etc., that refer to vector-specific components of the library. In **gdalraster**, OGR will be used throughout the documentation and as a prefix on function names, consistent with the style of the source library. There is also a certain amount of unification of the raster and vector APIs in GDAL. In **gdalraster**, we will also refer to the "GDAL Vector API" and use `GDALVector` as a class name. To support the vector API, **gdalraster** 2.0 also builds on its already existing bindings to portions of GDAL's Spatial Reference System and Geometry APIs.
 
-As an implementation of GDAL's Raster and Vector Data Models, **gdalraster** is not intended to compete directly with existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. **gdalraster** is primarily focused on API bindings, attempting to expose much of the underlying C++ library to R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with data sources provided on a continuum ranging from local storage and in-memory formats to database servers and cloud systems, involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API bindings facilitate code translation and reuse which can benefit hybrid environments where GDAL is used from multiple languages. Long-term stability of bindings at the library level is also highly desirable in production scenarios, and is a major goal for the package. It is hoped that **gdalraster** will complement and interoperate with R's rich set of geospatial packages and inherent analytical strengths.
+As an implementation of GDAL's Raster and Vector Data Models, **gdalraster** is not intended to compete directly with existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. **gdalraster** is primarily focused on API-level bindings, attempting to expose most of the underlying C++ library to R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with data sources existing on a continuum ranging from local storage and in-memory formats to database servers and cloud systems, often involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API bindings facilitate code translation and reuse which can benefit hybrid environments where GDAL is used from multiple languages. Long-term stability of bindings at the library level is also highly desirable in production scenarios, and is a major goal for the package. It is inteneded that **gdalraster** complements R's rich set of geospatial packages and inherent analytical strengths.
 
 ## Vector API components
 
@@ -129,9 +129,10 @@ if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
 inspectDataset(zf_gpkg)
 
 # OGR management fuctions for inspecting a vector datasource
+
 # existence with at least read access
 ogr_ds_exists(zf_gpkg)
-# update an existing zipped GPKG is not supported by the driver
+# updating an existing zipped GPKG is not supported
 ogr_ds_exists(zf_gpkg, with_update = TRUE)
 
 # similarly, testing dataset capabilities reflects read-only access
