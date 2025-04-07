@@ -20,7 +20,7 @@ Beginning at version 2.0, **gdalraster** includes bindings to a substantial subs
 
 The prefix [OGR](https://gdal.org/en/stable/faq.html#what-is-this-ogr-stuff) is used in GDAL with class names, command-line utilities, etc., that refer to vector-specific components of the library. In **gdalraster**, OGR will be used throughout the documentation and as a prefix on function names, consistent with the style of the source library. There is also a certain amount of unification of the raster and vector APIs in GDAL. In **gdalraster**, we will also refer to the "GDAL Vector API" and use `GDALVector` as a class name. To support the vector API, **gdalraster** 2.0 also builds on its already existing bindings to portions of GDAL's Spatial Reference System and Geometry APIs.
 
-As an implementation of GDAL's Raster and Vector Data Models, the bindings in **gdalraster** are not intended to compete directly with existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. The bindings in **gdalraster** are API-level, exposing the library itself in R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with data sources across a continuum ranging from local storage and in-memory formats to database servers and cloud systems, involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API-level bindings facilitate code translation and reuse which may benefit hybrid environments using GDAL from multiple languages. Long-term stability of bindings at the *library level* is also highly desirable for production applications, and is a major goal for the package. It is hoped that **gdalraster** complement and interoperate with R's rich set of geospatial packages and inherent analytical strengths.
+As an implementation of GDAL's Raster and Vector Data Models, **gdalraster** is not intended to compete directly with existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. **gdalraster** is primarily focused on API bindings, attempting to expose much of the underlying C++ library to R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with data sources provided on a continuum ranging from local storage and in-memory formats to database servers and cloud systems, involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API bindings facilitate code translation and reuse which can benefit hybrid environments where GDAL is used from multiple languages. Long-term stability of bindings at the library level is also highly desirable in production scenarios, and is a major goal for the package. It is hoped that **gdalraster** will complement and interoperate with R's rich set of geospatial packages and inherent analytical strengths.
 
 ## Vector API components
 
@@ -54,7 +54,7 @@ Bindings to a subset of GDAL's Spatial Reference System API are provided by a se
 
 Bindings to a significant subset of GDAL's Geometry API are implemented in a set of functions prefixed `g_()`. Many of these functions are built on the [GEOS library](https://libgeos.org/) (i.e., using GEOS via GDAL headers). The geometry functions in **gdalraster** are flexible in that the input geomteries, and corresponding output, may be any of a single [WKT string](https://libgeos.org/specifications/wkt/), a character vector of WKT strings, a single `raw` vector of [WKB](https://libgeos.org/specifications/wkb/), or a list of WKB `raw` vectors. The convenience function `g_wk2wk()` will convert its input from one to the other accordingly. Factory functions (`?g_factory`) support creating basic geometry types from point data (vertices) and building container geometry types from sub-geometries. Capabilities of the geometry bindings include inspection (`?g_query`), binary predicates (`?g_binary_pred`), binary operations (`?g_binary_op`), unary operations (e.g., `g_buffer()`, `g_simplify()`), measurements (`?g_measures`), and several utilities (e.g., `g_coords()`, `g_make_valid()`, `g_swap_xy()`, `g_transform()`). Convenience functions for working with bounding boxes are also provided (e.g., to/from WKT, intersect/union, and `bbox_transform()` to a different projection).
 
-Several existing data management functions in **gdalraster** operate on both raster and vector data sources. These include `addFilesInZip()` (create/append to a potentially [Seek-Optimized ZIP](https://github.com/sozip/sozip-spec) file), `copyDatasetFiles()`, `deleteDataset()`, `inspectDataset()` and `renameDataset()`.
+Existing data management functions that operate on both raster and vector data sources include `addFilesInZip()` (create/append to a potentially [Seek-Optimized ZIP](https://github.com/sozip/sozip-spec) file), `deleteDataset()`, `identifyDriver()` and `inspectDataset()`.
 
 Bindings to the GDAL's Virtual Systems Interface (VSI) implement standard file system operations abstracted for URLs, cloud storage services, Zip/GZip/7z/RAR, in-memory files, as well as "regular" local file systems. This provides a single interface for operating on file system objects, that works the same for any storage backend. The `vsi_()` functions have general utility not limited to operating on spatial data sources.
 
@@ -96,3 +96,75 @@ By default, geometries are returned as WKB `raw` vectors in a data frame list co
 ## Code examples
 
 Code examples for common tasks including: create new vector data sources, define and create new layers in a data source, connect to layers, filter and read feature data, write new data, etc.
+
+### Inspect a data source
+
+
+```{r}
+library(gdalraster)
+
+# get path to the YNP features sample dataset
+f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
+
+# add the VSI prefix 
+zf <- file.path("/vsizip", f)
+
+# list files in the zip archive
+vsi_read_dir(zf)
+
+# VSI path to the GPKG
+zf_gpkg <- file.path(zf, "ynp_features.gpkg")
+
+# support for SOZip is available with GDAL >= 3.7
+# vsi_get_file_metadata() can validate an SOZip file and list information
+if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
+  print("SOZip metadata for ynp_features.gpkg:")
+  print(vsi_get_file_metadata(zf_gpkg, domain="ZIP"))
+}
+
+# otherwise SOZip is fully backward compatible and works as a regular zip file
+
+# inspectDataset() returns information about the format and content of a
+# dataset that may contain raster and/or vector data
+inspectDataset(zf_gpkg)
+
+# OGR management fuctions for inspecting a vector datasource
+# existence with at least read access
+ogr_ds_exists(zf_gpkg)
+# update an existing zipped GPKG is not supported by the driver
+ogr_ds_exists(zf_gpkg, with_update = TRUE)
+
+# similarly, testing dataset capabilities reflects read-only access
+# unable to open with update access
+ogr_ds_test_cap(zf_gpkg, with_update = TRUE)
+# dataset capabilities with read-only access
+ogr_ds_test_cap(zf_gpkg, with_update = FALSE)
+
+# list the vector layers
+ogr_ds_layer_names(zf_gpkg)
+
+# ogrinfo() requires GDAL >= 3.7
+if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
+  cat(ogrinfo(zf_gpkg, cout = FALSE))
+
+  cat(ogrinfo(zf_gpkg, "points_of_interest", cout = FALSE))
+}
+```
+
+### Manage data sources and schemas
+
+```{r}
+# copy ynp_features.gpkg from the zip file to an in-memory file
+mem_gpkg <- "/vsimem/tmp/ynp_features.gpkg"
+ogr2ogr(zf_gpkg, mem_gpkg)
+
+vsi_read_dir("/vsimem/tmp")
+# confirm it's writable
+ogr_ds_exists(mem_gpkg, with_update = TRUE)
+
+ogr_layer_test_cap(mem_gpkg, "points_of_interest", with_update = TRUE)
+
+
+
+
+```
