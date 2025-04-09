@@ -195,28 +195,22 @@ ogr_execute_sql(mem_gpkg, sql)
 
 ogr_layer_field_names(mem_gpkg, "ynp_poi")
 
-# read and display
+# read data and display
 sql <- "SELECT poi_name, geom FROM ynp_poi WHERE is_geothermal_type = TRUE"
 lyr <- new(GDALVector, mem_gpkg, sql)
 lyr$getFeatureCount()
 
+# retrieve all features
 feat_set <- lyr$fetch(-1)
 head(feat_set)
 
 GDALVector$new(mem_gpkg, "ynp_bnd")$getNextFeature() |>
-  plot(main = "YNP Thermal Features")
-
+  plot(main = "YNP Geothermal Features")
 plot(feat_set, add = TRUE)
 
+lyr$close()
 
-
-
-
-
-
-
-
-
-
-
+# delete a data source
+vsi_unlink(mem_gpkg)  # delete a single file
+# or, deleteDataset(mem_gpkg)
 ```
