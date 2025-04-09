@@ -186,6 +186,8 @@ void GDALRaster::open(bool read_only) {
     if (m_shared)
         nOpenFlags |= GDAL_OF_SHARED;
 
+    nOpenFlags |= GDAL_OF_VERBOSE_ERROR;
+
     m_hDataset = GDALOpenEx(m_fname.c_str(), nOpenFlags, nullptr,
                             dsoo.data(), nullptr);
 
@@ -410,8 +412,10 @@ bool GDALRaster::setProjection(const std::string &projection) {
     }
 
     if (GDALSetProjection(m_hDataset, projection.c_str()) == CE_Failure) {
-        if (!quiet)
+        if (!quiet) {
+            Rcpp::Rcerr << CPLGetLastErrorMsg() << std::endl;
             Rcpp::Rcerr << "set projection failed\n";
+        }
         return false;
     }
     else {
@@ -639,8 +643,14 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
 
             double grid_x = inv_gt[0] + inv_gt[1] * geo_x + inv_gt[2] * geo_y;
             double grid_y = inv_gt[3] + inv_gt[4] * geo_x + inv_gt[5] * geo_y;
-            if (grid_x < 0 || grid_x > raster_xsize ||
-                grid_y < 0 || grid_y > raster_ysize) {
+
+            // allow input coordinates exactly on the bottom or right edges
+            // match behavior in: https://github.com/OSGeo/gdal/pull/12087
+
+            if ((grid_x < 0 || grid_x > static_cast<double>(raster_xsize) ||
+                 grid_y < 0 || grid_y > static_cast<double>(raster_ysize)) &&
+                !(ARE_REAL_EQUAL(grid_x, static_cast<double>(raster_xsize)) ||
+                  ARE_REAL_EQUAL(grid_y, static_cast<double>(raster_ysize)))) {
 
                 if (band_idx == 0)
                     pts_outside += 1;
@@ -651,6 +661,11 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
             }
 
             if (eResampleAlg == GRIORA_NearestNeighbour && krnl_dim == 1) {
+                if (ARE_REAL_EQUAL(grid_x, static_cast<double>(raster_xsize)))
+                    grid_x -= 0.25;
+                if (ARE_REAL_EQUAL(grid_y, static_cast<double>(raster_ysize)))
+                    grid_y -= 0.25;
+
                 int x_off = static_cast<int>(std::floor(grid_x));
                 int y_off = static_cast<int>(std::floor(grid_y));
 
@@ -910,8 +925,10 @@ void GDALRaster::buildOverviews(const std::string &resampling,
                                     quiet ? nullptr : GDALTermProgressR,
                                     nullptr);
 
-    if (err == CE_Failure)
+    if (err == CE_Failure) {
+        Rcpp::Rcerr << CPLGetLastErrorMsg() << std::endl;
         Rcpp::stop("build overviews failed");
+    }
 }
 
 std::string GDALRaster::getDataTypeName(int band) const {
@@ -1633,8 +1650,10 @@ void GDALRaster::write(int band, int xoff, int yoff, int xsize, int ysize,
         Rcpp::stop("data must be a vector of 'numeric' or 'complex' or 'raw'");
     }
 
-    if (err == CE_Failure)
+    if (err == CE_Failure) {
+        Rcpp::Rcerr << CPLGetLastErrorMsg() << std::endl;
         Rcpp::stop("write to raster failed");
+    }
 }
 
 void GDALRaster::fillRaster(int band, double value, double ivalue) {

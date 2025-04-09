@@ -136,23 +136,32 @@ dt_find_for_value <- function(value, is_complex = FALSE) {
 
 #' Get GDAL version
 #'
-#' `gdal_version()` returns runtime version information.
+#' `gdal_version()` returns a caharacter vector of GDAL runtime version
+#' information. `gdal_version_num()` returns only the full version number
+#' (`gdal_version()[2]`) as an integer value.
 #'
-#' @returns Character vector of length four containing:
+#' @name gdal_version
+#'
+#' @returns
+#' `gdal_version()` returns a character vector of length four containing:
 #'   * "–version" - one line version message, e.g., “GDAL 3.6.3, released
 #'   2023/03/12”
 #'   * "GDAL_VERSION_NUM" - formatted as a string, e.g., “3060300” for
 #'   GDAL 3.6.3.0
 #'   * "GDAL_RELEASE_DATE" - formatted as a string, e.g., “20230312”
 #'   * "GDAL_RELEASE_NAME" - e.g., “3.6.3”
+#'
+#' `gdal_version_num()` returns `as.integer(gdal_version()[2])`
 #' @examples
 #' gdal_version()
+#'
+#' gdal_version_num()
 gdal_version <- function() {
     .Call(`_gdalraster_gdal_version`)
 }
 
-#' @noRd
-.gdal_version_num <- function() {
+#' @rdname gdal_version
+gdal_version_num <- function() {
     .Call(`_gdalraster_gdal_version_num`)
 }
 
@@ -707,7 +716,7 @@ fillNodata <- function(filename, band, mask_file = "", max_dist = 100, smooth_it
 #' out_file <- file.path(tempdir(), "storml.geojson")
 #'
 #' # Requires GDAL >= 3.8
-#' if (as.integer(gdal_version()[2]) >= 3080000) {
+#' if (gdal_version_num() >= gdal_compute_version(3, 8, 0)) {
 #'   # command-line arguments for gdal_footprint
 #'   args <- c("-t_srs", "EPSG:4326")
 #'   footprint(evt_file, out_file, args)
@@ -823,43 +832,33 @@ ogr2ogr <- function(src_dsn, dst_dsn, src_layers = NULL, cl_arg = NULL, open_opt
 #' metadata strings.
 #'
 #' @seealso
-#' [ogr2ogr()], the [ogr_manage] utilities
+#' [ogr2ogr()], [ogr_manage]
 #'
-#' @examples
+#' @examplesIf gdal_version_num() >= gdal_compute_version(3, 7, 0)
 #' src <- system.file("extdata/ynp_fires_1984_2022.gpkg", package="gdalraster")
 #'
-#' # Requires GDAL >= 3.7
-#' if (as.integer(gdal_version()[2]) >= 3070000) {
-#'   # Get the names of the layers in a GeoPackage file.
-#'   ogrinfo(src)
+#' # Get the names of the layers in a GeoPackage file
+#' ogrinfo(src)
 #'
-#'   # Summary of a layer
-#'   ogrinfo(src, "mtbs_perims")
+#' # Summary of a layer
+#' ogrinfo(src, "mtbs_perims")
 #'
-#'   # JSON format
-#'   args <- c("-json", "-nomd")
-#'   json <- ogrinfo(src, "mtbs_perims", args, cout = FALSE)
-#'   #info <- jsonlite::fromJSON(json)
+#' # Query an attribute to restrict the output of the features in a layer
+#' args <- c("-ro", "-nomd", "-where", "ig_year = 2020")
+#' ogrinfo(src, "mtbs_perims", args)
 #'
-#'   # Query an attribute to restrict the output of the features in a layer
-#'   args <- c("-ro", "-nomd", "-where", "ig_year = 2020")
-#'   ogrinfo(src, "mtbs_perims", args)
+#' # Copy to a temporary in-memory file that is writeable
+#' src_mem <- paste0("/vsimem/", basename(src))
+#' vsi_copy_file(src, src_mem)
 #'
-#'   # Copy to a temporary in-memory file that is writeable
-#'   src_mem <- paste0("/vsimem/", basename(src))
-#'   vsi_copy_file(src, src_mem)
-#'   print(src_mem)
+#' # Add a column to a layer
+#' args <- c("-sql", "ALTER TABLE mtbs_perims ADD burn_bnd_ha float")
+#' ogrinfo(src_mem, cl_arg = args, read_only = FALSE)
 #'
-#'   # Add a column to a layer
-#'   args <- c("-sql", "ALTER TABLE mtbs_perims ADD burn_bnd_ha float")
-#'   ogrinfo(src_mem, cl_arg = args, read_only = FALSE)
-#'
-#'   # Update values of the column with SQL and specify a dialect
-#'   sql <- "UPDATE mtbs_perims SET burn_bnd_ha = (burn_bnd_ac / 2.471)"
-#'   args <- c("-dialect", "sqlite", "-sql", sql)
-#'   ogrinfo(src_mem, cl_arg = args, read_only = FALSE)
-#'   \dontshow{vsi_unlink(src_mem)}
-#' }
+#' # Update values of the column with SQL and specify a dialect
+#' sql <- "UPDATE mtbs_perims SET burn_bnd_ha = (burn_bnd_ac / 2.471)"
+#' args <- c("-dialect", "sqlite", "-sql", sql)
+#' ogrinfo(src_mem, cl_arg = args, read_only = FALSE)
 ogrinfo <- function(dsn, layers = NULL, cl_arg = as.character( c("-so", "-nomd")), open_options = NULL, read_only = TRUE, cout = TRUE) {
     invisible(.Call(`_gdalraster_ogrinfo`, dsn, layers, cl_arg, open_options, read_only, cout))
 }
@@ -1382,9 +1381,9 @@ validateCreationOptions <- function(format, options) {
 #' tmp_file <- "/vsimem/elev_temp.tif"
 #'
 #' # Requires GDAL >= 3.7
-#' if (as.integer(gdal_version()[2]) >= 3070000) {
+#' if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
 #'   result <- vsi_copy_file(elev_file, tmp_file)
-#'   print(result)
+#'   (result == 0)
 #'   print(vsi_stat(tmp_file, "size"))
 #'
 #'   vsi_unlink(tmp_file)
@@ -1666,13 +1665,12 @@ vsi_rmdir <- function(path, recursive = FALSE) {
 #' [deleteDataset()], [vsi_rmdir()], [vsi_unlink_batch()]
 #'
 #' @examples
-#' # regular file system for illustration
 #' elev_file <- system.file("extdata/storml_elev.tif", package="gdalraster")
-#' tmp_file <- file.path(tempdir(), "tmp.tif")
-#' file.copy(elev_file,  tmp_file)
-#' vsi_stat(tmp_file)
-#' vsi_unlink(tmp_file)
-#' vsi_stat(tmp_file)
+#' mem_file <- file.path("/vsimem", "tmp.tif")
+#' copyDatasetFiles(mem_file, elev_file)
+#' vsi_read_dir("/vsimem")
+#' vsi_unlink(mem_file)
+#' vsi_read_dir("/vsimem")
 vsi_unlink <- function(filename) {
     .Call(`_gdalraster_vsi_unlink`, filename)
 }
@@ -1701,9 +1699,9 @@ vsi_unlink <- function(filename) {
 #' tcc_file <- system.file("extdata/storml_tcc.tif", package="gdalraster")
 #'
 #' tmp_elev <- file.path(tempdir(), "tmp_elev.tif")
-#' file.copy(elev_file,  tmp_elev)
+#' file.copy(elev_file, tmp_elev)
 #' tmp_tcc <- file.path(tempdir(), "tmp_tcc.tif")
-#' file.copy(tcc_file,  tmp_tcc)
+#' file.copy(tcc_file, tmp_tcc)
 #' vsi_unlink_batch(c(tmp_elev, tmp_tcc))
 vsi_unlink_batch <- function(filenames) {
     .Call(`_gdalraster_vsi_unlink_batch`, filenames)
@@ -1763,6 +1761,10 @@ vsi_unlink_batch <- function(filenames) {
 #' base_url <- "https://raw.githubusercontent.com/usdaforestservice/"
 #' f <- "gdalraster/main/sample-data/landsat_c2ard_sr_mt_hood_jul2022_utm.tif"
 #' url_file <- paste0("/vsicurl/", base_url, f)
+#'
+#' # try to be CRAN-compliant for the example:
+#' set_config_option("GDAL_HTTP_CONNECTTIMEOUT", "10")
+#' set_config_option("GDAL_HTTP_TIMEOUT", "10")
 #'
 #' vsi_stat(url_file)
 #' vsi_stat(url_file, "type")
@@ -1853,7 +1855,7 @@ vsi_get_fs_prefixes <- function() {
 #'
 #' @examples
 #' # Requires GDAL >= 3.6
-#' if (as.integer(gdal_version()[2]) >= 3060000)
+#' if (gdal_version_num() >= gdal_compute_version(3, 6, 0))
 #'   vsi_supports_seq_write("/vsimem/test-mem-file.gpkg", TRUE)
 vsi_supports_seq_write <- function(filename, allow_local_tmpfile) {
     .Call(`_gdalraster_vsi_supports_seq_write`, filename, allow_local_tmpfile)
@@ -1881,7 +1883,7 @@ vsi_supports_seq_write <- function(filename, allow_local_tmpfile) {
 #'
 #' @examples
 #' # Requires GDAL >= 3.6
-#' if (as.integer(gdal_version()[2]) >= 3060000)
+#' if (gdal_version_num() >= gdal_compute_version(3, 6, 0))
 #'   vsi_supports_rnd_write("/vsimem/test-mem-file.gpkg", TRUE)
 vsi_supports_rnd_write <- function(filename, allow_local_tmpfile) {
     .Call(`_gdalraster_vsi_supports_rnd_write`, filename, allow_local_tmpfile)
@@ -1998,22 +2000,18 @@ vsi_clear_path_options <- function(path_prefix) {
 #' @seealso
 #' [vsi_stat()], [addFilesInZip()]
 #'
-#' @examples
-#' # create an SOZip-enabled file and validate
+#' @examplesIf gdal_version_num() >= gdal_compute_version(3, 7, 0)
+#' # validate an SOZip-enabled file
 #' # Requires GDAL >= 3.7
-#' f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package="gdalraster")
+#' f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
 #'
-#' if (as.integer(gdal_version()[2]) >= 3070000) {
-#'   zip_file <- tempfile(fileext=".zip")
-#'   addFilesInZip(zip_file, f, full_paths=FALSE, sozip_enabled="YES")
-#'   zip_vsi <- file.path("/vsizip", zip_file)
-#'   print("Files in zip archive:")
-#'   print(vsi_read_dir(zip_vsi))
-#'   print("SOZip metadata:")
-#'   print(vsi_get_file_metadata(zip_vsi, domain="ZIP"))
+#' zf <- file.path("/vsizip", f)
+#' # files in zip archive
+#' vsi_read_dir(zf)
 #'
-#'   vsi_unlink(zip_file)
-#' }
+#' # SOZip metadata for ynp_features.gpkg
+#' zf_gpkg <- file.path(zf, "ynp_features.gpkg")
+#' vsi_get_file_metadata(zf_gpkg, domain = "ZIP")
 vsi_get_file_metadata <- function(filename, domain) {
     .Call(`_gdalraster_vsi_get_file_metadata`, filename, domain)
 }
@@ -2120,7 +2118,7 @@ vsi_get_signed_url <- function(filename, options = NULL) {
 #'
 #' @examples
 #' # Requires GDAL >= 3.6
-#' if (as.integer(gdal_version()[2]) >= 3060000)
+#' if (gdal_version_num() >= gdal_compute_version(3, 6, 0))
 #'   print(vsi_is_local("/vsimem/test-mem-file.tif"))
 vsi_is_local <- function(filename) {
     .Call(`_gdalraster_vsi_is_local`, filename)
@@ -2746,7 +2744,7 @@ srs_to_wkt <- function(srs, pretty = FALSE) {
 #' ds$close()
 #'
 #' # Requires GDAL >= 3.4
-#' if (as.integer(gdal_version()[2]) >= 3040000) {
+#' if (gdal_version_num() >= gdal_compute_version(3, 4, 0)) {
 #'   if (srs_is_dynamic("WGS84"))
 #'     print("WGS84 is dynamic")
 #'

@@ -1,6 +1,14 @@
-# gdalraster 1.12.0.9281 (dev)
+# gdalraster 1.12.0.9287 (dev)
 
-* add default xy labels in S3 methods `plot.OGRFeature` and `plot.OGRFeatureSet` (#685) (2025-04-03)
+* fix `GDALRaster::pixel_extract()` for points exactly on the right or bottom edges of the raster (#687) (2025-04-08)
+
+* add two raster subdatasets to the sample file inst/extdata/ynp_features.zip/ynp_features.gpkg, and update examples for `inspectDataset()` and `vsi_get_file_metadata()` (#691) (2025-04-07)
+
+* expose `gdal_version_num()` (previously internal/undocumented) and add `gdal_compute_version()` (#689) (2025-04-06)
+
+* add more error messages from GDAL in a few places, mainly verbose message when opening a dataset fails (#688) (2025-04-05)
+
+* add default xy axis labels in S3 methods `plot.OGRFeature` and `plot.OGRFeatureSet` (#685) (2025-04-03)
 
 * add `ogr_reproject()`: reproject a vector layer (#684) (2025-04-03)
 

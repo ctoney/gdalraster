@@ -1,4 +1,13 @@
 # Tests for src/gdalraster.cpp
+test_that("class constructors work as expected", {
+    # TODO
+    # ...
+
+    # not recognized as being in a supported file format
+    f <- system.file("extdata/doctype.xml", package="gdalraster")
+    expect_error(ds <- new(GDALRaster, f))
+})
+
 test_that("info() prints output to the console", {
     evt_file <- system.file("extdata/storml_evt.tif", package="gdalraster")
     ds <- new(GDALRaster, evt_file, TRUE)
@@ -524,6 +533,27 @@ test_that("pixel extract internal class method returns correct data", {
 
     expect_equal(extr_nearest[1], 173)
 
+    # point exactly on right edge
+    # see https://github.com/OSGeo/gdal/pull/12087
+    bb <- ds$bbox()
+    extr_nearest <- ds$pixel_extract(xy = c(bb[3], (bb[2] + 200)),
+                                     bands = 1,
+                                     interp_method = "near",
+                                     krnl_dim = 1,
+                                     xy_srs = "")
+
+    expect_equal(extr_nearest[1], 132)
+
+    # exactly bottom right corner
+    bb <- ds$bbox()
+    extr_nearest <- ds$pixel_extract(xy = c(bb[3], bb[2]),
+                                     bands = 1,
+                                     interp_method = "near",
+                                     krnl_dim = 1,
+                                     xy_srs = "")
+
+    expect_equal(extr_nearest[1], 107)
+
     # as data frame
     geo_xy <- data.frame(geo_xy[1], geo_xy[2])
     extr_nearest <- ds$pixel_extract(xy = geo_xy,
@@ -559,7 +589,7 @@ test_that("pixel extract internal class method returns correct data", {
                                   interp_method = "invalid",
                                   krnl_dim = 1,
                                   xy_srs = ""))
-    # only  one band at a time supported for NxN kernel extract
+    # only one band at a time supported for NxN kernel extract
     expect_error(ds$pixel_extract(xy = geo_xy,
                                   bands = c(1, 2),
                                   interp_method = "near",
@@ -767,7 +797,7 @@ test_that("pixel extract cubic/cublicspline interpolation", {
     #    Copyright (c) 2024, Javier Jimenez Shaw <j1@jimenezshaw.com>
     #    SPDX-License-Identifier: MIT
 
-    skip_if(.gdal_version_num() < 3100000)
+    skip_if(gdal_version_num() < 3100000)
 
     ds <- create(format="MEM", dst_filename="", xsize=4, ysize=4,
                  nbands=1, dataType="Float32", return_obj=TRUE)

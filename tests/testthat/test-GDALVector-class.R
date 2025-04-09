@@ -53,6 +53,10 @@ test_that("class constructors work", {
 
     # default construstrctor with no arguments should not error
     expect_no_error(lyr <- new(GDALVector))
+
+    # not recognized as being in a supported file format
+    f <- system.file("extdata/doctype.xml", package="gdalraster")
+    expect_error(lyr <- new(GDALVector, f))
 })
 
 test_that("class basic interface works", {
@@ -446,7 +450,7 @@ test_that("feature write methods work", {
     expect_true(lyr$setFeature(feat))
     expect_equal(lyr$getFeatureCount(), start_count + 1)
 
-    if(.gdal_version_num() > 3060000) {
+    if(gdal_version_num() > 3060000) {
         # edit an existing feature and upsert with existing FID
         feat <- NULL
         feat <- lyr$getNextFeature()
@@ -496,7 +500,7 @@ test_that("feature write methods work", {
     expect_equal(test2_feat$ig_year, 9999)
     test2_feat <- NULL
 
-    if(.gdal_version_num() > 3060000) {
+    if(gdal_version_num() > 3060000) {
         lyr$setAttributeFilter("event_id = 'ZZ03'")
         test3_feat <- lyr$getNextFeature()
         expect_false(is.null(test3_feat))
@@ -1098,7 +1102,7 @@ test_that("get/set metadata works", {
 })
 
 test_that("field domain specifications are returned correctly", {
-    skip_if(.gdal_version_num() < 3030000)
+    skip_if(gdal_version_num() < 3030000)
 
     f <- system.file("extdata/domains.gpkg", package="gdalraster")
     dsn <- file.path(tempdir(), basename(f))
@@ -1192,7 +1196,7 @@ test_that("info() prints output to the console", {
     lyr$close()
 
     lyr <- new(GDALVector, dsn, "SELECT * FROM mtbs_perims LIMIT 10")
-    if (.gdal_version_num() >= 3070000) {
+    if (gdal_version_num() >= 3070000) {
         expect_output(lyr$info(), "Feature Count: 10")
     } else {
         # we only get the fallback minimal info
@@ -1202,7 +1206,7 @@ test_that("info() prints output to the console", {
 
     # default layer first by index
     lyr <- new(GDALVector, dsn)
-    if (.gdal_version_num() >= 3070000) {
+    if (gdal_version_num() >= 3070000) {
         expect_output(lyr$info(), "Feature Count: 61")
     } else {
         # we only get the fallback minimal info
@@ -1212,7 +1216,7 @@ test_that("info() prints output to the console", {
 
     unlink(dsn)
 
-    skip_if_not(.gdal_version_num() >= 3070000)
+    skip_if_not(gdal_version_num() >= 3070000)
 
     f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
     dsn <- file.path(tempdir(), basename(f))
@@ -1245,7 +1249,7 @@ test_that("info() prints output to the console", {
 })
 
 test_that("ArrowArrayStream is readable", {
-    skip_if(.gdal_version_num() < 3060000)
+    skip_if(gdal_version_num() < 3060000)
     skip_if_not_installed("nanoarrow")
 
     f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
@@ -1282,7 +1286,7 @@ test_that("ArrowArrayStream is readable", {
 })
 
 test_that("nanoarrow_array_stream implicit release works", {
-    skip_if(.gdal_version_num() < 3060000)
+    skip_if(gdal_version_num() < 3060000)
     skip_if_not_installed("nanoarrow")
 
     f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")

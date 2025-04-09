@@ -22,7 +22,7 @@ Configuration options are essentially global variables the user can set. They ar
 
 This quick reference covers a small subset of configuration options that may be useful in common scenarios, with links to topic-specific documentation provided by the GDAL project. Options can be set from R with `gdalraster::set_config_option()`. Note that specific usage is context dependent. Passing `value = ""` (empty string) will unset a value previously set by `set_config_option()`:
 
-```r
+```{r}
 library(gdalraster)
 
 set_config_option("GDAL_NUM_THREADS", "ALL_CPUS")
@@ -48,7 +48,7 @@ set_config_option("GDAL_RASTERIO_RESAMPLING", "BILINEAR")
 By default, temporary files are written into the current working directory. This can be changed with:
 
 ```r
-set_config_option("CPL_TMPDIR", "<dirname>") # tmpdir to use
+set_config_option("CPL_TMPDIR", "<dirname>")  # tmpdir to use
 ```
 
 ## Performance and caching
@@ -160,7 +160,7 @@ Multithreaded computation in `warp()` can be enabled with:
 
 ```r
 # note this also affects several other parts of GDAL
-set_config_option("GDAL_NUM_THREADS", "4") # number of threads or ALL_CPUS
+set_config_option("GDAL_NUM_THREADS", "4")  # number of threads or ALL_CPUS
 ```
 
 Increasing the memory available to `warp()` may also increase performance (i.e., the options passed in `cl_arg` include a value like `c("-wm", "1000")`). The warp memory specified by `"-wm"` is shared among all threads. It is especially beneficial to increase this value when running `warp()` with multithreading enabled.
@@ -271,12 +271,12 @@ set_config_option("AWS_NO_SIGN_REQUEST", "YES")
 If authentication is required, configure credentials with:
 
 ```r
-set_config_option("AWS_ACCESS_KEY_ID", "<value>") # key ID
-set_config_option("AWS_SECRET_ACCESS_KEY", "<value>") # secret access key
+set_config_option("AWS_ACCESS_KEY_ID", "<value>")  # key ID
+set_config_option("AWS_SECRET_ACCESS_KEY", "<value>")  # secret access key
 # used for validation if using temporary credentials:
-set_config_option("AWS_SESSION_TOKEN", "<value>") # session token
+set_config_option("AWS_SESSION_TOKEN", "<value>")  # session token
 # if requester pays:
-set_config_option("AWS_REQUEST_PAYER", "<value>") # requester
+set_config_option("AWS_REQUEST_PAYER", "<value>")  # requester
 ```
 
 **`AWS_REGION`**

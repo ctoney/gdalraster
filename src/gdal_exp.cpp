@@ -28,17 +28,26 @@
 
 //' Get GDAL version
 //'
-//' `gdal_version()` returns runtime version information.
+//' `gdal_version()` returns a caharacter vector of GDAL runtime version
+//' information. `gdal_version_num()` returns only the full version number
+//' (`gdal_version()[2]`) as an integer value.
 //'
-//' @returns Character vector of length four containing:
+//' @name gdal_version
+//'
+//' @returns
+//' `gdal_version()` returns a character vector of length four containing:
 //'   * "–version" - one line version message, e.g., “GDAL 3.6.3, released
 //'   2023/03/12”
 //'   * "GDAL_VERSION_NUM" - formatted as a string, e.g., “3060300” for
 //'   GDAL 3.6.3.0
 //'   * "GDAL_RELEASE_DATE" - formatted as a string, e.g., “20230312”
 //'   * "GDAL_RELEASE_NAME" - e.g., “3.6.3”
+//'
+//' `gdal_version_num()` returns `as.integer(gdal_version()[2])`
 //' @examples
 //' gdal_version()
+//'
+//' gdal_version_num()
 // [[Rcpp::export]]
 Rcpp::CharacterVector gdal_version() {
     Rcpp::CharacterVector ret(4);
@@ -50,8 +59,8 @@ Rcpp::CharacterVector gdal_version() {
 }
 
 
-//' @noRd
-// [[Rcpp::export(name = ".gdal_version_num")]]
+//' @rdname gdal_version
+// [[Rcpp::export]]
 int gdal_version_num() {
     std::string version(GDALVersionInfo("VERSION_NUM"));
     return std::stoi(version);
@@ -1498,7 +1507,7 @@ bool fillNodata(const Rcpp::CharacterVector &filename, int band,
 //' out_file <- file.path(tempdir(), "storml.geojson")
 //'
 //' # Requires GDAL >= 3.8
-//' if (as.integer(gdal_version()[2]) >= 3080000) {
+//' if (gdal_version_num() >= gdal_compute_version(3, 8, 0)) {
 //'   # command-line arguments for gdal_footprint
 //'   args <- c("-t_srs", "EPSG:4326")
 //'   footprint(evt_file, out_file, args)
@@ -1740,43 +1749,33 @@ bool ogr2ogr(const Rcpp::CharacterVector &src_dsn,
 //' metadata strings.
 //'
 //' @seealso
-//' [ogr2ogr()], the [ogr_manage] utilities
+//' [ogr2ogr()], [ogr_manage]
 //'
-//' @examples
+//' @examplesIf gdal_version_num() >= gdal_compute_version(3, 7, 0)
 //' src <- system.file("extdata/ynp_fires_1984_2022.gpkg", package="gdalraster")
 //'
-//' # Requires GDAL >= 3.7
-//' if (as.integer(gdal_version()[2]) >= 3070000) {
-//'   # Get the names of the layers in a GeoPackage file.
-//'   ogrinfo(src)
+//' # Get the names of the layers in a GeoPackage file
+//' ogrinfo(src)
 //'
-//'   # Summary of a layer
-//'   ogrinfo(src, "mtbs_perims")
+//' # Summary of a layer
+//' ogrinfo(src, "mtbs_perims")
 //'
-//'   # JSON format
-//'   args <- c("-json", "-nomd")
-//'   json <- ogrinfo(src, "mtbs_perims", args, cout = FALSE)
-//'   #info <- jsonlite::fromJSON(json)
+//' # Query an attribute to restrict the output of the features in a layer
+//' args <- c("-ro", "-nomd", "-where", "ig_year = 2020")
+//' ogrinfo(src, "mtbs_perims", args)
 //'
-//'   # Query an attribute to restrict the output of the features in a layer
-//'   args <- c("-ro", "-nomd", "-where", "ig_year = 2020")
-//'   ogrinfo(src, "mtbs_perims", args)
+//' # Copy to a temporary in-memory file that is writeable
+//' src_mem <- paste0("/vsimem/", basename(src))
+//' vsi_copy_file(src, src_mem)
 //'
-//'   # Copy to a temporary in-memory file that is writeable
-//'   src_mem <- paste0("/vsimem/", basename(src))
-//'   vsi_copy_file(src, src_mem)
-//'   print(src_mem)
+//' # Add a column to a layer
+//' args <- c("-sql", "ALTER TABLE mtbs_perims ADD burn_bnd_ha float")
+//' ogrinfo(src_mem, cl_arg = args, read_only = FALSE)
 //'
-//'   # Add a column to a layer
-//'   args <- c("-sql", "ALTER TABLE mtbs_perims ADD burn_bnd_ha float")
-//'   ogrinfo(src_mem, cl_arg = args, read_only = FALSE)
-//'
-//'   # Update values of the column with SQL and specify a dialect
-//'   sql <- "UPDATE mtbs_perims SET burn_bnd_ha = (burn_bnd_ac / 2.471)"
-//'   args <- c("-dialect", "sqlite", "-sql", sql)
-//'   ogrinfo(src_mem, cl_arg = args, read_only = FALSE)
-//'   \dontshow{vsi_unlink(src_mem)}
-//' }
+//' # Update values of the column with SQL and specify a dialect
+//' sql <- "UPDATE mtbs_perims SET burn_bnd_ha = (burn_bnd_ac / 2.471)"
+//' args <- c("-dialect", "sqlite", "-sql", sql)
+//' ogrinfo(src_mem, cl_arg = args, read_only = FALSE)
 // [[Rcpp::export(invisible = true)]]
 std::string ogrinfo(const Rcpp::CharacterVector &dsn,
                     const Rcpp::Nullable<Rcpp::CharacterVector> &layers =
