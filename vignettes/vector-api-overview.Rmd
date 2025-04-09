@@ -107,13 +107,13 @@ library(gdalraster)
 f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
 
 # add the VSI prefix 
-zf <- file.path("/vsizip", f)
+(zf <- file.path("/vsizip", f))
 
 # list files in the zip archive
 vsi_read_dir(zf)
 
 # VSI path to the GPKG
-zf_gpkg <- file.path(zf, "ynp_features.gpkg")
+(zf_gpkg <- file.path(zf, "ynp_features.gpkg"))
 
 # support for SOZip is available with GDAL >= 3.7
 # vsi_get_file_metadata() can validate an SOZip file and list information
@@ -128,18 +128,10 @@ if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
 # dataset that may contain raster and/or vector data
 inspectDataset(zf_gpkg)
 
-# OGR management fuctions for inspecting a vector datasource
-
-# existence with at least read access
+# test for existence of a vector data source with at least read access
 ogr_ds_exists(zf_gpkg)
-# updating an existing zipped GPKG is not supported
+# but update access on an existing zipped GPKG is not supported
 ogr_ds_exists(zf_gpkg, with_update = TRUE)
-
-# similarly, testing dataset capabilities reflects read-only access
-# unable to open with update access
-ogr_ds_test_cap(zf_gpkg, with_update = TRUE)
-# dataset capabilities with read-only access
-ogr_ds_test_cap(zf_gpkg, with_update = FALSE)
 
 # list the vector layers
 ogr_ds_layer_names(zf_gpkg)
@@ -163,7 +155,66 @@ vsi_read_dir("/vsimem/tmp")
 # confirm it's writable
 ogr_ds_exists(mem_gpkg, with_update = TRUE)
 
-ogr_layer_test_cap(mem_gpkg, "points_of_interest", with_update = TRUE)
+# delete a layer
+if (ogr_ds_test_cap(mem_gpkg)$DeleteLayer) {
+  ogr_layer_delete(mem_gpkg, "roads")
+}
+
+# rename a layer
+if (ogr_layer_test_cap(mem_gpkg, "points_of_interest")$Rename) {
+  ogr_layer_rename(mem_gpkg, "points_of_interest", "ynp_poi")
+}
+
+ogr_ds_layer_names(mem_gpkg)
+
+# manage fields on a layer
+ogr_layer_field_names(mem_gpkg, "ynp_poi")
+
+# delete a field
+if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$DeleteField) {
+  ogr_field_delete(mem_gpkg, "ynp_poi", "objectid")
+}
+
+# rename fields
+if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$AlterFieldDefn) {
+  ogr_field_rename(mem_gpkg, "ynp_poi", "poiname", "poi_name")
+  ogr_field_rename(mem_gpkg, "ynp_poi", "poitype", "poi_type")
+}
+
+# create a new field
+if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$CreateField) {
+  ogr_field_create(mem_gpkg, "ynp_poi", "is_geothermal_type",
+                   fld_type = "OFTInteger",
+                   fld_subtype = "OFSTBoolean")
+}
+
+# edit data with SQL
+sql <- "UPDATE ynp_poi SET is_geothermal_type = 
+          CASE WHEN poi_type IN ('Basin', 'Geyser') THEN 1 ELSE 0 END"
+ogr_execute_sql(mem_gpkg, sql)
+
+ogr_layer_field_names(mem_gpkg, "ynp_poi")
+
+# read and display
+sql <- "SELECT poi_name, geom FROM ynp_poi WHERE is_geothermal_type = TRUE"
+lyr <- new(GDALVector, mem_gpkg, sql)
+lyr$getFeatureCount()
+
+feat_set <- lyr$fetch(-1)
+head(feat_set)
+
+GDALVector$new(mem_gpkg, "ynp_bnd")$getNextFeature() |>
+  plot(main = "YNP Thermal Features")
+
+plot(feat_set, add = TRUE)
+
+
+
+
+
+
+
+
 
 
 
