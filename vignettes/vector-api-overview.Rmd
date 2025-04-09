@@ -18,11 +18,11 @@ knitr::opts_chunk$set(
 
 Beginning at version 2.0, **gdalraster** includes bindings to a substantial subset of the GDAL Vector API. The vector bindings provide an R implementation of the [GDAL Vector Data Model](https://gdal.org/en/stable/user/vector_data_model.html). Readers are encouraged to first review that document for background on the underlying object model and how it relates to usage of the API in **gdalraster**.
 
-The prefix [OGR](https://gdal.org/en/stable/faq.html#what-is-this-ogr-stuff) is used in GDAL with class names, command-line utilities, etc., that refer to vector-specific components of the library. In **gdalraster**, OGR will be used throughout the documentation and as a prefix on function names, consistent with the style of the source library. There is also a certain amount of unification of the raster and vector APIs in GDAL. In **gdalraster**, we will also refer to the "GDAL Vector API" and use `GDALVector` as a class name. To support the vector API, **gdalraster** 2.0 also builds on its already existing bindings to portions of GDAL's Spatial Reference System and Geometry APIs.
+The prefix [OGR](https://gdal.org/en/stable/faq.html#what-is-this-ogr-stuff) is used in GDAL with class names, command-line utilities, etc., that refer to vector-specific components of the library. In **gdalraster**, OGR will be used throughout the documentation and as a prefix on function names, consistent with the style of the source library. There is also a certain amount of unification of the raster and vector APIs in GDAL. In **gdalraster**, we will also refer to the "GDAL Vector API" and use `GDALVector` as a class name. To support the vector API, **gdalraster** 2.0 builds on its already existing bindings to portions of GDAL's Spatial Reference System and Geometry APIs.
 
 ## Rationale
 
-As an implementation of GDAL's Raster and Vector Data Models, **gdalraster** is not intended to compete directly with existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. **gdalraster** is primarily focused on API-level bindings, attempting to expose most of the underlying C++ library to R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with data sources provided on a continuum ranging from local storage and in-memory formats to database servers and cloud systems, often involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API bindings facilitate code translation and reuse which can benefit hybrid environments where GDAL is used from multiple languages. Long-term stability of bindings at the library level is also highly desirable in production scenarios, and is a major goal for the package. It is inteneded that **gdalraster** should complement R's rich set of geospatial packages and inherent analytical strengths.
+As an implementation of GDAL's Raster and Vector Data Models, **gdalraster** is not intended to compete directly with existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. **gdalraster** is primarily focused on API-level bindings, attempting to expose most of the underlying C++ library to R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with data sources provided on a continuum ranging from local storage and in-memory formats to database servers and cloud systems, often involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API bindings facilitate code translation and reuse which can benefit hybrid environments where GDAL is used from multiple languages. Long-term stability of bindings at the library level is also highly desirable in production scenarios, and is a major goal for the package. It is intended that **gdalraster** should complement R's rich set of geospatial packages and inherent analytical strengths.
 
 ## Vector API components
 
@@ -51,7 +51,7 @@ Several of the stand-alone `ogr_()` functions are grouped under the documentatio
 
 `ogr_define` provides documentation and helper functions for defining feature classes. An OGR feature class definition (a.k.a. layer definition) is modeled in R as a named list containing zero or more attribute field definitions, along with one or more geometry field definitions. Specifications of the the list structures for these definitions are given in `ogr_define`. The associated helper functions make it easy to create new layer definitions from scratch or modify an existing definition. A layer definition is convenient but not required for creating a new vector dataset, and/or a new layer within an existing dataset, using `ogr_ds_create()` / `ogr_layer_create()`.
 
-OGR facilities for vector geoprocessing are available in `ogr_proc()`. This function performs the following GIS overlay operations: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically an R port of the command-line utility[`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) inlcuded in the GDAL Python bindings. Both of these are interfaces to library functions via OGR API calls.
+OGR facilities for vector geoprocessing are available in `ogr_proc()`. This function performs the following GIS overlay operations: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically an R port of the command-line utility[`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) which is included in the GDAL Python bindings. Both of these are interfaces to library functions via OGR API calls.
 
 `ogrinfo()` and `ogr2ogr()`, provide R wrappers of the GDAL command-line utilities [`ogrinfo`](https://gdal.org/en/stable/programs/ogrinfo.html) and [`ogr2ogr`](https://gdal.org/en/stable/programs/ogr2ogr.html), respectively. These functions support all of the command-line arguments described in the GDAL documentation, providing a powerful set of capabilities for obtaining information about an OGR-supported data source, converting vector data between file formats, and potentially editing data with SQL statements. `ogr_reproject()` is a convenience wrapper around `ogr2ogr()` for reprojection of vector layers with user friendly interface and comprehensive documentation.
 
@@ -63,7 +63,7 @@ Bindings to a subset of GDAL's Spatial Reference System API are provided by a se
 
 #### Geometry
 
-Bindings to a significant subset of GDAL's Geometry API are implemented in a set of functions prefixed `g_()`. Many of these functions are built on the [GEOS library](https://libgeos.org/) (i.e., using GEOS via GDAL headers). The geometry functions in **gdalraster** are flexible in that the input geomteries, and corresponding output, may be any of a single [WKT string](https://libgeos.org/specifications/wkt/), a character vector of WKT strings, a single `raw` vector of [WKB](https://libgeos.org/specifications/wkb/), or a list of WKB `raw` vectors. The convenience function `g_wk2wk()` will convert its input from one to the other accordingly. Factory functions (`?g_factory`) support creating basic geometry types from point data (vertices) and building container geometry types from sub-geometries. Capabilities of the geometry bindings include inspection (`?g_query`), binary predicates (`?g_binary_pred`), binary operations (`?g_binary_op`), unary operations (e.g., `g_buffer()`, `g_simplify()`), measurements (`?g_measures`), and several utilities (e.g., `g_coords()`, `g_make_valid()`, `g_swap_xy()`, `g_transform()`). Convenience functions for working with bounding boxes are also provided (e.g., to/from WKT, intersect/union, and `bbox_transform()` to a different projection).
+Bindings to a significant subset of GDAL's Geometry API are implemented in a set of functions prefixed `g_()`. Many of these functions are built on the [GEOS library](https://libgeos.org/) (i.e., using GEOS via GDAL headers). The geometry functions in **gdalraster** are flexible in that the input geometries, and corresponding output, may be any of a single [WKT string](https://libgeos.org/specifications/wkt/), a character vector of WKT strings, a single `raw` vector of [WKB](https://libgeos.org/specifications/wkb/), or a list of WKB `raw` vectors. The convenience function `g_wk2wk()` will convert its input from one to the other accordingly. Factory functions (`?g_factory`) support creating basic geometry types from point data (vertices) and building container geometry types from sub-geometries. Capabilities of the geometry bindings include inspection (`?g_query`), binary predicates (`?g_binary_pred`), binary operations (`?g_binary_op`), unary operations (e.g., `g_buffer()`, `g_simplify()`), measurements (`?g_measures`), and several utilities (e.g., `g_coords()`, `g_make_valid()`, `g_swap_xy()`, `g_transform()`). Convenience functions for working with bounding boxes are also provided (e.g., to/from WKT, intersect/union, and `bbox_transform()` to a different projection).
 
 #### Virtual Systems Interface
 
@@ -73,7 +73,7 @@ Bindings to the GDAL's Virtual Systems Interface (VSI) implement standard file s
 
 Existing data management functions that operate on both raster and vector data sources include `addFilesInZip()` (create/append to a potentially [Seek-Optimized ZIP](https://github.com/sozip/sozip-spec) file), `deleteDataset()`, `identifyDriver()` and `inspectDataset()`.
 
-## Workflow
+## Workflow considerations
 
 
 High-level workflow for using **gdalraster** with vector data: distinguishing among phases that involve creation and management of vector data sources, schema management, layer access and data retrieval, writing/modifying data at the individual feature level, and vector geoprocessing on whole layers.
@@ -162,8 +162,9 @@ ogr_ds_layer_names(zf_gpkg)
 
 # ogrinfo() requires GDAL >= 3.7
 if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
+  print("List layers found in the DSN:")
   cat(ogrinfo(zf_gpkg, cout = FALSE))
-
+  print("Detailed information about a specific layer:")
   cat(ogrinfo(zf_gpkg, "points_of_interest", cout = FALSE))
 }
 ```
@@ -214,17 +215,19 @@ if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$CreateField) {
 
 # edit data with SQL
 sql <- "UPDATE ynp_poi SET is_geothermal_type = 
-          CASE WHEN poi_type IN ('Basin', 'Geyser') THEN 1 ELSE 0 END"
+          CASE WHEN poi_type IN ('Basin', 'Geyser')
+            THEN TRUE ELSE FALSE
+          END"
 ogr_execute_sql(mem_gpkg, sql)
 
 ogr_layer_field_names(mem_gpkg, "ynp_poi")
 
-# read data and display
+# read and display the geothermal features
 sql <- "SELECT poi_name, geom FROM ynp_poi WHERE is_geothermal_type = TRUE"
-lyr <- new(GDALVector, mem_gpkg, sql)
+lyr <- ogr_execute_sql(mem_gpkg, sql)
 lyr$getFeatureCount()
 
-# retrieve all features
+# retrieve all features in the result set
 feat_set <- lyr$fetch(-1)
 head(feat_set)
 
