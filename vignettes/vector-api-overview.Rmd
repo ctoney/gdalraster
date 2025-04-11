@@ -75,6 +75,9 @@ Existing data management functions that operate on both raster and vector data s
 
 ## Workflow considerations
 
+Creation of new vector datasets, and schema modification in existing datasets, are performed with the `ogr_()` stand-alone functions. These are "one-off" operations that attempt to open the dataset with update access, perform modifications, and then close the dataset. Objects of class `GDALVector` are used for reading and writing feature data. A `GDALVector` object provides a persistent connection to a layer and the vector dataset that contains it. That is, once instantiated, a `GDALVector` object represents a live connection to the data source until its `close()` method is called. The connection may be read-only (by default), or may be with update access allowing insert of new features, modifying exiting features, and deleting features. Currently, class `GDALVector` does not provide methods for modifying the layer schema.
+
+
 
 High-level workflow for using **gdalraster** with vector data: distinguishing among phases that involve creation and management of vector data sources, schema management, layer access and data retrieval, writing/modifying data at the individual feature level, and vector geoprocessing on whole layers.
 
@@ -179,7 +182,7 @@ if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
 
 ### Manage data sources and schemas
 
-Here we copy the .gpkg file from the zip archive to an in-memory file that is writable, and make several modifications. The [/vsimem/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsimem-in-memory-files) file handler allows block of memory to be treated as files. It is useful for temporary storage and is generally fast to access. The code below also shows testing capabilities at the dataset or layer level before attempting to perform the modifications. This will not be needed in some cases but might be used in code that needs to handle input datasets in a general way.
+Here we copy the .gpkg file from the zip archive to an in-memory file that is writable, and make several modifications. The [/vsimem/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsimem-in-memory-files) file handler allows a block of memory to be treated as files. It is useful for temporary storage and is generally fast to access. The code below also shows testing capabilities at the dataset or layer level before attempting to perform the modifications. This will not be needed in some cases but might be used in code that needs to handle input datasets in a general way.
 
 ```{r}
 # copy ynp_features.gpkg from the zip file to an in-memory file
