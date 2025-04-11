@@ -22,7 +22,7 @@ The prefix [OGR](https://gdal.org/en/stable/faq.html#what-is-this-ogr-stuff) is 
 
 ## Rationale
 
-As an implementation of GDAL's Raster and Vector Data Models, **gdalraster** is not intended to compete directly with existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. **gdalraster** is primarily focused on API-level bindings, attempting to expose most of the underlying C++ library to R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with data sources provided on a continuum ranging from local storage and in-memory formats to database servers and cloud systems, often involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API bindings facilitate code translation and reuse which can benefit hybrid environments where GDAL is used from multiple languages. Long-term stability of bindings at the library level is also highly desirable in production scenarios, and is a major goal for the package. It is intended that **gdalraster** should complement R's rich set of geospatial packages and inherent analytical strengths.
+As an implementation of GDAL's Raster and Vector Data Models, **gdalraster** is not intended as a direct alternative to existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. **gdalraster** is primarily focused on API-level bindings, attempting to expose most of the underlying C++ library to R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with data sources provided on a continuum ranging from local storage and in-memory formats to database servers and cloud systems, often involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API bindings facilitate code translation and reuse which can benefit hybrid environments where GDAL is used from multiple languages. Long-term stability of bindings at the library level is also highly desirable in production scenarios, and is a major goal for the package. It is intended that **gdalraster** should complement R's rich set of geospatial packages, and provide a GDAL API in the context of R's inherent analytical strengths.
 
 ## Vector API components
 
@@ -115,6 +115,7 @@ Code examples for common tasks including: create new vector data sources, define
 
 ### Inspect a data source
 
+The following examples use a GeoPackage file included in the the **gdalraster** package. The command `system.file()` is only used to obtain the path to the package sample files. The .gpkg file is compressed using SOZip, and we will read directly from the .zip archive without uncompressing first. A GDAL Virtual File System prefix is added to the full path ([/vsizip/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsizip-zip-archives) in this case).
 
 ```{r}
 library(gdalraster)
@@ -128,11 +129,17 @@ f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
 # list files in the zip archive
 vsi_read_dir(zf)
 
-# VSI path to the GPKG
+# VSI path to the GPKG file
 (zf_gpkg <- file.path(zf, "ynp_features.gpkg"))
 ```
 
-Support for SOZip is available with GDAL >= 3.7. `vsi_get_file_metadata()` can be used to validate an SOZip file and obtain compression information. Otherwise, SOZip is fully backward compatible and works as a regular zip file.
+Note that it is possible to chain multiple file system handlers. The [/vsicurl/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsicurl-http-https-ftp-files-random-access) prefix specifies a file system handler that allows on-the-fly random reading of files available through web protocols, without prior download of the entire file. For example, a zip file residing on a web server instead of the local file system could be accessed with a path like:
+
+```
+/vsizip//vsicurl/https://www.example.com/path/to/file.zip
+```
+
+Support for SOZip is available with GDAL >= 3.7. The function `vsi_get_file_metadata()` can be used to validate an SOZip file and obtain compression information. Otherwise, SOZip is fully backward compatible and works as a regular .zip file.
 
 ```{r}
 if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
@@ -154,7 +161,7 @@ OGR functions can be also be used to inspect a vector data source.
 ```{r}
 # test for existence of a vector data source with at least read access
 ogr_ds_exists(zf_gpkg)
-# note that update access on an existing zipped GPKG is not supported
+# note that update of an existing zipped GPKG file is not supported
 ogr_ds_exists(zf_gpkg, with_update = TRUE)
 
 # list the vector layers
@@ -162,32 +169,40 @@ ogr_ds_layer_names(zf_gpkg)
 
 # ogrinfo() requires GDAL >= 3.7
 if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
-  print("List layers found in the DSN:")
+  cat("List layers found in the data source:\n")
   cat(ogrinfo(zf_gpkg, cout = FALSE))
-  print("Detailed information about a specific layer:")
+  cat("\n")
+  cat("Detailed information about a specific layer:\n")
   cat(ogrinfo(zf_gpkg, "points_of_interest", cout = FALSE))
 }
 ```
 
 ### Manage data sources and schemas
 
-```{r fig.width=6, fig.height=4, dev="png"}
+Here we copy the .gpkg file from the zip archive to an in-memory file that is writable, and make several modifications. The [/vsimem/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsimem-in-memory-files) file handler allows block of memory to be treated as files. It is useful for temporary storage and is generally fast to access. The code below also shows testing capabilities at the dataset or layer level before attempting to perform the modifications. This will not be needed in some cases but might be used in code that needs to handle input datasets in a general way.
+
+```{r}
 # copy ynp_features.gpkg from the zip file to an in-memory file
 mem_gpkg <- "/vsimem/tmp/ynp_features.gpkg"
 ogr2ogr(zf_gpkg, mem_gpkg)
 
 vsi_read_dir("/vsimem/tmp")
+
 # confirm it's writable
 ogr_ds_exists(mem_gpkg, with_update = TRUE)
-
-# delete a layer
-if (ogr_ds_test_cap(mem_gpkg)$DeleteLayer) {
-  ogr_layer_delete(mem_gpkg, "roads")
-}
 
 # rename a layer
 if (ogr_layer_test_cap(mem_gpkg, "points_of_interest")$Rename) {
   ogr_layer_rename(mem_gpkg, "points_of_interest", "ynp_poi")
+} else {
+  stop("layer does not have Rename capability")
+}
+
+# delete a layer
+if (ogr_ds_test_cap(mem_gpkg)$DeleteLayer) {
+  ogr_layer_delete(mem_gpkg, "roads")
+} else {
+  stop("dataset does not have DeleteLayer capability")
 }
 
 ogr_ds_layer_names(mem_gpkg)
@@ -198,12 +213,16 @@ ogr_layer_field_names(mem_gpkg, "ynp_poi")
 # delete a field
 if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$DeleteField) {
   ogr_field_delete(mem_gpkg, "ynp_poi", "objectid")
+} else {
+  stop("layer does not have DeleteField capability")
 }
 
 # rename fields
 if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$AlterFieldDefn) {
   ogr_field_rename(mem_gpkg, "ynp_poi", "poiname", "poi_name")
   ogr_field_rename(mem_gpkg, "ynp_poi", "poitype", "poi_type")
+} else {
+  stop("layer does not have AlterFieldDefn capability")
 }
 
 # create a new field
@@ -211,6 +230,8 @@ if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$CreateField) {
   ogr_field_create(mem_gpkg, "ynp_poi", "is_geothermal_type",
                    fld_type = "OFTInteger",
                    fld_subtype = "OFSTBoolean")
+} else {
+  stop("layer does not have CreateField capability")
 }
 
 # edit data with SQL
@@ -221,22 +242,32 @@ sql <- "UPDATE ynp_poi SET is_geothermal_type =
 ogr_execute_sql(mem_gpkg, sql)
 
 ogr_layer_field_names(mem_gpkg, "ynp_poi")
+```
 
+We instantiate objects of class `GDALVector` to read back from the modified data source. This will be described in more detail in the examples below for retrieving data. The function `ogr_execute_sql()` returns an object of class `GDALVector` for SQL statements that return a result set (i.e., for SQL SELECT statements).
+
+```{r fig.width=6, fig.height=4, dev="png"}
 # read and display the geothermal features
 sql <- "SELECT poi_name, geom FROM ynp_poi WHERE is_geothermal_type = TRUE"
 lyr <- ogr_execute_sql(mem_gpkg, sql)
 lyr$getFeatureCount()
 
-# retrieve all features in the result set
+# retrieve all features in the result set (cf. DBI::dbFetch())
 feat_set <- lyr$fetch(-1)
 head(feat_set)
 
+# plot the park boundary, this layer contains only a single polygon feature
 GDALVector$new(mem_gpkg, "ynp_bnd")$getNextFeature() |>
   plot(xlab = "longitude", ylab = "latitude",
        main = "YNP Geothermal Features")
 
+# add point locations of the geothermal features
 plot(feat_set, add = TRUE)
+```
 
+To clean up, we close the SQL layer that was opened with `ogr_execute_sql()` and delete the temporary data source.
+
+```{r}
 lyr$close()
 
 # delete a data source
