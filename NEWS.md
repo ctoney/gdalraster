@@ -1,4 +1,10 @@
-# gdalraster 1.12.0.9288 (dev)
+# gdalraster 1.12.0.9291 (dev)
+
+* add `get_cache_max()` and `set_cache_max()`, get/set maximum memory size available for the GDAL block cache (#695) (2025-04-12)
+
+* `get_cache_used()`: change return value to R numeric carrying the integer64 class attribute and add argument `units` defaulting to MB (#694) (2025-04-12)
+
+* `inspectDataset()`: handle case of separate raster and vector drivers identified when specific flag was not given (#693) (2025-04-09)
 
 * add argument `main` to the S3 plot methods for `OGRFeature` and `OGRFeatureSet` (#692) (2025-04-08)
 
