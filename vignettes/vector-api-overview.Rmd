@@ -118,14 +118,16 @@ Code examples for common tasks including: create new vector data sources, define
 
 Note that parentheses around statements are used throughout the vignette only as a shortcut to display the assigned value.
 
-### Inspect a data source
+### Inspect data sources
 
-The following examples use a GeoPackage file included in the package. The `system.file()` command is only needed to obtain the path to the package sample files. The .gpkg file is compressed using SOZip and will be read directly from the .zip archive without decompressing first. A prefix is added to the file path ([/vsizip/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsizip-zip-archives) in this case) which specifies a GDAL Virtual File System handler. A file system handler provides access to less standard file types such as in-memory, compressed (.zip, .gz, .tar, .tar.gz), encrypted, standard input and output (STDIN, STDOUT), files stored on network (publicly accessible, or in private buckets of commercial cloud services), etc.
+Data sources can be files, relational database management systems (RDBMS), directories of many files, or even remote web services depending on the format driver being used. However, the data source name (DSN) is always a single string which might be the file path, database connection string, URL, etc.
+
+The following examples use a GeoPackage file included in **gdalraster**. The `system.file()` command is only used to obtain the path to the package sample files. The file ynp_features.gpkg is compressed using SOZip and will be read directly from the .zip archive without decompressing first. A prefix is added to the file path ([/vsizip/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsizip-zip-archives) in this case) which specifies a GDAL Virtual File System handler. A file system handler provides access to less standard file types such as in-memory, compressed (.zip, .gz, .tar, .tar.gz), encrypted, standard input and output (STDIN, STDOUT), files stored on network (publicly accessible, or in private buckets of commercial cloud services), etc.
 
 ```{r}
 library(gdalraster)
 
-# get path to the YNP features sample dataset
+# get path to the Yellowstone National Park sample dataset
 f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
 
 # add the VSI prefix 
@@ -184,7 +186,7 @@ if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
 
 ### Manage data sources and schemas
 
-Here we copy the .gpkg file from the zip archive to an in-memory file that is writable, and make several modifications. The [/vsimem/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsimem-in-memory-files) file handler allows a block of memory to be treated as files. It is useful for temporary storage and is generally fast to access. The code below also shows testing capabilities at the dataset or layer level before attempting to perform the modifications. This will not be needed in some cases but might be used in code that needs to handle input datasets in a general way.
+Here we copy the .gpkg file from the zip archive to an in-memory file that is writable, and make several modifications. The [/vsimem/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsimem-in-memory-files) file handler allows a block of memory to be treated as files. It is useful for temporary storage and is generally fast to access. The code below also demonstrates testing capabilities at the dataset or layer level before attempting to perform modifications. This will not be needed in all cases but might be used in code that is required to handle input datasets in a general way.
 
 ```{r}
 # copy ynp_features.gpkg from the zip file to an in-memory file
@@ -231,7 +233,7 @@ if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$AlterFieldDefn) {
 }
 ```
 
-As a simple example for illustration, populate a new field that flags geothermal features.
+As a simple example for illustration, we populate a new field that flags geothermal features.
 
 ```{r}
 # create a new field
@@ -275,7 +277,7 @@ GDALVector$new(mem_gpkg, "ynp_bnd")$getNextFeature() |>
 plot(feat_set, pch = 19, col = "steelblue1", add = TRUE)
 ```
 
-For clean up, the layer object opened with `ogr_execute_sql()` should be closed. We also delete the temporary in-memory data source.
+For clean up, the `$close()` method should be called on the layer object opened with `ogr_execute_sql()`. We also delete the temporary in-memory file.
 
 ```{r}
 lyr$close()
@@ -285,11 +287,11 @@ vsi_unlink(mem_gpkg)  # delete a single file
 # or, deleteDataset(mem_gpkg)
 ```
 
-### Data retrieval
+### Traditional row-based data retrieval
 
-These examples will use the original sample dataset for YNP features. The data source name (DSN) is constructed with the /viszip/ prefix and full path to the file ynp_features.gpkg contained in the zip archive. An object of class `GDALvector` is generated with a call to `new()`. From the examples above, we know that ynp_features.gpkg contains three vector layers, so we also pass a layer name argument.
+These examples will use the original sample dataset for YNP features. The DSN is formed with the /viszip/ prefix and full path to ynp_features.gpkg contained in the zip archive. An object of class `GDALvector` is generated with a call to `new()`. From the examples above, we know that the GeoPackage contains three vector layers, so we also pass a layer name argument to the object constructor. Note that if the layer argument is omitted, the constructor will attempt to open the first layer found by index. This abbreviated form of the constructor would generally be used for convenience only with single-layer file formats (e.g., ESRI Shapefiles, FlatGeobuf), or with a GeoPackage file known to contain only a single layer.
 
-
+Here we instantiate a `GDALVector` object for the park boundary layer and retrieve information about it.
 
 ```{r}
 f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
@@ -310,14 +312,27 @@ bnd$bbox()
 bnd$getLayerDefn() |> str()
 ```
 
+Traditional row-level access to feature data with OGR is cursor-based, reading one feature (row) at a time. When starting with a new layer object, the cursor is positioned at the beginning and we can iterate through features with calls to `$getNextFeature()`. This method returns an individual feature as a named list of fields and their values, and moves the cursor forward one row. It will return `NULL` when we run out of features. The park boundary layer contains a single polygon feature. The list object for an individual feature carries the `"OGRFeature"` class attribute with S3 methods for `print()` and `plot()`.
 
 ```{r}
-feat <- bnd$getNextFeature()
-str(feat)
+bnd_feat <- bnd$getNextFeature()
+str(bnd_feat)
 
+# no more features
 bnd$getNextFeature()
+
+bnd$close()
 ```
 
+The cursor can be reset to the beginning of the layer at any time with a call to `$resetReading()`.
+
+Class `GDALVector` also provides a `$fetch()` method to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of `DBI::dbFetch()` with basically identical calling semantics, where the vector layer itself is the equivalent of a **DBI** result set. `$fetch()` can be used to get the entire feature set for a layer, one chunk of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()`, only forward paging is supported.
+
+Passing `n = -1` or `n = Inf` will retrieve all features from the beginning (with an automatic call to `$resetReading()`). Passing `n = NA` is supported and will retrieve the remaining features from the current cursor position. Otherwise, features can be fetched progressively by passing a whole number (`integer` or `numeric`) as the `n` argument. If more features than available are fetched, the result is returned in full without warning. If fewer features than requested are returned, further fetches will return a data frame with zero rows.
+
+Note that it is possible to set an attribute and/or spatial filter prior to retrieving data to restrict the feature set returned. It is also possible to set specific fields as ignored (or to specify the list of desired fields). This includes potentially omitting the geometry column when access only to feature attributes is needed. Limiting the number of fields returned may save some processing time and/or bandwidth.
+
+Here we read the roads layer after setting an attribute filter to select only the publicly accessible roads. We call `$fetch()` with `n = -1` to read from the beginning and retrieve the full feature set. The data frame returned by `$fetch()` carries the `"OGRFeatureSet"` class attribute with S3 methods for `print()` and `plot()`.
 
 ```{r fig.width=6, fig.height=4, dev="png"}
 # an object for the roads layer
@@ -334,9 +349,33 @@ nrow(roads_df)
 
 head(roads_df)
 
-plot(feat, col = "wheat", xlab = "longitude", ylab = "latitude",
+plot(bnd_feat, col = "wheat", xlab = "longitude", ylab = "latitude",
      main = "YNP Public Roads")
 
 plot(roads_df, col = "slategray", lwd = 2, add = TRUE)
 
+roads$close()
 ```
+
+Fetching in chunks may be advantageous when dealing with large datasets.
+
+```{r}
+poi <- new(GDALVector, ynp_dsn, "points_of_interest")
+
+poi$getFeatureCount()
+
+# access features progressively in chunks
+chunk <- 0
+while (TRUE) {
+    poi_df <- poi$fetch(500)
+    if (nrow(poi_df) == 0) break
+    cat("chunk", chunk <- chunk + 1, ":", nrow(poi_df), "features\n")
+    # process chunk
+    # ...
+}
+
+poi$close()
+```
+
+### Reading with the OGR ArrowStream interface
+
