@@ -22,7 +22,7 @@ The prefix [OGR](https://gdal.org/en/stable/faq.html#what-is-this-ogr-stuff) is 
 
 ## Rationale
 
-As an implementation of GDAL's Raster and Vector Data Models, **gdalraster** is not intended as a direct alternative to existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. **gdalraster** is primarily focused on API-level bindings, attempting to expose most of the underlying C++ library to R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with data sources provided on a continuum ranging from local storage and in-memory formats to database servers and cloud systems, often involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API bindings facilitate code translation and reuse which can benefit hybrid environments where GDAL is used from multiple languages. Long-term stability of bindings at the library level is also highly desirable in production scenarios, and is a major goal for the package. It is intended that **gdalraster** should complement R's rich set of geospatial packages, and provide a GDAL API in the context of R's inherent analytical strengths.
+As an implementation of GDAL's Raster and Vector Data Models, **gdalraster** is not intended as a direct alternative to existing R packages such as **sf** and **terra** that primarily implement higher-level analytical data models. **gdalraster** is primarily focused on API-level bindings, attempting to expose most of the underlying C++ library to R. More direct access to GDAL's I/O capabilities may benefit workflows that deal with source data provided on a continuum ranging from local storage and in-memory formats to database servers and cloud systems, often involving various compression formats, SQL dialects, etc. Modularized, low-level access to GDAL/OGR functionality should be of interest to R developers creating higher-level interfaces, where the analytical data models may not have been designed with their use cases in mind. API bindings facilitate code translation and reuse which can benefit hybrid environments where GDAL is used from multiple languages. Long-term stability of bindings at the library level is highly desirable in production scenarios, and is a major goal for the package. It is intended that **gdalraster** should complement and interoperate with R's diverse and evolving spatial ecosystem.
 
 ## Vector API components
 
@@ -116,9 +116,11 @@ By default, geometries are returned as WKB `raw` vectors in a data frame list co
 
 Code examples for common tasks including: create new vector data sources, define and create new layers in a data source, connect to layers, filter and read feature data, write new data, etc.
 
+Note that parentheses around statements are used throughout the vignette only as a shortcut to display the assigned value.
+
 ### Inspect a data source
 
-The following examples use a GeoPackage file included in the the **gdalraster** package. The command `system.file()` is only used to obtain the path to the package sample files. The .gpkg file is compressed using SOZip, and we will read directly from the .zip archive without uncompressing first. A GDAL Virtual File System prefix is added to the full path ([/vsizip/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsizip-zip-archives) in this case).
+The following examples use a GeoPackage file included in the package. The `system.file()` command is only needed to obtain the path to the package sample files. The .gpkg file is compressed using SOZip and will be read directly from the .zip archive without decompressing first. A prefix is added to the file path ([/vsizip/](https://gdal.org/en/stable/user/virtual_file_systems.html#vsizip-zip-archives) in this case) which specifies a GDAL Virtual File System handler. A file system handler provides access to less standard file types such as in-memory, compressed (.zip, .gz, .tar, .tar.gz), encrypted, standard input and output (STDIN, STDOUT), files stored on network (publicly accessible, or in private buckets of commercial cloud services), etc.
 
 ```{r}
 library(gdalraster)
@@ -172,7 +174,7 @@ ogr_ds_layer_names(zf_gpkg)
 
 # ogrinfo() requires GDAL >= 3.7
 if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
-  cat("List layers found in the data source:\n")
+  cat("List of layers found in the data source:\n")
   cat(ogrinfo(zf_gpkg, cout = FALSE))
   cat("\n")
   cat("Detailed information about a specific layer:\n")
@@ -227,10 +229,14 @@ if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$AlterFieldDefn) {
 } else {
   stop("layer does not have AlterFieldDefn capability")
 }
+```
 
+As a simple example for illustration, populate a new field that flags geothermal features.
+
+```{r}
 # create a new field
 if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$CreateField) {
-  ogr_field_create(mem_gpkg, "ynp_poi", "is_geothermal_type",
+  ogr_field_create(mem_gpkg, "ynp_poi", "is_geothermal",
                    fld_type = "OFTInteger",
                    fld_subtype = "OFSTBoolean")
 } else {
@@ -238,20 +244,21 @@ if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$CreateField) {
 }
 
 # edit data with SQL
-sql <- "UPDATE ynp_poi SET is_geothermal_type = 
-          CASE WHEN poi_type IN ('Basin', 'Geyser')
-            THEN TRUE ELSE FALSE
+sql <- "UPDATE ynp_poi SET is_geothermal = 
+          CASE
+            WHEN poi_type IN ('Basin', 'Geyser') THEN TRUE
+            ELSE FALSE
           END"
 ogr_execute_sql(mem_gpkg, sql)
 
 ogr_layer_field_names(mem_gpkg, "ynp_poi")
 ```
 
-We instantiate objects of class `GDALVector` to read back from the modified data source. This will be described in more detail in the examples below for retrieving data. The function `ogr_execute_sql()` returns an object of class `GDALVector` for SQL statements that return a result set (i.e., for SQL SELECT statements).
+To read back from the modified data source we need to instantiate objects of class `GDALVector`. More detail on working with `GDALVector` objects is given in the examples below for data retrieval. For now, note that the function `ogr_execute_sql()` returns an object of class `GDALVector` for SQL statements that return a result set.
 
 ```{r fig.width=6, fig.height=4, dev="png"}
 # read and display the geothermal features
-sql <- "SELECT poi_name, geom FROM ynp_poi WHERE is_geothermal_type = TRUE"
+sql <- "SELECT poi_name, geom FROM ynp_poi WHERE is_geothermal = TRUE"
 lyr <- ogr_execute_sql(mem_gpkg, sql)
 lyr$getFeatureCount()
 
@@ -259,16 +266,16 @@ lyr$getFeatureCount()
 feat_set <- lyr$fetch(-1)
 head(feat_set)
 
-# plot the park boundary, this layer contains only a single polygon feature
+# plot the park boundary, this layer contains a single polygon feature
 GDALVector$new(mem_gpkg, "ynp_bnd")$getNextFeature() |>
-  plot(xlab = "longitude", ylab = "latitude",
+  plot(col = "wheat", xlab = "longitude", ylab = "latitude",
        main = "YNP Geothermal Features")
 
 # add point locations of the geothermal features
-plot(feat_set, add = TRUE)
+plot(feat_set, pch = 19, col = "steelblue1", add = TRUE)
 ```
 
-To clean up, we close the SQL layer that was opened with `ogr_execute_sql()` and delete the temporary data source.
+For clean up, the layer object opened with `ogr_execute_sql()` should be closed. We also delete the temporary in-memory data source.
 
 ```{r}
 lyr$close()
@@ -276,4 +283,60 @@ lyr$close()
 # delete a data source
 vsi_unlink(mem_gpkg)  # delete a single file
 # or, deleteDataset(mem_gpkg)
+```
+
+### Data retrieval
+
+These examples will use the original sample dataset for YNP features. The data source name (DSN) is constructed with the /viszip/ prefix and full path to the file ynp_features.gpkg contained in the zip archive. An object of class `GDALvector` is generated with a call to `new()`. From the examples above, we know that ynp_features.gpkg contains three vector layers, so we also pass a layer name argument.
+
+
+
+```{r}
+f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
+ynp_dsn <- file.path("/vsizip", f, "ynp_features.gpkg")
+
+# the park boundary layer containing a single feature
+(bnd <- new(GDALVector, ynp_dsn, "ynp_bnd"))
+
+bnd$getFeatureCount()
+
+# spatial reference definition as WKT string
+bnd$getSpatialRef()
+
+# xmin, ymin, xmax, ymax
+bnd$bbox()
+
+# structure of the layer definition (a.k.a. feature class definition)
+bnd$getLayerDefn() |> str()
+```
+
+
+```{r}
+feat <- bnd$getNextFeature()
+str(feat)
+
+bnd$getNextFeature()
+```
+
+
+```{r fig.width=6, fig.height=4, dev="png"}
+# an object for the roads layer
+(roads <- new(GDALVector, ynp_dsn, "roads"))
+
+roads$getFeatureCount()
+
+roads$getFieldNames()
+
+roads$setAttributeFilter("opentopubl = 'Yes'")
+
+roads_df <- roads$fetch(-1)
+nrow(roads_df)
+
+head(roads_df)
+
+plot(feat, col = "wheat", xlab = "longitude", ylab = "latitude",
+     main = "YNP Public Roads")
+
+plot(roads_df, col = "slategray", lwd = 2, add = TRUE)
+
 ```
