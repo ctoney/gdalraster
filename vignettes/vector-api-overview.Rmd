@@ -289,7 +289,7 @@ vsi_unlink(mem_gpkg)  # delete a single file
 
 ### Traditional row-based data retrieval
 
-These examples will use the original sample dataset for YNP features. The DSN is formed with the /viszip/ prefix and full path to ynp_features.gpkg contained in the zip archive. An object of class `GDALvector` is generated with a call to `new()`. From the examples above, we know that the GeoPackage contains three vector layers, so we also pass a layer name argument to the object constructor. Note that if the layer argument is omitted, the constructor will attempt to open the first layer found by index. This abbreviated form of the constructor would generally be used for convenience only with single-layer file formats (e.g., ESRI Shapefiles, FlatGeobuf), or with a GeoPackage file known to contain only a single layer.
+These examples will use the original sample dataset for YNP features. The DSN is formed with the /viszip/ prefix and full path to ynp_features.gpkg contained in the zip archive. An object of class `GDALVector` is generated with a call to `new()`. From the examples above, we know that the GeoPackage contains three vector layers, so we also pass a layer name argument to the object constructor. Note that if the layer argument is omitted, the constructor will attempt to open the first layer found by index. This abbreviated form of the constructor would generally be used for convenience only with single-layer file formats (e.g., ESRI Shapefiles, FlatGeoBuf), or with a GeoPackage file known to contain only a single layer.
 
 Here we instantiate a `GDALVector` object for the park boundary layer and retrieve information about it.
 
@@ -326,7 +326,7 @@ bnd$close()
 
 The cursor can be reset to the beginning of the layer at any time with a call to `$resetReading()`.
 
-Class `GDALVector` also provides a `$fetch()` method to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of `DBI::dbFetch()` with basically identical calling semantics, where the vector layer itself is the equivalent of a **DBI** result set. `$fetch()` can be used to get the entire feature set for a layer, one chunk of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()`, only forward paging is supported.
+Class `GDALVector` also provides a `$fetch()` method to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of `DBI::dbFetch()` with basically identical calling semantics, where the vector layer itself is the equivalent of a **DBI** result set. `$fetch()` can be used to get the entire feature set for a layer, one batch of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()`, only forward paging is supported.
 
 Passing `n = -1` or `n = Inf` will retrieve all features from the beginning (with an automatic call to `$resetReading()`). Passing `n = NA` is supported and will retrieve the remaining features from the current cursor position. Otherwise, features can be fetched progressively by passing a whole number (`integer` or `numeric`) as the `n` argument. If more features than available are fetched, the result is returned in full without warning. If fewer features than requested are returned, further fetches will return a data frame with zero rows.
 
@@ -344,38 +344,100 @@ roads$getFieldNames()
 
 roads$setAttributeFilter("opentopubl = 'Yes'")
 
-roads_df <- roads$fetch(-1)
-nrow(roads_df)
+roads_featset <- roads$fetch(-1)
+nrow(roads_featset)
 
-head(roads_df)
+head(roads_featset)
 
 plot(bnd_feat, col = "wheat", xlab = "longitude", ylab = "latitude",
      main = "YNP Public Roads")
 
-plot(roads_df, col = "slategray", lwd = 2, add = TRUE)
+plot(roads_featset, col = "slategray", lwd = 2, add = TRUE)
 
 roads$close()
 ```
 
-Fetching in chunks may be advantageous when dealing with large datasets.
+Fetching in batches may be advantageous when dealing with large datasets.
 
 ```{r}
 poi <- new(GDALVector, ynp_dsn, "points_of_interest")
 
 poi$getFeatureCount()
 
-# access features progressively in chunks
-chunk <- 0
+# access features progressively in batches
+batch <- 0
 while (TRUE) {
-    poi_df <- poi$fetch(500)
-    if (nrow(poi_df) == 0) break
-    cat("chunk", chunk <- chunk + 1, ":", nrow(poi_df), "features\n")
-    # process chunk
+    poi_featset <- poi$fetch(500)
+    if (nrow(poi_featset) == 0) break
+    cat("batch", batch <- batch + 1, ":", nrow(poi_featset), "features\n")
+    # process batch
     # ...
 }
 
 poi$close()
 ```
 
-### Reading with the OGR ArrowStream interface
+### Reading with OGR Arrow ArrayStream interface
 
+It is also possible to retrieve features in a column-oriented memory layout using OGR's Arrow ArrayStream interface (GDAL >= 3.6). Performance advantages may be substantial with vector format drivers that provide specialized implementations (e.g., Arrow, Parquet, FlatGeoBuf, GeoPackage). Drivers that have a specialized implementation advertise the `FastGetArrowStream` layer capability.
+
+The `$getArrowStream()` method of class `GDALVector` exposes an ArrayStream on the layer as a `nanoarrow_array_stream` object. The **nanoarrow** package provides functionality to consume the ArrayStream and import to R data structures.
+
+The default batch size for the ArrayStream is 65,536 features, but this can be changed on a per-object basis by assigning a value to the `GDALVector` writeable field `$arrowStreamOptions` (a character vector of `"NAME=VALUE"` pairs).
+
+```{r}
+# re-open the roads layer with the required argument for type of access
+roads$open(read_only = TRUE)
+roads$resetReading()
+
+# Expose an Arrow array stream (requires GDAL >= 3.6)
+if (gdal_version_num() >= gdal_compute_version(3, 6, 0)) {
+
+  cat("FastGetArrowStream layer capability:\n")
+  roads$testCapability()$FastGetArrowStream |> print()
+  cat("\n")
+
+  # change the default ArrowStream options
+  roads$arrowStreamOptions <- c("INCLUDE_FID=NO")
+
+  stream <- roads$getArrowStream()
+  cat("Object returned by getArrowStream():\n")
+  print(stream)
+  cat("\n")
+
+  # get the array schema if needed
+  schema <- stream$get_schema()
+
+  # read a batch of features (default batch size is 65,536)
+  batch <- stream$get_next()
+
+  # disable a warning that can be safely ignored here
+  options(nanoarrow.warn_unregistered_extension = FALSE)
+
+  cat("Array structure to data frame provided by nanoarrow:\n")
+  batch_df <- as.data.frame(batch)
+  head(batch_df) |> print()
+  cat("\n")
+
+  cat("The last batch is NULL: stream$get_next()\n")
+  stream$get_next() |> print()
+  cat("\n")
+
+  # release the stream when finished
+  stream$release()
+  cat("Stream released:\n")
+  print(stream)
+  cat("\n")
+
+  # the geom column is a list column of WKB raw vectors
+  cat("Road length calculated with Geometry API g_*() functions:\n")
+  geom_utm12 <- g_transform(batch_df$geom,
+                            srs_from = roads$getSpatialRef(),
+                            srs_to = "EPSG:26912")
+
+  batch_df$rdlength <- g_length(geom_utm12)
+  head(batch_df) |> print()
+}
+
+roads$close()
+```
