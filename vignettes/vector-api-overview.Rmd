@@ -40,7 +40,22 @@ Core functionality for vector is provided by an exposed C++ class `GDALVector`, 
 
 #### Class `GDALVector`
 
-`GDALVector` is a C++ class exposed in R via [**Rcpp** modules](https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-modules.pdf). It encapsulates a single OGRLayer and the GDALDataset that contains it. An object of class `GDALVector` persists an open connection to the dataset, and exposes methods to: retrieve layer information, set attribute and spatial filters, traverse and read feature data by traditional row-based cursor, read via column-oriented Arrow ArrayStream, write new features in a layer, edit/overwrite existing features, upsert, and delete features, and perform data manipulation within transactions. The `?GDALVector` documentation gives a full list of available methods in the Usage section, and descriptions of each in Details.
+`GDALVector` is a C++ class exposed in R via [**Rcpp** modules](https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-modules.pdf). It encapsulates a single OGRLayer and the GDALDataset that contains it. An object of class `GDALVector` persists an open connection to the dataset, and exposes methods to:
+
+* retrieve layer information
+* set attribute and spatial filters
+* set ignored fields/selected fields
+* traverse and read feature data by traditional row-based cursor
+* fetch the full feature set and return as data frame
+* fetch progressively in batches of `n` features at a time
+* read via column-oriented Arrow ArrayStream
+* write new features in a layer
+* upsert
+* edit/overwrite existing features
+* delete
+* perform operations within transactions
+
+A `GDALVector` object is typically generated with a call to `new()` but is also returned from certain `ogr_*()` functions. The documentation for `?GDALVector` gives a full list of available methods in the Usage section, along with descriptions under Details. Methods of the class are accessed using the `$` operator.
 
 #### OGR stand-alone functions
 
@@ -57,7 +72,7 @@ Several of the stand-alone `ogr_*()` functions are grouped under the documentati
 
 `ogr_define` provides documentation and helper functions for defining feature classes. An OGR feature class definition (a.k.a. layer definition) is modeled in R as a named list containing zero or more attribute field definitions, along with one or more geometry field definitions. Specifications of the the list structures for these definitions are given in `ogr_define`. The associated helper functions make it easy to create new layer definitions from scratch or modify an existing definition. A layer definition is convenient but not required for creating a new vector dataset, or a new layer within an existing dataset, using `ogr_ds_create()` / `ogr_layer_create()`.
 
-OGR facilities for vector geoprocessing are available in `ogr_proc()`. This function performs the following GIS overlay operations: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically an R port of the command-line utility[`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) which is included in the GDAL Python bindings. Both of these are interfaces to library functions in the OGR C++ API.
+OGR facilities for vector geoprocessing are available in `ogr_proc()`. This function performs the following GIS overlay operations: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically an R port of the command-line utility [`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) which is included in the GDAL Python bindings. Both of these are interfaces to library functions in the OGR C++ API.
 
 `ogrinfo()` and `ogr2ogr()`, provide R wrappers of the GDAL command-line utilities [`ogrinfo`](https://gdal.org/en/stable/programs/ogrinfo.html) and [`ogr2ogr`](https://gdal.org/en/stable/programs/ogr2ogr.html). These functions support all of the command-line arguments described in the GDAL documentation, providing a powerful set of capabilities for obtaining information about an OGR-supported data source, converting vector data between file formats, and potentially editing data with SQL statements. `ogr_reproject()` is a convenience wrapper around `ogr2ogr()` for reprojection of vector layers with user friendly interface and comprehensive documentation.
 
@@ -75,7 +90,7 @@ Bindings to a significant subset of GDAL's Geometry API are implemented in a set
 
 Bindings to the GDAL's Virtual Systems Interface (VSI) implement standard file system operations abstracted for URLs, cloud storage services, Zip/GZip/7z/RAR, in-memory files, as well as "regular" local file systems. This provides a single interface for operating on file system objects, that works the same for any storage backend. The `vsi_*()` functions have general utility not limited to operating on spatial data sources.
 
-Class `VSIFile` implements bindings to the GDAL VSIVirtualHandle API, providing analogs of Standard C file I/O functions (`seek()`, `tell()`, `read()`, `write()`, etc.) that operate on VSI file systems.
+Class `VSIFile` implements bindings to the GDAL VSIVirtualHandle API, providing analogs of Standard C file I/O functions that operate on VSI file systems (`seek()`, `tell()`, `read()`, `write()`, etc.)
 
 #### General data management
 
@@ -83,7 +98,9 @@ Existing data management functions that operate on both raster and vector data s
 
 ## Workflow considerations
 
-Creation of new vector datasets, and schema modification in existing datasets, are performed with the `ogr_()` stand-alone functions. These are "one-off" operations that attempt to open the dataset with update access, perform modifications, and then close the dataset. Objects of class `GDALVector` are used for reading and writing feature data. A `GDALVector` object provides a persistent connection to a layer and the vector dataset that contains it. That is, once instantiated, a `GDALVector` object represents a live connection to the data source until its `close()` method is called. The connection may be read-only (by default), or may be with update access allowing insert of new features, modifying exiting features, and deleting features. Currently, class `GDALVector` does not provide methods for modifying the layer schema.
+Creation of new vector datasets, and schema modification in existing datasets, are performed with the `ogr_()` stand-alone functions. These are "one-off" operations that attempt to open the dataset with update access, perform modifications, and then close the dataset.
+
+Objects of class `GDALVector` are used for obtaining layer information and reading/writing feature data. A `GDALVector` object provides a persistent connection to a layer and the vector dataset that contains it. That is, once instantiated, a `GDALVector` object represents a live connection to the data source until its `$close()` method is called. The connection may be read-only (by default), or may be with update access allowing insert of new features, modifying exiting features and deleting features. Currently, class `GDALVector` does not provide methods for modifying the layer schema.
 
 
 
@@ -93,11 +110,12 @@ High-level workflow for using **gdalraster** with vector data: distinguishing am
 
 ### Data retrieval
 
-
 https://en.wikipedia.org/wiki/Cursor_(databases)
 
 
-OGR field types are returned as the following R types (`NA` for OGR NULL values). When retrieving a batch of features as a data frame (`"OGRFeatureSet"`), some field types will be contained in a data frame list column as indicated:
+### Data type specifications
+
+OGR field types (OFT*) are returned as the following R data types. R currently lacks a native 64-bit integer type. Support for 64-bit integer values in R is provided by the [**bit64** package](https://CRAN.R-project.org/package=bit64) (`numeric` values carrying the `"integer64"` class attribute). OGR NULL values are returned as type-specific `NA` (i.e., `NA`, `NA_integer_`, `NA_integer64_`, `NA_real_`, `NA_character_`). When retrieving a batch of features as a data frame (`"OGRFeatureSet"`), some field types will be contained in a data frame list column as indicated:
 
 * **OFTInteger**: `integer` value
 * **OFTInteger subtype OFSTBoolean**: `logical` value
@@ -114,11 +132,7 @@ OGR field types are returned as the following R types (`NA` for OGR NULL values)
 * **OFTTime**: `character` string (`"HH:MM:SS"`)
 * **OFTBinary**: `raw` vector (list column, `NULL` entries for OGR NULL values)
 
-By default, geometries are returned as WKB `raw` vectors in a data frame list column. The per-object setting `$returnGeomAs` can also be set to one of `"WKB_ISO"`, `"WKT"`, `"WKT_ISO"`, or `"NONE"`. Omitting the geometries (e.g., by setting `lyr$returnGeomAs <- "NONE"`) may be beneficial for performance and memory usage when access only to feature attributes is required.
-
-
-
-
+By default, geometries are returned as WKB `raw` vectors in a data frame list column (with `NULL` entries for OGR NULL geometries). The per-object setting `$returnGeomAs` can also be set to one of `"WKB_ISO"`, `"WKT"`, `"WKT_ISO"`, or `"NONE"`. Omitting the geometries (e.g., by setting `lyr$returnGeomAs <- "NONE"`) may be beneficial for performance and memory usage when access only to feature attributes is required.
 
 ## Code examples
 
@@ -338,6 +352,8 @@ bnd$close()
 
 The cursor can be reset to the beginning of the layer at any time with a call to `$resetReading()`.
 
+### Fetch all features or progressively in batches
+
 Class `GDALVector` also provides a `$fetch()` method to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of [`DBI::dbFetch()`](https://dbi.r-dbi.org/reference/dbFetch.html) with basically identical calling semantics, where the vector layer itself is the equivalent of a DBI result set. `$fetch()` can be used to get the entire feature set for a layer, one batch of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()` only forward paging is supported.
 
 Passing `n = -1` or `n = Inf` will retrieve all features from the beginning (with an automatic call to `$resetReading()`). Passing `n = NA` is supported and will retrieve the remaining features from the current cursor position. Otherwise, features can be fetched progressively by passing a whole number (`integer` or `numeric`) as the `n` argument. If more features than available are requested, the result is returned in full without warning. If fewer features than requested are returned, further fetches will return a data frame with zero rows.
@@ -450,3 +466,6 @@ if (gdal_version_num() >= gdal_compute_version(3, 6, 0)) {
 
 roads$close()
 ```
+
+### Reproject vector layers
+
