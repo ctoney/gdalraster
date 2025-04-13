@@ -3,6 +3,10 @@ title: "Vector API Overview"
 output:
   rmarkdown::html_vignette:
     toc: true
+    toc_depth: 4
+    fig_width: 7
+    fig_height: 5
+    fig_caption: true
 vignette: >
   %\VignetteIndexEntry{Vector API Overview}
   %\VignetteEngine{knitr::rmarkdown}
@@ -262,7 +266,7 @@ ogr_layer_field_names(mem_gpkg, "ynp_poi")
 
 To read back from the modified data source we need to instantiate objects of class `GDALVector`. More detail on working with `GDALVector` objects is given in the examples below for data retrieval. For now, note that the function `ogr_execute_sql()` returns an object of class `GDALVector` for SQL statements that return a result set.
 
-```{r fig.width=6, fig.height=4, dev="png"}
+```{r}
 # read and display the geothermal features
 sql <- "SELECT poi_name, geom FROM ynp_poi WHERE is_geothermal = TRUE"
 lyr <- ogr_execute_sql(mem_gpkg, sql)
@@ -342,7 +346,7 @@ Note that it is possible to set an attribute filter and/or spatial filter prior 
 
 Here we read the roads layer after setting an attribute filter to select only the publicly accessible roads. We call `$fetch()` with `n = -1` to read from the beginning and retrieve all available features. The data frame returned by `$fetch()` carries the `"OGRFeatureSet"` class attribute providing S3 methods for `print()` and `plot()`.
 
-```{r fig.width=6, fig.height=4, dev="png"}
+```{r}
 # an object for the roads layer
 (roads <- new(GDALVector, ynp_dsn, "roads"))
 
@@ -365,7 +369,7 @@ plot(roads_featset, col = "slategray", lwd = 2, add = TRUE)
 roads$close()
 ```
 
-Fetching in batches may be advantageous when dealing with large datasets. Also, note that `$getFeatureCount()` is called internally when fetching the full feature set but not for a page of features. Some vector drivers will actually scan the entire layer once to count features. The `FastFeatureCount` element in the list returned by the `$testCapability()` method can be checked if this might be a concern. This may be a consideration when reading from even moderately large sources over a network.
+Fetching in batches may be advantageous when dealing with large datasets. Also, note that `$getFeatureCount()` is called internally when fetching the full feature set but not for a page of features. Some vector drivers will actually scan the entire layer once to count features. The `FastFeatureCount` element in the list returned by the `$testCapability()` method can be checked if this might be a concern. This may be a consideration when reading from even moderately large sources over a network where paging could be beneficial.
 
 ```{r}
 poi <- new(GDALVector, ynp_dsn, "points_of_interest")
@@ -389,11 +393,11 @@ poi$close()
 
 It is also possible to retrieve features in a column-oriented memory layout using OGR's Arrow ArrayStream interface (GDAL >= 3.6). Performance advantages may be substantial with vector format drivers that provide specialized implementations (e.g., Arrow, Parquet, FlatGeoBuf, GeoPackage). Drivers that have a specialized implementation advertise the `FastGetArrowStream` layer capability.
 
-The `$getArrowStream()` method of class `GDALVector` exposes an ArrayStream on the layer as a `nanoarrow_array_stream` object. The **nanoarrow** package provides functionality to consume the ArrayStream and import to R data structures which are generally column oriented.
+The `$getArrowStream()` method of class `GDALVector` exposes an ArrayStream on the layer as a `nanoarrow_array_stream` object. The **nanoarrow** package provides functionality to consume the array stream and import to R data structures which are generally column oriented.
 
 The default batch size for the ArrayStream is 65,536 features, but this can be changed on a per-object basis by assigning a value to the `GDALVector` writeable field `$arrowStreamOptions` (a character vector of `"NAME=VALUE"` pairs).
 
-```{r}
+```{r warning=FALSE}
 # re-open the roads layer with the required argument for type of access
 roads$open(read_only = TRUE)
 roads$resetReading()
@@ -418,9 +422,6 @@ if (gdal_version_num() >= gdal_compute_version(3, 6, 0)) {
 
   # read a batch of features (default batch size is 65,536)
   batch <- stream$get_next()
-
-  # disable a warning that can be safely ignored here
-  options(nanoarrow.warn_unregistered_extension = FALSE)
 
   cat("Array structure to data frame provided by nanoarrow:\n")
   batch_df <- as.data.frame(batch)
