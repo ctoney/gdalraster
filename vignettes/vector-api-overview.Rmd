@@ -1,6 +1,8 @@
 ---
 title: "Vector API Overview"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    toc: true
 vignette: >
   %\VignetteIndexEntry{Vector API Overview}
   %\VignetteEngine{knitr::rmarkdown}
@@ -34,11 +36,11 @@ Core functionality for vector is provided by an exposed C++ class `GDALVector`, 
 
 #### Class `GDALVector`
 
-`GDALVector` is a C++ class exposed in R via [**Rcpp** modules](https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-modules.pdf). It encapsulates a single OGRLayer and the GDALDataset that contains it. An object of class `GDALVector` persists an open connection to the dataset, and exposes methods to: retrieve layer information, set attribute and spatial filters, traverse and read feature data by traditional row-based cursor (including an analog of `DBI::dbFetch()`), read via column-oriented Arrow Array stream, write new features in a layer, edit/overwrite existing features, upsert, and delete features, and perform data manipulation within transactions. The `?GDALVector` documentation gives a full list of object methods under Usage, and descriptions of each under Details.
+`GDALVector` is a C++ class exposed in R via [**Rcpp** modules](https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-modules.pdf). It encapsulates a single OGRLayer and the GDALDataset that contains it. An object of class `GDALVector` persists an open connection to the dataset, and exposes methods to: retrieve layer information, set attribute and spatial filters, traverse and read feature data by traditional row-based cursor, read via column-oriented Arrow ArrayStream, write new features in a layer, edit/overwrite existing features, upsert, and delete features, and perform data manipulation within transactions. The `?GDALVector` documentation gives a full list of available methods in the Usage section, and descriptions of each in Details.
 
 #### OGR stand-alone functions
 
-Several of the stand-alone `ogr_()` functions are grouped under the documentation topics `?ogr_manage` and `?ogr_define`. The `ogr_manage` functions can be used to:
+Several of the stand-alone `ogr_*()` functions are grouped under the documentation topics `?ogr_manage` and `?ogr_define`. The `ogr_manage` functions can be used to:
 
 * create new vector datasets from scratch
 * test for existence of datasets, layers and fields
@@ -49,25 +51,27 @@ Several of the stand-alone `ogr_()` functions are grouped under the documentatio
 * rename and delete fields
 * edit data with SQL statements
 
-`ogr_define` provides documentation and helper functions for defining feature classes. An OGR feature class definition (a.k.a. layer definition) is modeled in R as a named list containing zero or more attribute field definitions, along with one or more geometry field definitions. Specifications of the the list structures for these definitions are given in `ogr_define`. The associated helper functions make it easy to create new layer definitions from scratch or modify an existing definition. A layer definition is convenient but not required for creating a new vector dataset, and/or a new layer within an existing dataset, using `ogr_ds_create()` / `ogr_layer_create()`.
+`ogr_define` provides documentation and helper functions for defining feature classes. An OGR feature class definition (a.k.a. layer definition) is modeled in R as a named list containing zero or more attribute field definitions, along with one or more geometry field definitions. Specifications of the the list structures for these definitions are given in `ogr_define`. The associated helper functions make it easy to create new layer definitions from scratch or modify an existing definition. A layer definition is convenient but not required for creating a new vector dataset, or a new layer within an existing dataset, using `ogr_ds_create()` / `ogr_layer_create()`.
 
-OGR facilities for vector geoprocessing are available in `ogr_proc()`. This function performs the following GIS overlay operations: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically an R port of the command-line utility[`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) which is included in the GDAL Python bindings. Both of these are interfaces to library functions via OGR API calls.
+OGR facilities for vector geoprocessing are available in `ogr_proc()`. This function performs the following GIS overlay operations: Intersection, Union, SymDifference, Identity, Update, Clip and Erase (https://en.wikipedia.org/wiki/Vector_overlay). `ogr_proc()` is basically an R port of the command-line utility[`ogr_layer_algebra`](https://gdal.org/en/stable/programs/ogr_layer_algebra.html#ogr-layer-algebra) which is included in the GDAL Python bindings. Both of these are interfaces to library functions in the OGR C++ API.
 
-`ogrinfo()` and `ogr2ogr()`, provide R wrappers of the GDAL command-line utilities [`ogrinfo`](https://gdal.org/en/stable/programs/ogrinfo.html) and [`ogr2ogr`](https://gdal.org/en/stable/programs/ogr2ogr.html), respectively. These functions support all of the command-line arguments described in the GDAL documentation, providing a powerful set of capabilities for obtaining information about an OGR-supported data source, converting vector data between file formats, and potentially editing data with SQL statements. `ogr_reproject()` is a convenience wrapper around `ogr2ogr()` for reprojection of vector layers with user friendly interface and comprehensive documentation.
+`ogrinfo()` and `ogr2ogr()`, provide R wrappers of the GDAL command-line utilities [`ogrinfo`](https://gdal.org/en/stable/programs/ogrinfo.html) and [`ogr2ogr`](https://gdal.org/en/stable/programs/ogr2ogr.html). These functions support all of the command-line arguments described in the GDAL documentation, providing a powerful set of capabilities for obtaining information about an OGR-supported data source, converting vector data between file formats, and potentially editing data with SQL statements. `ogr_reproject()` is a convenience wrapper around `ogr2ogr()` for reprojection of vector layers with user friendly interface and comprehensive documentation.
 
 ### Supporting APIs
 
 #### Spatial Reference Systems
 
-Bindings to a subset of GDAL's Spatial Reference System API are provided by a set of stand-alone `srs_()` functions. These support conversion of spatial reference system definitions in various formats to OGC Well Known Text (WKT) representation (e.g., EPSG codes, well known names such as NAD27, NAD83, WGS84, etc., PROJ.4 definitions, PROJJSON, and others, as well as between different versions of OGC WKT, see `?srs_convert`). Several functions under the `?srs_query` topic provide various information about a given SRS definition and allow comparing definitions for equality.
+Bindings to a subset of GDAL's Spatial Reference System API are provided by a set of stand-alone `srs_*()` functions. These support conversion of spatial reference definitions in various formats to OGC Well Known Text (WKT) representation (e.g., EPSG codes, well known names such as NAD27, NAD83, WGS84, etc., PROJ.4 definitions, PROJJSON, and others, as well as between different versions of OGC WKT, see `?srs_convert`). Several functions under the `?srs_query` topic provide various information about a given SRS definition and testing definitions for equality.
 
 #### Geometry
 
-Bindings to a significant subset of GDAL's Geometry API are implemented in a set of functions prefixed `g_()`. Many of these functions are built on the [GEOS library](https://libgeos.org/) (i.e., using GEOS via GDAL headers). The geometry functions in **gdalraster** are flexible in that the input geometries, and corresponding output, may be any of a single [WKT string](https://libgeos.org/specifications/wkt/), a character vector of WKT strings, a single `raw` vector of [WKB](https://libgeos.org/specifications/wkb/), or a list of WKB `raw` vectors. The convenience function `g_wk2wk()` will convert its input from one to the other accordingly. Factory functions (`?g_factory`) support creating basic geometry types from point data (vertices) and building container geometry types from sub-geometries. Capabilities of the geometry bindings include inspection (`?g_query`), binary predicates (`?g_binary_pred`), binary operations (`?g_binary_op`), unary operations (e.g., `g_buffer()`, `g_simplify()`), measurements (`?g_measures`), and several utilities (e.g., `g_coords()`, `g_make_valid()`, `g_swap_xy()`, `g_transform()`). Convenience functions for working with bounding boxes are also provided (e.g., to/from WKT, intersect/union, and `bbox_transform()` to a different projection).
+Bindings to a significant subset of GDAL's Geometry API are implemented in a set of functions prefixed `g_*()`. Many of these functions are built on the [GEOS library](https://libgeos.org/) (i.e., using GEOS via GDAL headers). The geometry functions in **gdalraster** are flexible in that the input geometries, and corresponding output, may be any of a single [WKT string](https://libgeos.org/specifications/wkt/), a character vector of WKT strings, a single `raw` vector of [WKB](https://libgeos.org/specifications/wkb/), or a list of WKB `raw` vectors. The convenience function `g_wk2wk()` will convert its input from one to the other accordingly. Factory functions (`?g_factory`) support creating basic geometry types from point data (vertices) and building container geometry types from sub-geometries. Capabilities of the geometry bindings include inspection (`?g_query`), binary predicates (`?g_binary_pred`), binary operations (`?g_binary_op`), unary operations (e.g., `g_buffer()`, `g_simplify()`), measurements (`?g_measures`), and several utilities (e.g., `g_coords()`, `g_make_valid()`, `g_swap_xy()`, `g_transform()`). Convenience functions for working with bounding boxes are also provided (e.g., to/from WKT, intersect/union, and `bbox_transform()` to a different projection).
 
 #### Virtual Systems Interface
 
-Bindings to the GDAL's Virtual Systems Interface (VSI) implement standard file system operations abstracted for URLs, cloud storage services, Zip/GZip/7z/RAR, in-memory files, as well as "regular" local file systems. This provides a single interface for operating on file system objects, that works the same for any storage backend. The `vsi_()` functions have general utility not limited to operating on spatial data sources.
+Bindings to the GDAL's Virtual Systems Interface (VSI) implement standard file system operations abstracted for URLs, cloud storage services, Zip/GZip/7z/RAR, in-memory files, as well as "regular" local file systems. This provides a single interface for operating on file system objects, that works the same for any storage backend. The `vsi_*()` functions have general utility not limited to operating on spatial data sources.
+
+Class `VSIFile` implements bindings to the GDAL VSIVirtualHandle API, providing analogs of Standard C file I/O functions (`seek()`, `tell()`, `read()`, `write()`, etc.) that operate on VSI file systems.
 
 #### General data management
 
@@ -289,7 +293,11 @@ vsi_unlink(mem_gpkg)  # delete a single file
 
 ### Traditional row-based data retrieval
 
-These examples will use the original sample dataset for YNP features. The DSN is formed with the /viszip/ prefix and full path to ynp_features.gpkg contained in the zip archive. An object of class `GDALVector` is generated with a call to `new()`. From the examples above, we know that the GeoPackage contains three vector layers, so we also pass a layer name argument to the object constructor. Note that if the layer argument is omitted, the constructor will attempt to open the first layer found by index. This abbreviated form of the constructor would generally be used for convenience only with single-layer file formats (e.g., ESRI Shapefiles, FlatGeoBuf), or with a GeoPackage file known to contain only a single layer.
+These examples will use the original sample dataset for YNP features. The DSN is formed with the /viszip/ prefix and full path to ynp_features.gpkg contained in the zip archive. An object of class `GDALVector` is generated with a call to `new()`. From the examples above, we know that the GeoPackage contains three vector layers, so we also pass a layer name argument to the object constructor.
+
+Note that if the layer argument is omitted, the constructor will attempt to open the first layer by index. This abbreviated form of the constructor would generally be used for convenience only with single-layer file formats (e.g., ESRI Shapefile, FlatGeoBuf), or with a GeoPackage file known to contain only a single layer.
+
+A SQL SELECT statement that returns a result set can also be used for the `layer` argument in the constructor.
 
 Here we instantiate a `GDALVector` object for the park boundary layer and retrieve information about it.
 
@@ -312,7 +320,7 @@ bnd$bbox()
 bnd$getLayerDefn() |> str()
 ```
 
-Traditional row-level access to feature data with OGR is cursor-based, reading one feature (row) at a time. When starting with a new layer object, the cursor is positioned at the beginning and we can iterate through features with calls to `$getNextFeature()`. This method returns an individual feature as a named list of fields and their values, and moves the cursor forward one row. It will return `NULL` when we run out of features. The park boundary layer contains a single polygon feature. The list object for an individual feature carries the `"OGRFeature"` class attribute with S3 methods for `print()` and `plot()`.
+Traditional row-level access to feature data with OGR is cursor-based, reading one feature row at a time. When starting with a new layer object, the cursor is positioned at the beginning and we can iterate through features with calls to `$getNextFeature()`. This method returns an individual feature as a named list of fields and their values, and moves the cursor forward one row. It will return `NULL` when no features are left. The park boundary layer contains a single polygon feature. The list object returned for an individual feature carries the `"OGRFeature"` class attribute providing S3 methods for `print()` and `plot()`.
 
 ```{r}
 bnd_feat <- bnd$getNextFeature()
@@ -326,13 +334,13 @@ bnd$close()
 
 The cursor can be reset to the beginning of the layer at any time with a call to `$resetReading()`.
 
-Class `GDALVector` also provides a `$fetch()` method to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of `DBI::dbFetch()` with basically identical calling semantics, where the vector layer itself is the equivalent of a **DBI** result set. `$fetch()` can be used to get the entire feature set for a layer, one batch of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()`, only forward paging is supported.
+Class `GDALVector` also provides a `$fetch()` method to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of [`DBI::dbFetch()`](https://dbi.r-dbi.org/reference/dbFetch.html) with basically identical calling semantics, where the vector layer itself is the equivalent of a DBI result set. `$fetch()` can be used to get the entire feature set for a layer, one batch of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()` only forward paging is supported.
 
-Passing `n = -1` or `n = Inf` will retrieve all features from the beginning (with an automatic call to `$resetReading()`). Passing `n = NA` is supported and will retrieve the remaining features from the current cursor position. Otherwise, features can be fetched progressively by passing a whole number (`integer` or `numeric`) as the `n` argument. If more features than available are fetched, the result is returned in full without warning. If fewer features than requested are returned, further fetches will return a data frame with zero rows.
+Passing `n = -1` or `n = Inf` will retrieve all features from the beginning (with an automatic call to `$resetReading()`). Passing `n = NA` is supported and will retrieve the remaining features from the current cursor position. Otherwise, features can be fetched progressively by passing a whole number (`integer` or `numeric`) as the `n` argument. If more features than available are requested, the result is returned in full without warning. If fewer features than requested are returned, further fetches will return a data frame with zero rows.
 
-Note that it is possible to set an attribute and/or spatial filter prior to retrieving data to restrict the feature set returned. It is also possible to set specific fields as ignored (or to specify the list of desired fields). This includes potentially omitting the geometry column when access only to feature attributes is needed. Limiting the number of fields returned may save some processing time and/or bandwidth.
+Note that it is possible to set an attribute filter and/or spatial filter prior to retrieving data to restrict the returned feature set. It is also possible to set specific fields as ignored (or to specify the list of desired fields). This includes potentially omitting the geometry column when access only to feature attributes is needed. Limiting the number of fields returned may save some processing time and/or bandwidth.
 
-Here we read the roads layer after setting an attribute filter to select only the publicly accessible roads. We call `$fetch()` with `n = -1` to read from the beginning and retrieve the full feature set. The data frame returned by `$fetch()` carries the `"OGRFeatureSet"` class attribute with S3 methods for `print()` and `plot()`.
+Here we read the roads layer after setting an attribute filter to select only the publicly accessible roads. We call `$fetch()` with `n = -1` to read from the beginning and retrieve all available features. The data frame returned by `$fetch()` carries the `"OGRFeatureSet"` class attribute providing S3 methods for `print()` and `plot()`.
 
 ```{r fig.width=6, fig.height=4, dev="png"}
 # an object for the roads layer
@@ -357,7 +365,7 @@ plot(roads_featset, col = "slategray", lwd = 2, add = TRUE)
 roads$close()
 ```
 
-Fetching in batches may be advantageous when dealing with large datasets.
+Fetching in batches may be advantageous when dealing with large datasets. Also, note that `$getFeatureCount()` is called internally when fetching the full feature set but not for a page of features. Some vector drivers will actually scan the entire layer once to count features. The `FastFeatureCount` element in the list returned by the `$testCapability()` method can be checked if this might be a concern. This may be a consideration when reading from even moderately large sources over a network.
 
 ```{r}
 poi <- new(GDALVector, ynp_dsn, "points_of_interest")
@@ -381,7 +389,7 @@ poi$close()
 
 It is also possible to retrieve features in a column-oriented memory layout using OGR's Arrow ArrayStream interface (GDAL >= 3.6). Performance advantages may be substantial with vector format drivers that provide specialized implementations (e.g., Arrow, Parquet, FlatGeoBuf, GeoPackage). Drivers that have a specialized implementation advertise the `FastGetArrowStream` layer capability.
 
-The `$getArrowStream()` method of class `GDALVector` exposes an ArrayStream on the layer as a `nanoarrow_array_stream` object. The **nanoarrow** package provides functionality to consume the ArrayStream and import to R data structures.
+The `$getArrowStream()` method of class `GDALVector` exposes an ArrayStream on the layer as a `nanoarrow_array_stream` object. The **nanoarrow** package provides functionality to consume the ArrayStream and import to R data structures which are generally column oriented.
 
 The default batch size for the ArrayStream is 65,536 features, but this can be changed on a per-object basis by assigning a value to the `GDALVector` writeable field `$arrowStreamOptions` (a character vector of `"NAME=VALUE"` pairs).
 
