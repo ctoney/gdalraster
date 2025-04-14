@@ -18,6 +18,10 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+
+library(gdalraster)
+gdal_3_6_0_min <- (gdal_version_num() >= gdal_compute_version(3, 6, 0))
+gdal_3_7_0_min <- (gdal_version_num() >= gdal_compute_version(3, 7, 0))
 ```
 
 ## Background
@@ -190,20 +194,21 @@ OGR functions can be also be used to inspect a vector data source.
 ```{r}
 # test for existence of a vector data source with at least read access
 ogr_ds_exists(zf_gpkg)
-# note that update of an existing zipped GPKG file is not supported
+# note that update of an existing zipped .gpkg file is not supported
 ogr_ds_exists(zf_gpkg, with_update = TRUE)
 
 # list the vector layers
 ogr_ds_layer_names(zf_gpkg)
+```
 
-# ogrinfo() requires GDAL >= 3.7
-if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
-  cat("List of layers found in the data source:\n")
-  cat(ogrinfo(zf_gpkg, cout = FALSE))
-  cat("\n")
-  cat("Detailed information about a specific layer:\n")
-  cat(ogrinfo(zf_gpkg, "points_of_interest", cout = FALSE))
-}
+`ogrinfo()` requires GDAL >= 3.7. It accepts an optional character vector containing any of the arguments supported by the [`ogrinfo`](https://gdal.org/en/stable/programs/ogrinfo.html) command-line utility included with GDAL.
+
+```{r eval=gdal_3_7_0_min}
+# list the layers in a data source
+ogrinfo(zf_gpkg)
+
+# detailed information about a specific layer
+ogrinfo(zf_gpkg, "ynp_bnd", cl_arg = c("-geom=SUMMARY", "-wkt_format", "WKT2"))
 ```
 
 ### Manage data sources and schemas
@@ -255,7 +260,7 @@ if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$AlterFieldDefn) {
 }
 ```
 
-As a simple example for illustration, we populate a new field that flags geothermal features.
+As a simple example for illustration, we populate a new field to flag geothermal features.
 
 ```{r}
 # create a new field
@@ -354,7 +359,7 @@ The cursor can be reset to the beginning of the layer at any time with a call to
 
 ### Fetch all features or progressively in batches
 
-Class `GDALVector` also provides a `$fetch()` method to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of [`DBI::dbFetch()`](https://dbi.r-dbi.org/reference/dbFetch.html) with basically identical calling semantics, where the vector layer itself is the equivalent of a DBI result set. `$fetch()` can be used to get the entire feature set for a layer, one batch of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()` only forward paging is supported.
+Class `GDALVector` also provides `$fetch()` to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of [`DBI::dbFetch()`](https://dbi.r-dbi.org/reference/dbFetch.html), with the vector layer as the equivalent of a DBI result set. `$fetch()` can be used to get the entire feature set for a layer, one batch of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()` only forward paging is supported.
 
 Passing `n = -1` or `n = Inf` will retrieve all features from the beginning (with an automatic call to `$resetReading()`). Passing `n = NA` is supported and will retrieve the remaining features from the current cursor position. Otherwise, features can be fetched progressively by passing a whole number (`integer` or `numeric`) as the `n` argument. If more features than available are requested, the result is returned in full without warning. If fewer features than requested are returned, further fetches will return a data frame with zero rows.
 
@@ -363,7 +368,7 @@ Note that it is possible to set an attribute filter and/or spatial filter prior 
 Here we read the roads layer after setting an attribute filter to select only the publicly accessible roads. We call `$fetch()` with `n = -1` to read from the beginning and retrieve all available features. The data frame returned by `$fetch()` carries the `"OGRFeatureSet"` class attribute providing S3 methods for `print()` and `plot()`.
 
 ```{r}
-# an object for the roads layer
+# instantiate an object for the roads layer
 (roads <- new(GDALVector, ynp_dsn, "roads"))
 
 roads$getFeatureCount()
@@ -385,14 +390,14 @@ plot(roads_featset, col = "slategray", lwd = 2, add = TRUE)
 roads$close()
 ```
 
-Fetching in batches may be advantageous when dealing with large datasets. Also, note that `$getFeatureCount()` is called internally when fetching the full feature set but not for a page of features. Some vector drivers will actually scan the entire layer once to count features. The `FastFeatureCount` element in the list returned by the `$testCapability()` method can be checked if this might be a concern. This may be a consideration when reading from even moderately large sources over a network where paging could be beneficial.
+Fetching in batches may be advantageous when dealing with large datasets. Also, note that `$getFeatureCount()` is called internally when fetching the full feature set but not for a page of features. Some vector drivers will actually scan the entire layer once to count features. The `FastFeatureCount` element in the list returned by the `$testCapability()` method can be checked if this might be a concern. It could be a consideration when reading from even moderately large sources over a network where paging may benefit.
 
 ```{r}
 poi <- new(GDALVector, ynp_dsn, "points_of_interest")
 
 poi$getFeatureCount()
 
-# access features progressively in batches
+# read progressively in batches
 batch <- 0
 while (TRUE) {
     poi_featset <- poi$fetch(500)
@@ -405,67 +410,99 @@ while (TRUE) {
 poi$close()
 ```
 
-### Reading with OGR Arrow ArrayStream interface
+### Read using an ArrowArrayStream
 
-It is also possible to retrieve features in a column-oriented memory layout using OGR's Arrow ArrayStream interface (GDAL >= 3.6). Performance advantages may be substantial with vector format drivers that provide specialized implementations (e.g., Arrow, Parquet, FlatGeoBuf, GeoPackage). Drivers that have a specialized implementation advertise the `FastGetArrowStream` layer capability.
+It is also possible to retrieve features in a column-oriented memory layout using the Arrow C Stream interface in OGR (requires GDAL >= 3.6). Performance advantages can be substantial with vector format drivers that provide specialized implementations (e.g., Parquet, FlatGeoBuf, GeoPackage). Drivers with specialized implementations advertise the `FastGetArrowStream` layer capability.
 
-The `$getArrowStream()` method of class `GDALVector` exposes an ArrayStream on the layer as a `nanoarrow_array_stream` object. The **nanoarrow** package provides functionality to consume the array stream and import to R data structures which are generally column oriented.
+The `$getArrowStream()` method of class `GDALVector` exposes an ArrowArrayStream on the layer as a `nanoarrow_array_stream` object. The [**nanoarrow** package](https://arrow.apache.org/nanoarrow/latest/getting-started/r.html) provides functionality to consume the array stream and import to R data structures which are generally column oriented.
 
-The default batch size for the ArrayStream is 65,536 features, but this can be changed on a per-object basis by assigning a value to the `GDALVector` writeable field `$arrowStreamOptions` (a character vector of `"NAME=VALUE"` pairs).
+The default batch size for the array stream is 65,536 features, but this can be configured on a per-object basis by assigning a value to the `GDALVector` writeable field `$arrowStreamOptions` (a character vector of `"NAME=VALUE"` pairs).
 
-```{r warning=FALSE}
+```{r eval=gdal_3_6_0_min, warning=FALSE}
+# Expose an ArrowArrayStream (requires GDAL >= 3.6)
+
 # re-open the roads layer with the required argument for type of access
 roads$open(read_only = TRUE)
 roads$resetReading()
 
-# Expose an Arrow array stream (requires GDAL >= 3.6)
-if (gdal_version_num() >= gdal_compute_version(3, 6, 0)) {
+# does the layer have a specialized implementation
+roads$testCapability()$FastGetArrowStream
 
-  cat("FastGetArrowStream layer capability:\n")
-  roads$testCapability()$FastGetArrowStream |> print()
-  cat("\n")
+# change the default ArrowStream options to omit the FID column
+roads$arrowStreamOptions <- c("INCLUDE_FID=NO")
+# the default batch size of 65,536 could also be configured with
+# MAX_FEATURES_IN_BATCH=num
 
-  # change the default ArrowStream options
-  roads$arrowStreamOptions <- c("INCLUDE_FID=NO")
+(stream <- roads$getArrowStream())
 
-  stream <- roads$getArrowStream()
-  cat("Object returned by getArrowStream():\n")
-  print(stream)
-  cat("\n")
+# get the array schema if needed
+schema <- stream$get_schema()
 
-  # get the array schema if needed
-  schema <- stream$get_schema()
+# read a batch of features
+batch <- stream$get_next()
 
-  # read a batch of features (default batch size is 65,536)
-  batch <- stream$get_next()
+# import the array to a data frame (S3 method from nanoarrow)
+batch_df <- as.data.frame(batch)
+head(batch_df)
 
-  cat("Array structure to data frame provided by nanoarrow:\n")
-  batch_df <- as.data.frame(batch)
-  head(batch_df) |> print()
-  cat("\n")
+# the last batch is NULL
+stream$get_next()
 
-  cat("The last batch is NULL: stream$get_next()\n")
-  stream$get_next() |> print()
-  cat("\n")
+# release the stream when finished
+stream$release()
 
-  # release the stream when finished
-  stream$release()
-  cat("Stream released:\n")
-  print(stream)
-  cat("\n")
+# 'geom' is a list column of WKB raw vectors which can be passed to the
+# Geometry API functions
+geom_utm <- g_transform(batch_df$geom,
+                        srs_from = roads$getSpatialRef(),
+                        srs_to = "EPSG:26912")
 
-  # the geom column is a list column of WKB raw vectors
-  cat("Road length calculated with Geometry API g_*() functions:\n")
-  geom_utm12 <- g_transform(batch_df$geom,
-                            srs_from = roads$getSpatialRef(),
-                            srs_to = "EPSG:26912")
-
-  batch_df$rdlength <- g_length(geom_utm12)
-  head(batch_df) |> print()
-}
+batch_df$rdlength <- g_length(geom_utm)
+head(batch_df)
 
 roads$close()
 ```
 
 ### Reproject vector layers
+
+```{r}
+# MTBS fire perimeters in Yellowstone National Park 1984-2022
+f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
+
+# copy to a temporary writable file
+mtbs_dsn <- "/vsimem/tmp/ynp_fires_1984_2022.gpkg"
+ogr2ogr(f, mtbs_dsn)
+
+(fires <- new(GDALVector, mtbs_dsn, "mtbs_perims"))
+
+srs_mtsp <- fires$getSpatialRef()
+
+# reproject the boundary in ynp_features.gpkg to match the MTBS layer,
+# returning a GDALVector object on the output layer by default
+(bnd <- ogr_reproject(src_dsn = ynp_dsn, src_layer = "ynp_bnd",
+                      out_dsn = mtbs_dsn, out_srs = srs_mtsp))
+
+# do the same for roads and points_of_interest
+roads <- ogr_reproject(ynp_dsn, "roads", mtbs_dsn, srs_mtsp)
+poi <- ogr_reproject(ynp_dsn, "points_of_interest", mtbs_dsn, srs_mtsp)
+
+# set an attribute filter to select the Maple Fire
+fires$setAttributeFilter("incid_name = 'MAPLE'")
+fires$getFeatureCount()
+
+maple_fire <- fires$getNextFeature()
+
+# use the fire polygon as a spatial filter for points_of_interest
+# setSpatialFilter() expects WKT input, so convert the WKB geometry
+g_wk2wk(maple_fire$geom) |> poi$setSpatialFilter()
+poi$getFeatureCount()
+
+poi$setSelectedFields(c("poiname", "poitype", "geom"))
+(maple_pois <- poi$fetch(-1))
+
+plot(bnd$getNextFeature(), col = "wheat")
+plot(maple_fire, col = "orangered", border = NA, add = TRUE)
+plot(maple_pois, pch = 15, col = "royalblue", add = TRUE)
+```
+
 
