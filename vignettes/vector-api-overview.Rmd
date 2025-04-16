@@ -117,9 +117,9 @@ High-level workflow for using **gdalraster** with vector data: distinguishing am
 https://en.wikipedia.org/wiki/Cursor_(databases)
 
 
-### Data type specifications
+## Data type specifications
 
-OGR field types (OFT*) are returned as the following R data types. R currently lacks a native 64-bit integer type. Support for 64-bit integer values in R is provided by the [**bit64** package](https://CRAN.R-project.org/package=bit64) (`numeric` values carrying the `"integer64"` class attribute). OGR NULL values are returned as type-specific `NA` (i.e., `NA`, `NA_integer_`, `NA_integer64_`, `NA_real_`, `NA_character_`). When retrieving a batch of features as a data frame (`"OGRFeatureSet"`), some field types will be contained in a data frame list column as indicated:
+OGR field types are returned as the following R data types. R currently lacks a native 64-bit integer type. Support for 64-bit integer values in R is provided by the [**bit64** package](https://CRAN.R-project.org/package=bit64) (`numeric` values carrying the `"integer64"` class attribute). OGR NULL values are returned as type-specific `NA` (i.e., `NA`, `NA_integer_`, `NA_integer64_`, `NA_real_`, `NA_character_`). When retrieving a batch of features as a data frame (`"OGRFeatureSet"`), some field types will be contained in a data frame list column as indicated:
 
 * **OFTInteger**: `integer` value
 * **OFTInteger subtype OFSTBoolean**: `logical` value
@@ -359,23 +359,22 @@ The cursor can be reset to the beginning of the layer at any time with a call to
 
 ### Fetch all features or progressively in batches
 
-Class `GDALVector` also provides `$fetch()` to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of [`DBI::dbFetch()`](https://dbi.r-dbi.org/reference/dbFetch.html), with the vector layer as the equivalent of a DBI result set. `$fetch()` can be used to get the entire feature set for a layer, one batch of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()` only forward paging is supported.
+Class `GDALVector` also provides `$fetch()` to retrieve the next `n` features from the layer and return them as a data frame. `$fetch()` is an analog of [`DBI::dbFetch()`](https://dbi.r-dbi.org/reference/dbFetch.html), with the vector layer the equivalent of a DBI result set. `$fetch()` can be used to get the entire feature set for a layer, one batch of features at a time, or the remaining features from the current cursor position. Fetching zero features is also possible to retrieve the structure of the layer as a 0-row data frame with fully typed columns. As with `$getNextFeature()` only forward paging is supported.
 
 Passing `n = -1` or `n = Inf` will retrieve all features from the beginning (with an automatic call to `$resetReading()`). Passing `n = NA` is supported and will retrieve the remaining features from the current cursor position. Otherwise, features can be fetched progressively by passing a whole number (`integer` or `numeric`) as the `n` argument. If more features than available are requested, the result is returned in full without warning. If fewer features than requested are returned, further fetches will return a data frame with zero rows.
 
 Note that it is possible to set an attribute filter and/or spatial filter prior to retrieving data to restrict the returned feature set. It is also possible to set specific fields as ignored (or to specify the list of desired fields). This includes potentially omitting the geometry column when access only to feature attributes is needed. Limiting the number of fields returned may save some processing time and/or bandwidth.
 
-Here we read the roads layer after setting an attribute filter to select only the publicly accessible roads. We call `$fetch()` with `n = -1` to read from the beginning and retrieve all available features. The data frame returned by `$fetch()` carries the `"OGRFeatureSet"` class attribute providing S3 methods for `print()` and `plot()`.
+The `layer` argument in the constructor for `GDALVector` can also be given as a SQL SELECT statement. Here we read from the roads layer selecting only the publicly accessible roads. We call `$fetch()` with `n = -1` to read from the beginning and retrieve all available features. The data frame returned by `$fetch()` carries the `"OGRFeatureSet"` class attribute providing S3 methods for `print()` and `plot()`.
 
 ```{r}
-# instantiate an object for the roads layer
-(roads <- new(GDALVector, ynp_dsn, "roads"))
+# SQL layer for public roads
+sql <- "SELECT rdname, opentopubl, geom FROM roads WHERE opentopubl = 'Yes'"
+(roads <- new(GDALVector, ynp_dsn, sql))
 
 roads$getFeatureCount()
 
 roads$getFieldNames()
-
-roads$setAttributeFilter("opentopubl = 'Yes'")
 
 roads_featset <- roads$fetch(-1)
 nrow(roads_featset)
@@ -410,13 +409,13 @@ while (TRUE) {
 poi$close()
 ```
 
-### Read using an ArrowArrayStream
+### Read using ArrowArrayStream
 
 It is also possible to retrieve features in a column-oriented memory layout using the Arrow C Stream interface in OGR (requires GDAL >= 3.6). Performance advantages can be substantial with vector format drivers that provide specialized implementations (e.g., Parquet, FlatGeoBuf, GeoPackage). Drivers with specialized implementations advertise the `FastGetArrowStream` layer capability.
 
-The `$getArrowStream()` method of class `GDALVector` exposes an ArrowArrayStream on the layer as a `nanoarrow_array_stream` object. The [**nanoarrow** package](https://arrow.apache.org/nanoarrow/latest/getting-started/r.html) provides functionality to consume the array stream and import to R data structures which are generally column oriented.
+The `$getArrowStream()` method of class `GDALVector` exposes an ArrowArrayStream on the layer as a `nanoarrow_array_stream` object. The [**nanoarrow** package](https://arrow.apache.org/nanoarrow/latest/getting-started/r.html) provides functionality to consume the array stream and import to R data structures (which are generally column oriented).
 
-The default batch size for the array stream is 65,536 features, but this can be configured on a per-object basis by assigning a value to the `GDALVector` writeable field `$arrowStreamOptions` (a character vector of `"NAME=VALUE"` pairs).
+Note that the `nanoarrow_array_stream` object has a `$get_next()` method which allows accessing features in the stream by batch (returning a `nanoarrow_array` object). The default batch size for an OGR array stream is 65,536 features, but can be configured on a per-object basis by assigning a value to the `GDALVector` writeable field `$arrowStreamOptions` (a character vector of "NAME=VALUE" pairs). **nanoarrow** provides S3 methods for `as.data.frame()` to import a `nanoarrow_array` (one batch at a time) or the `nanoarrow_array_stream` itself (pulling all batches in the stream).
 
 ```{r eval=gdal_3_6_0_min, warning=FALSE}
 # Expose an ArrowArrayStream (requires GDAL >= 3.6)
@@ -428,8 +427,8 @@ roads$resetReading()
 # does the layer have a specialized implementation
 roads$testCapability()$FastGetArrowStream
 
-# change the default ArrowStream options to omit the FID column
-roads$arrowStreamOptions <- c("INCLUDE_FID=NO")
+# optionally set ArrowStream options as character vector of "NAME=VALUE", e.g.,
+roads$arrowStreamOptions <- "INCLUDE_FID=NO"
 # the default batch size of 65,536 could also be configured with
 # MAX_FEATURES_IN_BATCH=num
 
@@ -438,27 +437,27 @@ roads$arrowStreamOptions <- c("INCLUDE_FID=NO")
 # get the array schema if needed
 schema <- stream$get_schema()
 
-# read a batch of features
-batch <- stream$get_next()
+# optionally read by batch, NULL is returned when no more features are available
+# batch <- stream$get_next()
+# if (!is.null(batch))
+#   d_batch <- as.data.frame(batch)
 
-# import the array to a data frame (S3 method from nanoarrow)
-batch_df <- as.data.frame(batch)
-head(batch_df)
-
-# the last batch is NULL
-stream$get_next()
+# or, pull all the batches into a data frame
+d <- as.data.frame(stream)
+nrow(d)
+head(d)
 
 # release the stream when finished
 stream$release()
 
 # 'geom' is a list column of WKB raw vectors which can be passed to the
 # Geometry API functions
-geom_utm <- g_transform(batch_df$geom,
+geom_utm <- g_transform(d$geom,
                         srs_from = roads$getSpatialRef(),
                         srs_to = "EPSG:26912")
 
-batch_df$rdlength <- g_length(geom_utm)
-head(batch_df)
+d$rdlength <- g_length(geom_utm)
+head(d)
 
 roads$close()
 ```
