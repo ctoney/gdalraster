@@ -246,7 +246,7 @@ ogr_layer_field_names(mem_gpkg, "ynp_poi")
 
 # delete a field
 if (ogr_layer_test_cap(mem_gpkg, "ynp_poi")$DeleteField) {
-  ogr_field_delete(mem_gpkg, "ynp_poi", "objectid")
+  ogr_field_delete(mem_gpkg, "ynp_poi", "createdate")
 } else {
   stop("layer does not have DeleteField capability")
 }
@@ -533,13 +533,11 @@ poi$createFeature(feat)
 poi$syncToDisk()
 
 # read back
-poi$setAttributeFilter("poiname = 'YNP centroid'")
-poi$getFeatureCount()
-
-(ynp_centroid <- poi$getNextFeature())
+fid <- poi$getLastWriteFID()
+(ynp_centroid <- poi$getFeature(fid))
 
 plot(bnd_feat, col = "wheat")
-plot(ynp_centroid, pch = 10, cex = 2, add = TRUE)
+plot(ynp_centroid, pch = 10, cex = 1.5, add = TRUE)
 ```
 
 ### Rewrite/replace an existing feature
@@ -551,11 +549,23 @@ The `$setFeature()` method of a `GDALVector` object writes a feature based on th
 * The GeoJSON driver will take into account unset fields to remove the corresponding JSON member.
 
 ```{r}
+# rewrite a point_of_interest feature to update the feature name
+# verify the layer has random write capability
+(poi$testCapability()$RandomWrite)
 
+# FID 3809 is missing the trailhead name
+(feat <- poi$getFeature(3809))
 
-# Maple Fire: lightning-caused re-burn within the 1988 North Fork fire perimeter
+# update the name field and the date of the edit
+feat$poiname <- "Ice Lake Trailhead"
+feat$editdate <- Sys.Date()
 
+# rewrite the feature
+poi$setFeature(feat)
 
+# close and re-open the layer with read-only access
+poi$open(read_only = TRUE)
+(feat <- poi$getFeature(3809))
 ```
 
 ### Delete features
