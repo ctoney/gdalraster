@@ -481,7 +481,11 @@ srs_mtsp <- fires$getSpatialRef()
 (bnd <- ogr_reproject(src_dsn = ynp_dsn, src_layer = "ynp_bnd",
                       out_dsn = mtbs_dsn, out_srs = srs_mtsp))
 
-# do the same for roads and points_of_interest
+(bnd_feat <- bnd$getNextFeature())
+
+bnd$close()
+
+# reproject roads and points_of_interest
 roads <- ogr_reproject(ynp_dsn, "roads", mtbs_dsn, srs_mtsp)
 poi <- ogr_reproject(ynp_dsn, "points_of_interest", mtbs_dsn, srs_mtsp)
 
@@ -499,9 +503,59 @@ poi$getFeatureCount()
 poi$setSelectedFields(c("poiname", "poitype", "geom"))
 (maple_pois <- poi$fetch(-1))
 
-plot(bnd$getNextFeature(), col = "wheat")
+plot(bnd_feat, col = "wheat")
 plot(maple_fire, col = "orangered", border = NA, add = TRUE)
 plot(maple_pois, pch = 15, col = "royalblue", add = TRUE)
 ```
 
+### Write a new feature in an existing layer
 
+The `$createFeature()` method of `GDALVector` object creates and writes a new feature within the layer. The `feature` argument is a named list of fields and their values (which could be be one row of a data frame). The passed feature is written to the layer as a new feature, rather than overwriting an existing one.
+
+```{r}
+# add the YNP centroid as a point of interest
+(bnd_centroid_xy <- g_centroid(bnd_feat$geom))
+
+feat <- list()
+feat$poiname <- "YNP centroid"
+feat$poitype <- "Information"
+feat$createdate <- Sys.Date()
+feat$editdate <- Sys.Date()
+feat$geom <- g_create("POINT", bnd_centroid_xy)
+
+# re-open the points_of_interest layer with update access
+poi$open(read_only = FALSE)
+
+# create and write the new feature
+poi$createFeature(feat)
+
+# be sure pending writes are flushed
+poi$syncToDisk()
+
+# read back
+poi$setAttributeFilter("poiname = 'YNP centroid'")
+poi$getFeatureCount()
+
+(ynp_centroid <- poi$getNextFeature())
+
+plot(bnd_feat, col = "wheat")
+plot(ynp_centroid, pch = 10, cex = 2, add = TRUE)
+```
+
+### Rewrite/replace an existing feature
+
+The `$setFeature()` method of a `GDALVector` object writes a feature based on the feature id (FID) specified in the input. As with `$createFeature()`, the `feature` argument is a named list of fields and their values, and must include a `$FID` element referencing the existing feature to rewrite. Note that if any fields are omitted in the passed `feature` the write behavior is driver-dependent:
+
+* SQL-based drivers which implement set feature through SQL UPDATE will skip unset fields, and thus the content of the existing feature will be preserved.
+* The shapefile driver will write a NULL value in the DBF file.
+* The GeoJSON driver will take into account unset fields to remove the corresponding JSON member.
+
+```{r}
+
+
+# Maple Fire: lightning-caused re-burn within the 1988 North Fork fire perimeter
+
+
+```
+
+### Delete features
