@@ -525,6 +525,7 @@ feat$geom <- g_create("POINT", bnd_centroid_xy)
 
 # re-open the points_of_interest layer with update access
 poi$open(read_only = FALSE)
+poi$testCapability()$SequentialWrite
 
 # create and write the new feature
 poi$createFeature(feat)
@@ -551,7 +552,7 @@ The `$setFeature()` method of a `GDALVector` object writes a feature based on th
 ```{r}
 # rewrite a point_of_interest feature to update the feature name
 # verify the layer has random write capability
-(poi$testCapability()$RandomWrite)
+poi$testCapability()$RandomWrite
 
 # FID 3809 is missing the trailhead name
 (feat <- poi$getFeature(3809))
@@ -562,10 +563,54 @@ feat$editdate <- Sys.Date()
 
 # rewrite the feature
 poi$setFeature(feat)
+poi$syncToDisk()
 
-# close and re-open the layer with read-only access
-poi$open(read_only = TRUE)
 (feat <- poi$getFeature(3809))
 ```
 
-### Delete features
+### Delete a feature
+
+```{r}
+# delete the YNP centroid feature the was created above
+# verify the layer has delete feature capability
+poi$testCapability()$DeleteFeature
+
+poi$getFeature(fid)
+
+poi$deleteFeature(fid)
+poi$syncToDisk()
+
+poi$getFeature(fid)
+```
+
+### Batch write features from data frame input
+
+
+```{r}
+# create a layer definition for random_points
+# the spatial ref was obtained above as: srs_mtsp <- fires$getSpatialRef()
+defn <- ogr_def_layer("POINT", srs = srs_mtsp)
+defn$pt_id <- ogr_def_field("OFTInteger64", is_nullable = FALSE,
+                            is_unique = TRUE)
+defn$pt_desc <- ogr_def_field("OFTString")
+defn$create_time <- ogr_def_field("OFTDateTime")
+
+
+ogr_layer_create(mtbs_dsn, "random_points", layer_defn = defn)
+
+lyr <- new(GDALVector, mtbs_dsn, "random_points", read_only = FALSE)
+
+bb <- g_wk2wk(bnd_feat$geom) |> bbox_from_wkt()
+rndX <- sample((bb[1] + 1):(bb[3] - 1), 10000, replace=T)
+rndY <- sample((bb[2] + 1):(bb[4] - 1), 10000, replace=T)
+pts <- cbind(rndX, rndY)
+pts_geom <- g_create("POINT", pts)
+d <- data.frame(pt_id = 1:10000, pt_desc = rep("random points batch 1", 10000),
+                create_time = rep(Sys.time(), 10000))
+d$geom <- pts_geom
+
+res <- lyr$batchCreateFeature(d)
+
+
+
+```
