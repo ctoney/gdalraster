@@ -585,32 +585,59 @@ poi$getFeature(fid)
 
 ### Batch write features from data frame input
 
+By default, the GeoPackage driver automatically creates a column named `fid` to use for the OGR FID (primary key in the SQLite database). This can be configured with the `FID=value` layer creation option. Note that FID (feature id) is a special property of a feature and not treated as an attribute, so we do not specify it in the layer definition.
 
 ```{r}
 # create a layer definition for random_points
 # the spatial ref was obtained above as: srs_mtsp <- fires$getSpatialRef()
 defn <- ogr_def_layer("POINT", srs = srs_mtsp)
-defn$pt_id <- ogr_def_field("OFTInteger64", is_nullable = FALSE,
-                            is_unique = TRUE)
 defn$pt_desc <- ogr_def_field("OFTString")
 defn$create_time <- ogr_def_field("OFTDateTime")
-
 
 ogr_layer_create(mtbs_dsn, "random_points", layer_defn = defn)
 
 lyr <- new(GDALVector, mtbs_dsn, "random_points", read_only = FALSE)
 
 bb <- g_wk2wk(bnd_feat$geom) |> bbox_from_wkt()
-rndX <- sample((bb[1] + 1):(bb[3] - 1), 10000, replace=T)
-rndY <- sample((bb[2] + 1):(bb[4] - 1), 10000, replace=T)
+
+batch_size <- as.integer(1e5)
+
+# create a batch of features
+rndX <- sample((bb[1] + 1):(bb[3] - 1), batch_size, replace = TRUE)
+rndY <- sample((bb[2] + 1):(bb[4] - 1), batch_size, replace = TRUE)
 pts <- cbind(rndX, rndY)
 pts_geom <- g_create("POINT", pts)
-d <- data.frame(pt_id = 1:10000, pt_desc = rep("random points batch 1", 10000),
-                create_time = rep(Sys.time(), 10000))
+d <- data.frame(pt_desc = rep("random points batch 1", batch_size),
+                create_time = rep(Sys.time(), batch_size))
 d$geom <- pts_geom
 
-res <- lyr$batchCreateFeature(d)
+# write the batch (no transaction)
+system.time(res <- lyr$batchCreateFeature(d))
 
+(all(res))
 
+lyr$syncToDisk()
 
+# create a second batch of features
+rndX <- sample((bb[1] + 1):(bb[3] - 1), batch_size, replace = TRUE)
+rndY <- sample((bb[2] + 1):(bb[4] - 1), batch_size, replace = TRUE)
+pts <- cbind(rndX, rndY)
+pts_geom <- g_create("POINT", pts)
+d <- data.frame(pt_desc = rep("random points batch 2", batch_size),
+                create_time = rep(Sys.time(), batch_size))
+d$geom <- pts_geom
+
+# write the batch using a database transaction
+system.time({
+  lyr$startTransaction()
+  res2 <- lyr$batchCreateFeature(d)
+  if (all(res2))
+    lyr$commitTransaction()
+  else
+    lyr$rollbackTransaction()
+})
+
+(all(res2))
+
+lyr$close()
 ```
