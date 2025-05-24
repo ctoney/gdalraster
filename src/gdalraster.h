@@ -370,7 +370,8 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
                                          const Rcpp::RObject &xyzA,
                                          const std::string &srsA,
                                          const Rcpp::RObject &xyzB,
-                                         const std::string &srsB);
+                                         const std::string &srsB,
+                                         bool quiet);
 
 bool ogr2ogr(const Rcpp::CharacterVector &src_dsn,
              const Rcpp::CharacterVector &dst_dsn,

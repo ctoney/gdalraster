@@ -1482,7 +1482,7 @@ dem_proc <- function(mode,
 
 
 isLineOfSightVisible <- function(raster, ptsA, ptsB, band = 1L,
-                                 srsA = NULL, srsB = srsA) {
+                                 srsA = NULL, srsB = srsA, quiet = FALSE) {
 
     if (gdal_version_num() < gdal_compute_version(3, 9, 0))
         stop("isLineOfSightVisible() requires GDAL >= 3.9", call. = FALSE)

@@ -1722,7 +1722,8 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
                                          const Rcpp::RObject &ptsA,
                                          const std::string &srsA,
                                          const Rcpp::RObject &ptsB,
-                                         const std::string &srsB) {
+                                         const std::string &srsB,
+                                         bool quiet) {
 
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 9, 0)
     Rcpp::stop("isLineOfSightVisible() requires GDAL >= 3.9");
@@ -1738,17 +1739,34 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
     if (ptsB_in.nrow() == 0)
         Rcpp::stop("'ptsB' is empty");
 
+    if ((ptsA_in.nrow() != ptsB_in.nrow()) && ptsA_in.nrow() != 1)
+        Rcpp::stop("incompatible number of points in 'ptsA' vs 'ptsB'");
+
     if (ptsA_in.ncol() < 2 || ptsA_in.ncol() > 3)
         Rcpp::stop("input matrix for 'ptsA' must have 2 or 3 columns");
 
     if (ptsB_in.ncol() < 2 || ptsB_in.ncol() > 3)
         Rcpp::stop("input matrix for 'ptsB' must have 2 or 3 columns");
 
-    if (srsA != "")
+    if (srsA != "") {
+        if (!quiet)
+            Rcpp::Rcout << "transforming 'ptsA'..." << std::endl;
         ptsA_in = transform_xy(ptsA_in, srsA, ds->getProjection());
+    }
 
-    if (srsB != "")
+    if (srsB != "") {
+        if (!quiet)
+            Rcpp::Rcout << "transforming 'ptsB'..." << std::endl;
         ptsB_in = transform_xy(ptsB_in, srsB, ds->getProjection());
+    }
+
+    if (ptsA_in.nrow() == 1) {
+        if (Rcpp::NumericVector::is_na(ptsA_in(0, 0)) ||
+            Rcpp::NumericVector::is_na(ptsA_in(0, 1))) {
+
+            Rcpp::stop("point A has missing value(s) for x and/or y");
+        }
+    }
 
     R_xlen_t num_pts = ptsB_in.nrow();
 
@@ -1758,17 +1776,121 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
 
     int raster_xsize = GDALGetRasterXSize(ds->getGDALDatasetH_());
     int raster_ysize = GDALGetRasterYSize(ds->getGDALDatasetH_());
-
+    GDALProgressFunc pfnProgress = GDALTermProgressR;
     GDALRasterBandH hBand = ds->getBand_(band);
 
     Rcpp::LogicalVector out = Rcpp::no_init(num_pts);
+    R_xlen_t pts_outside = 0;
 
     for (R_xlen_t i = 0; i < num_pts; ++i) {
+        if (!quiet) {
+            Rcpp::Rcout << "checking line-of-sight..." << std::endl;
 
+            pfnProgress(0, nullptr, nullptr);
+        }
 
+        double geo_xA = NA_REAL;
+        double geo_yA = NA_REAL;
+        double zA = 0;
+        if (ptsA_in.nrow() > 1) {
+            geo_xA = ptsA_in(i, 0);
+            geo_yA = ptsA_in(i, 1);
+            if (ptsA_in.ncol() == 3) {
+                zA = ptsA_in(i, 2);
+            }
+        }
+        else {
+            geo_xA = ptsA_in(0, 0);
+            geo_yA = ptsA_in(0, 1);
+            if (ptsA_in.ncol() == 3) {
+                zA = ptsA_in(0, 2);
+            }
+        }
 
+        double geo_xB = NA_REAL;
+        double geo_yB = NA_REAL;
+        double zB = 0;
+        geo_xB = ptsB_in(i, 0);
+        geo_yB = ptsB_in(i, 1);
+        if (ptsB_in.ncol() == 3) {
+            zB = ptsB_in(i, 2);
+        }
 
+        if (Rcpp::NumericVector::is_na(geo_xA) ||
+            Rcpp::NumericVector::is_na(geo_yA) ||
+            Rcpp::NumericVector::is_na(zA) ||
+            Rcpp::NumericVector::is_na(geo_xB) ||
+            Rcpp::NumericVector::is_na(geo_yB) ||
+            Rcpp::NumericVector::is_na(zB)) {
 
+            out[i] = NA_LOGICAL;
+            continue;
+        }
+
+        // convert to raster row/column
+        // allow input coordinates exactly on the bottom or right edges
+        // match behavior in: https://github.com/OSGeo/gdal/pull/12087
+
+        double grid_xA = inv_gt[0] + inv_gt[1] * geo_xA + inv_gt[2] * geo_yA;
+        double grid_yA = inv_gt[3] + inv_gt[4] * geo_xA + inv_gt[5] * geo_yA;
+
+        if ((grid_xA < 0 || grid_xA > static_cast<double>(raster_xsize) ||
+             grid_yA < 0 || grid_yA > static_cast<double>(raster_ysize)) &&
+            !(ARE_REAL_EQUAL(grid_xA, static_cast<double>(raster_xsize)) ||
+              ARE_REAL_EQUAL(grid_yA, static_cast<double>(raster_ysize)))) {
+
+            pts_outside += 1;
+
+            out[i] = NA_LOGICAL;
+            continue;
+        }
+
+        if (ARE_REAL_EQUAL(grid_xA, static_cast<double>(raster_xsize)))
+            grid_xA -= 0.25;
+        if (ARE_REAL_EQUAL(grid_yA, static_cast<double>(raster_ysize)))
+            grid_yA -= 0.25;
+
+        double grid_xB = inv_gt[0] + inv_gt[1] * geo_xB + inv_gt[2] * geo_yB;
+        double grid_yB = inv_gt[3] + inv_gt[4] * geo_xB + inv_gt[5] * geo_yB;
+
+        if ((grid_xB < 0 || grid_xB > static_cast<double>(raster_xsize) ||
+             grid_yB < 0 || grid_yB > static_cast<double>(raster_ysize)) &&
+            !(ARE_REAL_EQUAL(grid_xB, static_cast<double>(raster_xsize)) ||
+              ARE_REAL_EQUAL(grid_yB, static_cast<double>(raster_ysize)))) {
+
+            pts_outside += 1;
+
+            out[i] = NA_LOGICAL;
+            continue;
+        }
+
+        if (ARE_REAL_EQUAL(grid_xB, static_cast<double>(raster_xsize)))
+            grid_xB -= 0.25;
+        if (ARE_REAL_EQUAL(grid_yB, static_cast<double>(raster_ysize)))
+            grid_yB -= 0.25;
+
+        int xA = static_cast<int>(std::floor(grid_xA));
+        int yA = static_cast<int>(std::floor(grid_yA));
+        int xB = static_cast<int>(std::floor(grid_xB));
+        int yB = static_cast<int>(std::floor(grid_yB));
+
+        if (GDALIsLineOfSightVisible(hBand, xA, yA, zA, xB, yB, zB,
+                                     nullptr, nullptr, nullptr)) {
+            out[i] = 1;
+        }
+        else {
+            out[i] = 0;
+        }
+
+        if (!quiet)
+            pfnProgress((i + 1.0) / num_pts, nullptr, nullptr);
+    }
+
+    if (!quiet && pts_outside > 0) {
+        std::string msg =
+                "point(s) were outside the raster extent, NA returned";
+
+        Rcpp::warning(std::to_string(pts_outside) + " " + msg);
     }
 
     return out;
