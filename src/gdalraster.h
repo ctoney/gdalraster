@@ -366,6 +366,12 @@ bool footprint(const Rcpp::CharacterVector &src_filename,
                const Rcpp::CharacterVector &dst_filename,
                const Rcpp::Nullable<Rcpp::CharacterVector> &cl_arg);
 
+Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
+                                         const Rcpp::RObject &xyzA,
+                                         const std::string &srsA,
+                                         const Rcpp::RObject &xyzB,
+                                         const std::string &srsB);
+
 bool ogr2ogr(const Rcpp::CharacterVector &src_dsn,
              const Rcpp::CharacterVector &dst_dsn,
              const Rcpp::Nullable<Rcpp::CharacterVector> &src_layers,

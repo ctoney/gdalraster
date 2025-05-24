@@ -24,6 +24,7 @@
 
 #include "cmb_table.h"
 #include "ogr_util.h"
+#include "transform.h"
 #include "gdalraster.h"
 
 //' Get GDAL version
@@ -1717,17 +1718,61 @@ bool footprint(const Rcpp::CharacterVector &src_filename,
 //'
 //' @noRd
 // [[Rcpp::export(name = ".isLineOfSightVisible")]]
-bool isLineOfSightVisible(const GDALRaster* const &ds,
-                          int band,
-                          const Rcpp::RObject &xyzA,
-                          const std::string &srsA,
-                          const Rcpp::RObject &xyzB,
-                          const std::string &srsB) {
+Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
+                                         const Rcpp::RObject &ptsA,
+                                         const std::string &srsA,
+                                         const Rcpp::RObject &ptsB,
+                                         const std::string &srsB) {
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 9, 0)
+    Rcpp::stop("isLineOfSightVisible() requires GDAL >= 3.9");
+
+#else
+
+    Rcpp::NumericMatrix ptsA_in = xy_robject_to_matrix_(ptsA);
+    Rcpp::NumericMatrix ptsB_in = xy_robject_to_matrix_(ptsB);
+
+    if (ptsA_in.nrow() == 0)
+        Rcpp::stop("'ptsA' is empty");
+
+    if (ptsB_in.nrow() == 0)
+        Rcpp::stop("'ptsB' is empty");
+
+    if (ptsA_in.ncol() < 2 || ptsA_in.ncol() > 3)
+        Rcpp::stop("input matrix for 'ptsA' must have 2 or 3 columns");
+
+    if (ptsB_in.ncol() < 2 || ptsB_in.ncol() > 3)
+        Rcpp::stop("input matrix for 'ptsB' must have 2 or 3 columns");
+
+    if (srsA != "")
+        ptsA_in = transform_xy(ptsA_in, srsA, ds->getProjection());
+
+    if (srsB != "")
+        ptsB_in = transform_xy(ptsB_in, srsB, ds->getProjection());
+
+    R_xlen_t num_pts = ptsB_in.nrow();
+
+    Rcpp::NumericVector inv_gt = inv_geotransform(ds->getGeoTransform());
+    if (Rcpp::any(Rcpp::is_na(inv_gt)))
+        Rcpp::stop("failed to get inverse geotransform");
+
+    int raster_xsize = GDALGetRasterXSize(ds->getGDALDatasetH_());
+    int raster_ysize = GDALGetRasterYSize(ds->getGDALDatasetH_());
+
+    GDALRasterBandH hBand = ds->getBand_(band);
+
+    Rcpp::LogicalVector out = Rcpp::no_init(num_pts);
+
+    for (R_xlen_t i = 0; i < num_pts; ++i) {
 
 
 
 
 
+    }
+
+    return out;
+#endif
 }
 
 
