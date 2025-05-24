@@ -1481,6 +1481,97 @@ dem_proc <- function(mode,
 }
 
 
+isLineOfSightVisible <- function(raster, ptsA, ptsB, band = 1L,
+                                 srsA = NULL, srsB = srsA) {
+
+    ds <- NULL
+    close_ds <- FALSE
+    if (is(raster, "Rcpp_GDALRaster")) {
+        ds <- raster
+        if (!ds$isOpen()) {
+            stop("raster dataset is not open", call. = FALSE)
+        }
+    } else if (is.character(raster) && length(raster) == 1) {
+        ds <- new(GDALRaster, raster)
+        close_ds <- TRUE
+    } else {
+        stop("'raster' must be a character string or GDALRaster object",
+             call. = FALSE)
+    }
+
+    if (is.null(band))
+        band <- 1L
+    if (!(is.numeric(band) && length(band == 1)))
+        stop("'band' must be a numeric value", call. = FALSE)
+
+    if (missing(ptsA) || is.null(ptsA))
+        stop("'ptsA' is required", call. = FALSE)
+
+    if (missing(ptsB) || is.null(ptsB))
+        stop("'ptsB' is required", call. = FALSE)
+
+    if (is.null(srsA))
+        srsA <- ""
+    else if (!is.character(srsA) || length(srsA) > 1)
+        stop("'srsA' must be a character string", call. = FALSE)
+
+    if (is.null(srsB))
+        srsB <- ""
+    else if (!is.character(srsB) || length(srsB) > 1)
+        stop("'srsB' must be a character string", call. = FALSE)
+
+    ptsA_in <- NULL
+    if (is.raw(ptsA) || (is.list(ptsA) && is.raw(ptsA[[1]]) ||
+        is.character(ptsA))) {
+
+        if (is.raw(ptsA)) {
+            geom_type <- g_name(ptsA)
+        } else {
+            geom_type <- g_name(ptsA[[1]])
+        }
+        if (toupper(geom_type) != "POINT")
+            stop("'ptsA' does not contain POINT geometry type", call. = FALSE)
+
+        coords <- g_coords(ptsA)
+        if (!is.null(coords$z)) {
+            ptsA_in <- coords[, c("x", "y", "z")]
+        } else {
+            ptsA_in <- coords[, c("x", "y")]
+        }
+    } else if (is.data.frame(ptsA) || is.matrix(ptsA) || is.vector(ptsA)) {
+        ptsA_in <- ptsA
+    } else {
+        stop("'ptsA' is not a valid input type", call. = FALSE)
+    }
+
+    ptsB_in <- NULL
+    if (is.raw(ptsB) || (is.list(ptsB) && is.raw(ptsB[[1]]) ||
+        is.character(ptsB))) {
+
+        if (is.raw(ptsB)) {
+            geom_type <- g_name(ptsB)
+        } else {
+            geom_type <- g_name(ptsB[[1]])
+        }
+        if (toupper(geom_type) != "POINT")
+            stop("'ptsB' does not contain POINT geometry type", call. = FALSE)
+
+        coords <- g_coords(ptsB)
+        if (!is.null(coords$z)) {
+            ptsB_in <- coords[, c("x", "y", "z")]
+        } else {
+            ptsB_in <- coords[, c("x", "y")]
+        }
+    } else if (is.data.frame(ptsB) || is.matrix(ptsB) || is.vector(ptsB)) {
+        ptsB_in <- ptsB
+    } else {
+        stop("'ptsB' is not a valid input type", call. = FALSE)
+    }
+
+
+}
+
+
 #' Extract pixel values at geospatial point locations
 #'
 #' @description

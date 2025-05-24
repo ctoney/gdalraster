@@ -1709,6 +1709,28 @@ bool footprint(const Rcpp::CharacterVector &src_filename,
 }
 
 
+//' Check Line of Sight between pairs of points
+//'
+//' Wrapper of GDALIsLineOfSightVisible()
+//'
+//' Called from and documented in R/gdalraster_proc.R
+//'
+//' @noRd
+// [[Rcpp::export(name = ".isLineOfSightVisible")]]
+bool isLineOfSightVisible(const GDALRaster* const &ds,
+                          int band,
+                          const Rcpp::RObject &xyzA,
+                          const std::string &srsA,
+                          const Rcpp::RObject &xyzB,
+                          const std::string &srsB) {
+
+
+
+
+
+}
+
+
 //' Convert vector data between different formats
 //'
 //' `ogr2ogr()` is a wrapper of the \command{ogr2ogr} command-line
