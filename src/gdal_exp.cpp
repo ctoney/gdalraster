@@ -1782,6 +1782,14 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
     GDALProgressFunc pfnProgress = GDALTermProgressR;
     GDALRasterBandH hBand = ds->getBand_(band);
 
+    bool zA_interp_as_above_dem = false;
+    if (EQUAL(ZinterpA.c_str(), "ABOVE_DEM"))
+        zA_interp_as_above_dem = true;
+
+    bool zB_interp_as_above_dem = false;
+    if (EQUAL(ZinterpB.c_str(), "ABOVE_DEM"))
+        zB_interp_as_above_dem = true;
+
     Rcpp::LogicalVector out = Rcpp::no_init(num_pts);
     R_xlen_t pts_outside = 0;
 
@@ -1842,47 +1850,43 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
         double grid_xA = inv_gt[0] + inv_gt[1] * geo_xA + inv_gt[2] * geo_yA;
         double grid_yA = inv_gt[3] + inv_gt[4] * geo_xA + inv_gt[5] * geo_yA;
 
-        if ((grid_xA < 0 || grid_xA > static_cast<double>(raster_xsize) ||
-             grid_yA < 0 || grid_yA > static_cast<double>(raster_ysize)) &&
-            !(ARE_REAL_EQUAL(grid_xA, static_cast<double>(raster_xsize)) ||
-              ARE_REAL_EQUAL(grid_yA, static_cast<double>(raster_ysize)))) {
-
-            pts_outside += 1;
-
-            out[i] = NA_LOGICAL;
-            continue;
-        }
-
         if (ARE_REAL_EQUAL(grid_xA, static_cast<double>(raster_xsize)))
             grid_xA -= 0.25;
         if (ARE_REAL_EQUAL(grid_yA, static_cast<double>(raster_ysize)))
             grid_yA -= 0.25;
 
-        double grid_xB = inv_gt[0] + inv_gt[1] * geo_xB + inv_gt[2] * geo_yB;
-        double grid_yB = inv_gt[3] + inv_gt[4] * geo_xB + inv_gt[5] * geo_yB;
-
-        if ((grid_xB < 0 || grid_xB > static_cast<double>(raster_xsize) ||
-             grid_yB < 0 || grid_yB > static_cast<double>(raster_ysize)) &&
-            !(ARE_REAL_EQUAL(grid_xB, static_cast<double>(raster_xsize)) ||
-              ARE_REAL_EQUAL(grid_yB, static_cast<double>(raster_ysize)))) {
+        if ((grid_xA < 0 || grid_xA > static_cast<double>(raster_xsize) ||
+             grid_yA < 0 || grid_yA > static_cast<double>(raster_ysize))) {
 
             pts_outside += 1;
 
             out[i] = NA_LOGICAL;
             continue;
         }
+
+        double grid_xB = inv_gt[0] + inv_gt[1] * geo_xB + inv_gt[2] * geo_yB;
+        double grid_yB = inv_gt[3] + inv_gt[4] * geo_xB + inv_gt[5] * geo_yB;
 
         if (ARE_REAL_EQUAL(grid_xB, static_cast<double>(raster_xsize)))
             grid_xB -= 0.25;
         if (ARE_REAL_EQUAL(grid_yB, static_cast<double>(raster_ysize)))
             grid_yB -= 0.25;
 
+        if ((grid_xB < 0 || grid_xB > static_cast<double>(raster_xsize) ||
+             grid_yB < 0 || grid_yB > static_cast<double>(raster_ysize))) {
+
+            pts_outside += 1;
+
+            out[i] = NA_LOGICAL;
+            continue;
+        }
+
         int xA = static_cast<int>(std::floor(grid_xA));
         int yA = static_cast<int>(std::floor(grid_yA));
         int xB = static_cast<int>(std::floor(grid_xB));
         int yB = static_cast<int>(std::floor(grid_yB));
 
-        if (EQUAL(ZinterpA.c_str(), "ABOVE_DEM")) {
+        if (zA_interp_as_above_dem) {
             Rcpp::NumericVector elev = Rcpp::as<Rcpp::NumericVector>(
                                                 ds->read(band, xA, yA,
                                                          1, 1, 1, 1));
@@ -1892,11 +1896,11 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
                 continue;
             }
             else {
-                zA = zA + elev[0];
+                zA += elev[0];
             }
         }
 
-        if (EQUAL(ZinterpB.c_str(), "ABOVE_DEM")) {
+        if (zB_interp_as_above_dem) {
             Rcpp::NumericVector elev = Rcpp::as<Rcpp::NumericVector>(
                                                 ds->read(band, xB, yB,
                                                          1, 1, 1, 1));
@@ -1906,7 +1910,7 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
                 continue;
             }
             else {
-                zB = zB + elev[0];
+                zB += elev[0];
             }
         }
 
