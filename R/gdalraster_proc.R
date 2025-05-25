@@ -1482,7 +1482,9 @@ dem_proc <- function(mode,
 
 
 isLineOfSightVisible <- function(raster, ptsA, ptsB, band = 1L,
-                                 srsA = NULL, srsB = srsA, quiet = FALSE) {
+                                 srsA = NULL, srsB = srsA,
+                                 ZinterpA = "ACTUAL", ZinterpB = "ACTUAL",
+                                 quiet = FALSE) {
 
     if (gdal_version_num() < gdal_compute_version(3, 9, 0))
         stop("isLineOfSightVisible() requires GDAL >= 3.9", call. = FALSE)
@@ -1523,6 +1525,24 @@ isLineOfSightVisible <- function(raster, ptsA, ptsB, band = 1L,
     else if (!is.character(srsB) || length(srsB) > 1)
         stop("'srsB' must be a character string", call. = FALSE)
 
+    if (is.null(ZinterpA))
+        ZinterpA <- "ACTUAL"
+    else if (!is.character(ZinterpA) || length(ZinterpA) > 1)
+        stop("'ZinterpA' must be a character string", call. = FALSE)
+    if (!(toupper(ZinterpA) %in% c("ACTUAL", "ABOVE_DEM"))) {
+        stop("'ZinterpA' must be one of \"ACTUAL\" or \"ABOVE_DEM\"",
+             call. = FALSE)
+    }
+
+    if (is.null(ZinterpB))
+        ZinterpB <- "ACTUAL"
+    else if (!is.character(ZinterpB) || length(ZinterpB) > 1)
+        stop("'ZinterpB' must be a character string", call. = FALSE)
+    if (!(toupper(ZinterpB) %in% c("ACTUAL", "ABOVE_DEM"))) {
+        stop("'ZinterpB' must be one of \"ACTUAL\" or \"ABOVE_DEM\"",
+             call. = FALSE)
+    }
+
     ptsA_in <- NULL
     if (is.raw(ptsA) || (is.list(ptsA) && is.raw(ptsA[[1]]) ||
         is.character(ptsA))) {
@@ -1539,7 +1559,7 @@ isLineOfSightVisible <- function(raster, ptsA, ptsB, band = 1L,
         if (!is.null(coords$z)) {
             ptsA_in <- coords[, c("x", "y", "z")]
         } else {
-            ptsA_in <- coords[, c("x", "y")]
+            stop("'ptsA' does not contain Z values", call. = FALSE)
         }
     } else if (is.data.frame(ptsA) || is.matrix(ptsA) || is.vector(ptsA)) {
         ptsA_in <- ptsA
@@ -1563,7 +1583,7 @@ isLineOfSightVisible <- function(raster, ptsA, ptsB, band = 1L,
         if (!is.null(coords$z)) {
             ptsB_in <- coords[, c("x", "y", "z")]
         } else {
-            ptsB_in <- coords[, c("x", "y")]
+            stop("'ptsB' does not contain Z values", call. = FALSE)
         }
     } else if (is.data.frame(ptsB) || is.matrix(ptsB) || is.vector(ptsB)) {
         ptsB_in <- ptsB
@@ -1571,7 +1591,13 @@ isLineOfSightVisible <- function(raster, ptsA, ptsB, band = 1L,
         stop("'ptsB' is not a valid input type", call. = FALSE)
     }
 
+    ret <- .isLineOfSightVisible(ds, band, ptsA_in, srsA, ZinterpA,
+                                 ptsB_in, srsB, ZinterpB, quiet)
 
+    if (close_ds)
+        ds$close()
+
+    return(ret)
 }
 
 

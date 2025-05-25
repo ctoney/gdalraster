@@ -1721,8 +1721,10 @@ bool footprint(const Rcpp::CharacterVector &src_filename,
 Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
                                          const Rcpp::RObject &ptsA,
                                          const std::string &srsA,
+                                         const std::string &ZinterpA,
                                          const Rcpp::RObject &ptsB,
                                          const std::string &srsB,
+                                         const std::string &ZinterpB,
                                          bool quiet) {
 
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 9, 0)
@@ -1742,11 +1744,11 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
     if ((ptsA_in.nrow() != ptsB_in.nrow()) && ptsA_in.nrow() != 1)
         Rcpp::stop("incompatible number of points in 'ptsA' vs 'ptsB'");
 
-    if (ptsA_in.ncol() < 2 || ptsA_in.ncol() > 3)
-        Rcpp::stop("input matrix for 'ptsA' must have 2 or 3 columns");
+    if (ptsA_in.ncol() != 3)
+        Rcpp::stop("input matrix for 'ptsA' must have 3 columns (xyz)");
 
-    if (ptsB_in.ncol() < 2 || ptsB_in.ncol() > 3)
-        Rcpp::stop("input matrix for 'ptsB' must have 2 or 3 columns");
+    if (ptsB_in.ncol() != 3)
+        Rcpp::stop("input matrix for 'ptsB' must have 3 columns (xyz)");
 
     if (srsA != "") {
         if (!quiet)
@@ -1762,9 +1764,10 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
 
     if (ptsA_in.nrow() == 1) {
         if (Rcpp::NumericVector::is_na(ptsA_in(0, 0)) ||
-            Rcpp::NumericVector::is_na(ptsA_in(0, 1))) {
+            Rcpp::NumericVector::is_na(ptsA_in(0, 1)) ||
+            Rcpp::NumericVector::is_na(ptsA_in(0, 2))) {
 
-            Rcpp::stop("point A has missing value(s) for x and/or y");
+            Rcpp::stop("point A contains one or more missing value(s)");
         }
     }
 
@@ -1782,29 +1785,25 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
     Rcpp::LogicalVector out = Rcpp::no_init(num_pts);
     R_xlen_t pts_outside = 0;
 
+    if (!quiet) {
+        Rcpp::Rcout << "checking line-of-sight..." << std::endl;
+
+        pfnProgress(0, nullptr, nullptr);
+    }
+
     for (R_xlen_t i = 0; i < num_pts; ++i) {
-        if (!quiet) {
-            Rcpp::Rcout << "checking line-of-sight..." << std::endl;
-
-            pfnProgress(0, nullptr, nullptr);
-        }
-
         double geo_xA = NA_REAL;
         double geo_yA = NA_REAL;
-        double zA = 0;
+        double zA = NA_REAL;
         if (ptsA_in.nrow() > 1) {
             geo_xA = ptsA_in(i, 0);
             geo_yA = ptsA_in(i, 1);
-            if (ptsA_in.ncol() == 3) {
-                zA = ptsA_in(i, 2);
-            }
+            zA = ptsA_in(i, 2);
         }
         else {
             geo_xA = ptsA_in(0, 0);
             geo_yA = ptsA_in(0, 1);
-            if (ptsA_in.ncol() == 3) {
-                zA = ptsA_in(0, 2);
-            }
+            zA = ptsA_in(0, 2);
         }
 
         double geo_xB = NA_REAL;
@@ -1812,19 +1811,28 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
         double zB = 0;
         geo_xB = ptsB_in(i, 0);
         geo_yB = ptsB_in(i, 1);
-        if (ptsB_in.ncol() == 3) {
-            zB = ptsB_in(i, 2);
+        zB = ptsB_in(i, 2);
+
+        if (ptsA_in.nrow() > 1) {
+            if (Rcpp::NumericVector::is_na(geo_xA) ||
+                Rcpp::NumericVector::is_na(geo_yA) ||
+                Rcpp::NumericVector::is_na(zA) ||
+                Rcpp::NumericVector::is_na(geo_xB) ||
+                Rcpp::NumericVector::is_na(geo_yB) ||
+                Rcpp::NumericVector::is_na(zB)) {
+
+                out[i] = NA_LOGICAL;
+                continue;
+            }
         }
+        else {
+            if (Rcpp::NumericVector::is_na(geo_xB) ||
+                Rcpp::NumericVector::is_na(geo_yB) ||
+                Rcpp::NumericVector::is_na(zB)) {
 
-        if (Rcpp::NumericVector::is_na(geo_xA) ||
-            Rcpp::NumericVector::is_na(geo_yA) ||
-            Rcpp::NumericVector::is_na(zA) ||
-            Rcpp::NumericVector::is_na(geo_xB) ||
-            Rcpp::NumericVector::is_na(geo_yB) ||
-            Rcpp::NumericVector::is_na(zB)) {
-
-            out[i] = NA_LOGICAL;
-            continue;
+                out[i] = NA_LOGICAL;
+                continue;
+            }
         }
 
         // convert to raster row/column
@@ -1874,12 +1882,40 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
         int xB = static_cast<int>(std::floor(grid_xB));
         int yB = static_cast<int>(std::floor(grid_yB));
 
+        if (EQUAL(ZinterpA.c_str(), "ABOVE_DEM")) {
+            Rcpp::NumericVector elev = Rcpp::as<Rcpp::NumericVector>(
+                                                ds->read(band, xA, yA,
+                                                         1, 1, 1, 1));
+
+            if (Rcpp::NumericVector::is_na(elev[0])) {
+                out[i] = NA_LOGICAL;
+                continue;
+            }
+            else {
+                zA = zA + elev[0];
+            }
+        }
+
+        if (EQUAL(ZinterpB.c_str(), "ABOVE_DEM")) {
+            Rcpp::NumericVector elev = Rcpp::as<Rcpp::NumericVector>(
+                                                ds->read(band, xB, yB,
+                                                         1, 1, 1, 1));
+
+            if (Rcpp::NumericVector::is_na(elev[0])) {
+                out[i] = NA_LOGICAL;
+                continue;
+            }
+            else {
+                zB = zB + elev[0];
+            }
+        }
+
         if (GDALIsLineOfSightVisible(hBand, xA, yA, zA, xB, yB, zB,
                                      nullptr, nullptr, nullptr)) {
-            out[i] = 1;
+            out[i] = TRUE;
         }
         else {
-            out[i] = 0;
+            out[i] = FALSE;
         }
 
         if (!quiet)
