@@ -1795,7 +1795,6 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
 
     if (!quiet) {
         Rcpp::Rcout << "checking line-of-sight..." << std::endl;
-
         pfnProgress(0, nullptr, nullptr);
     }
 
@@ -1807,6 +1806,13 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
             geo_xA = ptsA_in(i, 0);
             geo_yA = ptsA_in(i, 1);
             zA = ptsA_in(i, 2);
+            if (Rcpp::NumericVector::is_na(geo_xA) ||
+                Rcpp::NumericVector::is_na(geo_yA) ||
+                Rcpp::NumericVector::is_na(zA)) {
+
+                out[i] = NA_LOGICAL;
+                continue;
+            }
         }
         else {
             geo_xA = ptsA_in(0, 0);
@@ -1816,37 +1822,24 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds, int band,
 
         double geo_xB = NA_REAL;
         double geo_yB = NA_REAL;
-        double zB = 0;
+        double zB = NA_REAL;
         geo_xB = ptsB_in(i, 0);
         geo_yB = ptsB_in(i, 1);
         zB = ptsB_in(i, 2);
+        if (Rcpp::NumericVector::is_na(geo_xB) ||
+            Rcpp::NumericVector::is_na(geo_yB) ||
+            Rcpp::NumericVector::is_na(zB)) {
 
-        if (ptsA_in.nrow() > 1) {
-            if (Rcpp::NumericVector::is_na(geo_xA) ||
-                Rcpp::NumericVector::is_na(geo_yA) ||
-                Rcpp::NumericVector::is_na(zA) ||
-                Rcpp::NumericVector::is_na(geo_xB) ||
-                Rcpp::NumericVector::is_na(geo_yB) ||
-                Rcpp::NumericVector::is_na(zB)) {
-
-                out[i] = NA_LOGICAL;
-                continue;
-            }
-        }
-        else {
-            if (Rcpp::NumericVector::is_na(geo_xB) ||
-                Rcpp::NumericVector::is_na(geo_yB) ||
-                Rcpp::NumericVector::is_na(zB)) {
-
-                out[i] = NA_LOGICAL;
-                continue;
-            }
+            out[i] = NA_LOGICAL;
+            continue;
         }
 
         // convert to raster row/column
         // allow input coordinates exactly on the bottom or right edges
         // match behavior in: https://github.com/OSGeo/gdal/pull/12087
 
+        // TODO: only do this if ptsA_in.nrow() > 1
+        //       compute abd check above before the loop for the case of 1 ptA
         double grid_xA = inv_gt[0] + inv_gt[1] * geo_xA + inv_gt[2] * geo_yA;
         double grid_yA = inv_gt[3] + inv_gt[4] * geo_xA + inv_gt[5] * geo_yA;
 
