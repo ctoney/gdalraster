@@ -533,7 +533,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // ogrinfo
-std::string ogrinfo(const Rcpp::CharacterVector& dsn, const Rcpp::Nullable<Rcpp::CharacterVector>& layers, const Rcpp::Nullable<Rcpp::CharacterVector>& cl_arg, const Rcpp::Nullable<Rcpp::CharacterVector>& open_options, bool read_only, bool cout);
+Rcpp::String ogrinfo(const Rcpp::CharacterVector& dsn, const Rcpp::Nullable<Rcpp::CharacterVector>& layers, const Rcpp::Nullable<Rcpp::CharacterVector>& cl_arg, const Rcpp::Nullable<Rcpp::CharacterVector>& open_options, bool read_only, bool cout);
 RcppExport SEXP _gdalraster_ogrinfo(SEXP dsnSEXP, SEXP layersSEXP, SEXP cl_argSEXP, SEXP open_optionsSEXP, SEXP read_onlySEXP, SEXP coutSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -1755,14 +1755,29 @@ BEGIN_RCPP
 END_RCPP
 }
 // srs_to_wkt
-std::string srs_to_wkt(const std::string& srs, bool pretty);
-RcppExport SEXP _gdalraster_srs_to_wkt(SEXP srsSEXP, SEXP prettySEXP) {
+std::string srs_to_wkt(const std::string& srs, bool pretty, bool gcs_only);
+RcppExport SEXP _gdalraster_srs_to_wkt(SEXP srsSEXP, SEXP prettySEXP, SEXP gcs_onlySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type srs(srsSEXP);
     Rcpp::traits::input_parameter< bool >::type pretty(prettySEXP);
-    rcpp_result_gen = Rcpp::wrap(srs_to_wkt(srs, pretty));
+    Rcpp::traits::input_parameter< bool >::type gcs_only(gcs_onlySEXP);
+    rcpp_result_gen = Rcpp::wrap(srs_to_wkt(srs, pretty, gcs_only));
+    return rcpp_result_gen;
+END_RCPP
+}
+// srs_to_projjson
+std::string srs_to_projjson(const std::string& srs, bool multiline, int indent_width, const std::string& schema);
+RcppExport SEXP _gdalraster_srs_to_projjson(SEXP srsSEXP, SEXP multilineSEXP, SEXP indent_widthSEXP, SEXP schemaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type srs(srsSEXP);
+    Rcpp::traits::input_parameter< bool >::type multiline(multilineSEXP);
+    Rcpp::traits::input_parameter< int >::type indent_width(indent_widthSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type schema(schemaSEXP);
+    rcpp_result_gen = Rcpp::wrap(srs_to_projjson(srs, multiline, indent_width, schema));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2183,7 +2198,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_ogr_field_delete", (DL_FUNC) &_gdalraster_ogr_field_delete, 3},
     {"_gdalraster_ogr_execute_sql", (DL_FUNC) &_gdalraster_ogr_execute_sql, 4},
     {"_gdalraster_epsg_to_wkt", (DL_FUNC) &_gdalraster_epsg_to_wkt, 2},
-    {"_gdalraster_srs_to_wkt", (DL_FUNC) &_gdalraster_srs_to_wkt, 2},
+    {"_gdalraster_srs_to_wkt", (DL_FUNC) &_gdalraster_srs_to_wkt, 3},
+    {"_gdalraster_srs_to_projjson", (DL_FUNC) &_gdalraster_srs_to_projjson, 4},
     {"_gdalraster_srs_get_name", (DL_FUNC) &_gdalraster_srs_get_name, 1},
     {"_gdalraster_srs_find_epsg", (DL_FUNC) &_gdalraster_srs_find_epsg, 2},
     {"_gdalraster_srs_is_geographic", (DL_FUNC) &_gdalraster_srs_is_geographic, 1},

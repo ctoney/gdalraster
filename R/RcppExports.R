@@ -2584,10 +2584,13 @@ bbox_to_wkt <- function(bbox, extend_x = 0, extend_y = 0) {
     invisible(.Call(`_gdalraster_ogr_execute_sql`, dsn, sql, spatial_filter, dialect))
 }
 
-#' Convert spatial reference definitions to OGC Well Known Text
+#' @noRd
+NULL
+
+#' Convert spatial reference definitions to OGC WKT or PROJJSON
 #'
 #' These functions convert various spatial reference formats to Well Known
-#' Text (WKT).
+#' Text (WKT) or PROJJSON.
 #'
 #' @name srs_convert
 #'
@@ -2602,6 +2605,11 @@ bbox_to_wkt <- function(bbox, extend_x = 0, extend_y = 0) {
 #' try to deduce the format, and then export it to WKT.
 #' Wrapper for `OSRSetFromUserInput()` in the GDAL Spatial Reference System
 #' API with output to WKT.
+#'
+#' `srs_to_projjson()` accepts a spatial reference system (SRS) definition in
+#' any of the formats supported by `srs_to_wkt()`, and converts into PROJJSON
+#' format. Wrapper for `OSRExportToPROJJSON()` in the GDAL Spatial Reference
+#' System API.
 #'
 #' The input SRS may take the following forms:
 #'   * WKT - to convert WKT versions (see below)
@@ -2633,29 +2641,51 @@ bbox_to_wkt <- function(bbox, extend_x = 0, extend_y = 0) {
 #' @param epsg Integer EPSG code.
 #' @param srs Character string containing an SRS definition in various
 #' formats (see Details).
-#' @param pretty Logical. `TRUE` to return a nicely formatted WKT string
+#' @param pretty Logical value. `TRUE` to return a nicely formatted WKT string
 #' for display to a person. `FALSE` for a regular WKT string (the default).
 #' @return Character string containing OGC WKT.
+#' @param gcs_only Logical value. `TRUE` to return only the definition of the
+#' GEOGCS node of the input `srs`. Defaults to `FALSE` (see Note).
+#' @param multiline Logical value. `TRUE` for PROJJSON multiline output (the
+#' default).
+#' @param indent_width Integer value. Defaults to `2`.
+#' Only used if `multiline = TRUE` for PROJJSON output.
+#' @param schema Character string containing URL to PROJJSON schema. Can be
+#' set to empty string to disable it (the default).
+#'
+#' @note
+#' Setting `gcs_only = TRUE` in `srs_to_wkt()` is a wrapper of
+#' `OSRCloneGeogCS()` in the GDAL API. The returned WKT will be for the GEOGCS
+#' node of the input `srs`.
 #'
 #' @seealso
 #' [srs_query]
 #'
 #' @examples
 #' epsg_to_wkt(5070)
-#' writeLines(epsg_to_wkt(5070, pretty=TRUE))
+#' writeLines(epsg_to_wkt(5070, pretty = TRUE))
 #'
 #' srs_to_wkt("NAD83")
-#' writeLines(srs_to_wkt("NAD83", pretty=TRUE))
+#' writeLines(srs_to_wkt("NAD83", pretty = TRUE))
 #' set_config_option("OSR_WKT_FORMAT", "WKT2")
-#' writeLines(srs_to_wkt("NAD83", pretty=TRUE))
+#' writeLines(srs_to_wkt("NAD83", pretty = TRUE))
 #' set_config_option("OSR_WKT_FORMAT", "")
+#'
+#' srs_to_wkt("EPSG:5070", gcs_only = TRUE)
+#'
+#' srs_to_projjson("NAD83") |> cat("\n")
 epsg_to_wkt <- function(epsg, pretty = FALSE) {
     .Call(`_gdalraster_epsg_to_wkt`, epsg, pretty)
 }
 
 #' @rdname srs_convert
-srs_to_wkt <- function(srs, pretty = FALSE) {
-    .Call(`_gdalraster_srs_to_wkt`, srs, pretty)
+srs_to_wkt <- function(srs, pretty = FALSE, gcs_only = FALSE) {
+    .Call(`_gdalraster_srs_to_wkt`, srs, pretty, gcs_only)
+}
+
+#' @rdname srs_convert
+srs_to_projjson <- function(srs, multiline = TRUE, indent_width = 2L, schema = "") {
+    .Call(`_gdalraster_srs_to_projjson`, srs, multiline, indent_width, schema)
 }
 
 #' Obtain information about a spatial reference system
