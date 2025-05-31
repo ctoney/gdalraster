@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9006</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9007</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,8 +50,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="2.0.0.9006" id="gdalraster-2009006-dev">gdalraster 2.0.0.9006 (dev)<a class="anchor" aria-label="anchor" href="#gdalraster-2009006-dev"></a></h2>
-<ul><li><p><code><a href="../reference/g_envelope.html">g_envelope()</a></code>: fix order of xy coordinates in the returned envelope(s) (fixes <a href="https://github.com/USDAForestService/gdalraster/issues/725" class="external-link">#725</a>, a breaking change); and add argument <code>as_3d</code>, wrapper of <code>OGR_G_GetEnvelope3D()</code> in the GDAL Geometry API (<a href="https://github.com/USDAForestService/gdalraster/issues/724" class="external-link">#724</a>) (2025-05-30)</p></li>
+<h2 class="pkg-version" data-toc-text="2.0.0.9007" id="gdalraster-2009007-dev">gdalraster 2.0.0.9007 (dev)<a class="anchor" aria-label="anchor" href="#gdalraster-2009007-dev"></a></h2>
+<ul><li><p>add <code><a href="../reference/g_unary_op.html">g_convex_hull()</a></code>: compute convex hull for input geometries (<a href="https://github.com/USDAForestService/gdalraster/issues/726" class="external-link">#726</a>) (2025-05-31)</p></li>
+<li><p><code><a href="../reference/g_envelope.html">g_envelope()</a></code>: fix order of xy coordinates in the returned envelope(s) (fixes <a href="https://github.com/USDAForestService/gdalraster/issues/725" class="external-link">#725</a>, a breaking change); and add argument <code>as_3d</code>, wrapper of <code>OGR_G_GetEnvelope3D()</code> in the GDAL Geometry API (<a href="https://github.com/USDAForestService/gdalraster/issues/724" class="external-link">#724</a>) (2025-05-30)</p></li>
 <li><p>(internal) avoid clang-asan error from implicitly wrapping <code>CPLString</code> as an R character vector, due to changes introduced at dev version 2.0.0.9000 with PR <a href="https://github.com/USDAForestService/gdalraster/issues/714" class="external-link">#714</a> (fix in <a href="https://github.com/USDAForestService/gdalraster/issues/723" class="external-link">#723</a>) (2025-05-29)</p></li>
 <li><p><code><a href="../reference/srs_convert.html">srs_to_wkt()</a></code>: add argument <code>gcs_only</code>, wrapper for <code>OSRCloneGeogCS()</code> in the GDAL API (2025-05-28)</p></li>
 <li><p>add <code><a href="../reference/srs_convert.html">srs_to_projjson()</a></code>, wrapper for <code>OSRExportToPROJJSON()</code> in the GDAL Spatial Reference System API (<a href="https://github.com/USDAForestService/gdalraster/issues/721" class="external-link">#721</a>) (2025-05-28)</p></li>
@@ -106,10 +107,10 @@
 <li>the geometry wrapper functions now operate on input of either WKB raw vector, list of WKB, or character vector of WKT strings, with returned geometries as either WKB raw vector (or list of) or WKT character string (vector of)</li>
 <li>
 <strong>breaking changes</strong>: breaks some existing functions by renaming argument <code>wkt</code> to <code>geom</code>, and by returning raw vectors of WKB by default from functions that return geometries (<code>as_wkb = TRUE</code> by default)</li>
-<li>update <code><a href="../reference/g_query.html">g_is_valid()</a></code>, <code><a href="../reference/g_query.html">g_is_empty()</a></code>, <code><a href="../reference/g_query.html">g_name()</a></code> and <code><a href="../reference/g_buffer.html">g_buffer()</a></code> to the new style Geometry API</li>
+<li>update <code><a href="../reference/g_query.html">g_is_valid()</a></code>, <code><a href="../reference/g_query.html">g_is_empty()</a></code>, <code><a href="../reference/g_query.html">g_name()</a></code> and <code><a href="../reference/g_unary_op.html">g_buffer()</a></code> to the new style Geometry API</li>
 <li>add <code><a href="../reference/g_make_valid.html">g_make_valid()</a></code>: attempt to make invalid geometries valid</li>
 <li>add <code><a href="../reference/g_query.html">g_summary()</a></code>: obtain text summaries of WKB/WKT geometries (GDAL &gt;= 3.7)</li>
-<li>add <code><a href="../reference/g_simplify.html">g_simplify()</a></code>: simplify WKB/WKT geometries, optionally preserving topology</li>
+<li>add <code><a href="../reference/g_unary_op.html">g_simplify()</a></code>: simplify WKB/WKT geometries, optionally preserving topology</li>
 <li>add <code><a href="../reference/g_swap_xy.html">g_swap_xy()</a></code>: swap x and y coordinates of the input geometry</li>
 <li>add <code><a href="../reference/g_measures.html">g_geodesic_area()</a></code> and <code><a href="../reference/g_measures.html">g_geodesic_length()</a></code> (<a href="https://github.com/USDAForestService/gdalraster/issues/671" class="external-link">#671</a>)</li>
 <li>add <code><a href="../reference/g_query.html">g_is_3D()</a></code> and <code><a href="../reference/g_query.html">g_is_measured()</a></code> (<a href="https://github.com/USDAForestService/gdalraster/issues/650" class="external-link">#650</a>)</li>
@@ -648,7 +649,7 @@
 <li>add <code><a href="../reference/createColorRamp.html">createColorRamp()</a></code>: wrapper for <code>GDALCreateColorRamp()</code>, automatically create a ramp from one color to another</li>
 <li>add <code><a href="../reference/sieveFilter.html">sieveFilter()</a></code>: wrapper for <code>GDALSieveFilter()</code> in the Algorithms API, remove small raster polygons</li>
 <li>add PROJ utility functions: <code><a href="../reference/proj_version.html">proj_version()</a></code>, <code><a href="../reference/proj_search_paths.html">proj_search_paths()</a></code>, <code><a href="../reference/proj_networking.html">proj_networking()</a></code> (via GDAL headers)</li>
-<li>add <code><a href="../reference/g_buffer.html">g_buffer()</a></code>: compute buffer of a WKT geometry (GEOS convenience function via GDAL headers)</li>
+<li>add <code><a href="../reference/g_unary_op.html">g_buffer()</a></code>: compute buffer of a WKT geometry (GEOS convenience function via GDAL headers)</li>
 </ul></div>
 <div class="section level3">
 <h3 id="cmbtable-class-1-5-0">CmbTable-class<a class="anchor" aria-label="anchor" href="#cmbtable-class-1-5-0"></a></h3>
