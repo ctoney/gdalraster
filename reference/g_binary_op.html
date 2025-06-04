@@ -9,7 +9,7 @@ or WKT format."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9011</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9020</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -135,9 +135,9 @@ WKB. One of <code>"LSB"</code> (the default) or <code>"MSB"</code> (uncommon).</
     <p>A geometry as WKB raw vector or WKT string, or a list/character vector of
 geometries as WKB/WKT with length equal to the number of input geometry
 pairs.
-<code>NA</code> is returned with a warning if WKB input cannot be converted
-into an OGR geometry object, or if an error occurs in the call to the
-underlying OGR API function.</p>
+<code>NULL</code> (<code>as_wkb = TRUE</code>) / <code>NA</code> (<code>as_wkb = FALSE</code>) is returned with a
+warning if WKB input cannot be converted into an OGR geometry object, or if
+an error occurs in the call to the underlying OGR API function.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
