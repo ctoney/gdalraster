@@ -270,3 +270,114 @@ ogr_def_geom_field <- function(geom_type, srs = NULL, is_nullable = NULL) {
     return(defn)
 }
 
+#' @name ogr_define
+#' @export
+ogr_def_field_domain <- function(domain_type, name, description = "",
+                                 fld_type = NULL, fld_subtype = NULL,
+                                 coded_values = NULL,
+                                 range_min = NULL, min_is_inclusive = TRUE,
+                                 range_max = NULL, max_is_inclusive = TRUE,
+                                 glob = "") {
+
+    defn <- list()
+
+    if (!(is.character(domain_type) && length(domain_type) == 1)) {
+        stop("'domain_type' must be a length-1 character vector", call. = FALSE)
+    }
+    if (is.na(domain_type) || !nzchar(domain_type)) {
+        stop("'domain_type' is required", call. = FALSE)
+    }
+    domain_type <- tolower(domain_type)
+    if (!(domain_type %in% c("coded", "range", "rangedatetime", "glob"))) {
+        stop("'domain_type' must be one of \"Coded\", \"Range\", \"RangeDateTime\", \"Glob\"",
+             call. = FALSE)
+    }
+    defn$type <- domain_type
+
+    if (!(is.character(name) && length(name) == 1)) {
+        stop("'name' must be a length-1 character vector", call. = FALSE)
+    }
+    if (is.na(name) || !nzchar(name)) {
+        stop("domain 'name' is required", call. = FALSE)
+    }
+    defn$name <- name
+
+    if (missing(description) || is.null(description)) {
+        description <- ""
+    }
+    if (!(is.character(description) && length(description) == 1)) {
+        stop("'description' must be a length-1 character vector", call. = FALSE)
+    }
+    defn$description <- description
+
+    if (!(is.character(fld_type) && length(fld_type) == 1)) {
+        stop("'fld_type' must be a length-1 character vector", call. = FALSE)
+    }
+    defn$fld_type <- fld_type
+
+    defn$subtype <- "OFST_None"
+    if (!is.null(fld_subtype)) {
+        if (!(is.character(fld_subtype) && length(fld_subtype) == 1)) {
+            stop("'fld_subtype' must be a length-1 character vector",
+                 call. = FALSE)
+        } else {
+            defn$fld_subtype <- fld_subtype
+        }
+    }
+
+    defn$coded_values <- character(0)
+    defn$min <- numeric(0)
+    defn$min_is_inclusive <- TRUE
+    defn$max <- numeric(0)
+    defn$max_is_inclusive <- TRUE
+    defn$glob <- ""
+
+    if (domain_type == "coded") {
+        if (!(is.character(coded_values) && length(coded_values) > 0)) {
+            stop("'coded_values' must be a character vector", call. = FALSE)
+        }
+        defn$coded_values <- coded_values
+
+    } else if (domain_type == "range") {
+        if (!(is.numeric(range_min) && length(range_min) == 1)) {
+            stop("'range_min' must be a single numeric value", call. = FALSE)
+        } else {
+            defn$min <- range_min
+        }
+        if (!(is.logical(min_is_inclusive) && length(min_is_inclusive) == 1)) {
+            stop("'min_is_inclusive' must be a single logical value",
+                 call. = FALSE)
+        } else {
+            defn$min_is_inclusive <- min_is_inclusive
+        }
+        if (!(is.numeric(range_max) && length(range_max) == 1)) {
+            stop("'range_max' must be a single numeric value", call. = FALSE)
+        } else {
+            defn$max <- range_max
+        }
+        if (!(is.logical(max_is_inclusive) && length(max_is_inclusive) == 1)) {
+            stop("'max_is_inclusive' must be a single logical value",
+                 call. = FALSE)
+        } else {
+            defn$max_is_inclusive <- max_is_inclusive
+        }
+
+    } else if (domain_type == "rangedatetime") {
+        ## TODO
+
+    } else if (domain_type == "glob") {
+        if (!(is.character(glob) && length(glob) == 1)) {
+            stop("'glob' must be a length-1 character vector", call. = FALSE)
+        }
+        if (is.na(glob) || !nzchar(glob)) {
+            stop("'glob' is required", call. = FALSE)
+        }
+        defn$glob <- glob
+
+    } else {
+        stop("'domain_type' not recognized", call. = FALSE)
+    }
+
+    class(defn) <- c("OGRFieldDomain")
+    return(defn)
+}

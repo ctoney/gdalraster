@@ -5,6 +5,7 @@
 \alias{ogr_def_layer}
 \alias{ogr_def_field}
 \alias{ogr_def_geom_field}
+\alias{ogr_def_field_domain}
 \title{OGR feature class definition for vector data}
 \usage{
 ogr_def_layer(geom_type, geom_fld_name = "geom", srs = NULL)
@@ -20,6 +21,20 @@ ogr_def_field(
 )
 
 ogr_def_geom_field(geom_type, srs = NULL, is_nullable = NULL)
+
+ogr_def_field_domain(
+  domain_type,
+  name,
+  description = "",
+  fld_type = NULL,
+  fld_subtype = NULL,
+  coded_values = NULL,
+  range_min = NULL,
+  min_is_inclusive = TRUE,
+  range_max = NULL,
+  max_is_inclusive = TRUE,
+  glob = ""
+)
 }
 \arguments{
 \item{geom_type}{Character string specifying a geometry type (see Details).}
