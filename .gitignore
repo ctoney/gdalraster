@@ -16,3 +16,4 @@ inst/proj
 *.gcov
 cran-comments.md
 .vscode
+.devcontainer
