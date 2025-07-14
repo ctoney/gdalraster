@@ -98,6 +98,14 @@ Rcpp::CharacterVector enc_to_utf8_(const Rcpp::CharacterVector &x) {
     return f(x);
 }
 
+//' wrapper for base R strsplit()
+//' @noRd
+Rcpp::CharacterVector strsplit_(const Rcpp::CharacterVector &x,
+                                const Rcpp::CharacterVector &split) {
+    Rcpp::Function f("strsplit");
+    return f(x, split);
+}
+
 //' std::string to uppercase
 //' @noRd
 std::string str_toupper_(const std::string &s) {

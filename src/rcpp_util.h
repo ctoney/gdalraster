@@ -39,6 +39,9 @@ Rcpp::CharacterVector normalize_path_(const Rcpp::CharacterVector &path,
 
 Rcpp::CharacterVector enc_to_utf8_(const Rcpp::CharacterVector &x);
 
+Rcpp::CharacterVector strsplit_(const Rcpp::CharacterVector &x,
+                                const Rcpp::CharacterVector &split);
+
 std::string str_toupper_(const std::string &s);
 
 // case-insensitive comparator for std::map
