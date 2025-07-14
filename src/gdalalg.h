@@ -13,5 +13,37 @@
 
 Rcpp::DataFrame gdal_commands(std::string starts_with, bool cout);
 
+class GDALAlg {
+ public:
+    GDALAlg();
+    explicit GDALAlg(const Rcpp::CharacterVector &cmd);
+    GDALAlg(const Rcpp::CharacterVector &cmd,
+            const Rcpp::CharacterVector &cl_arg);
+    ~GDALAlg();
+
+    // undocumented, exposed read-only fields for internal use
+
+    // exposed read/write fields
+    bool quiet {false};
+
+    // exposed methods
+    Rcpp::List getAlgInfo() const;
+    Rcpp::List getArgInfo(std::string arg_name) const;
+
+    bool run();
+    Rcpp::List output() const;
+
+    void show() const;
+
+    // methods for internal use not exposed to R
+
+
+ private:
+    std::string m_cmd_str {""};
+    GDALAlgorithmH m_hAlg {nullptr};
+};
+
+// cppcheck-suppress unknownMacro
+RCPP_EXPOSED_CLASS(GDALAlg)
 
 #endif  // SRC_GDALALG_H_
