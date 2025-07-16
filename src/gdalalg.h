@@ -1,4 +1,5 @@
-/* R interface to GDALAlgorithm and related classes
+/* R interface to GDALAlgorithm and related classes that implement GDAL CLI
+   GDAL >= 3.11
    Chris Toney <chris.toney at usda.gov>
    Copyright (c) 2023-2025 gdalraster authors
 */
