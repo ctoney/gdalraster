@@ -19,13 +19,15 @@ class GDALAlg {
     GDALAlg();
     explicit GDALAlg(const Rcpp::CharacterVector &cmd);
     GDALAlg(const Rcpp::CharacterVector &cmd,
-            const Rcpp::CharacterVector &cl_arg);
+            const Rcpp::Nullable<Rcpp::CharacterVector> &cl_arg);
     ~GDALAlg();
 
     // undocumented, exposed read-only fields for internal use
+    bool m_haveParsedCmdLineArgs {false};
 
     // exposed read/write fields
     bool quiet {false};
+    std::string outputLayerNameForOpen {""};
 
     // exposed methods
     Rcpp::List getAlgInfo() const;
@@ -42,6 +44,7 @@ class GDALAlg {
  private:
     std::string m_cmd_str {""};
     GDALAlgorithmH m_hAlg {nullptr};
+    GDALAlgorithmH m_hActualAlg {nullptr};
 };
 
 // cppcheck-suppress unknownMacro
