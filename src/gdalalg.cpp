@@ -1,5 +1,5 @@
 /* R interface to GDALAlgorithm and related classes
-   Chris Toney <chris.toney at usda.gov>
+   Chris Toney <jctoney at gmail.com>
    Copyright (c) 2023-2025 gdalraster authors
 */
 

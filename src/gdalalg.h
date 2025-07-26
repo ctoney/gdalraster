@@ -1,6 +1,6 @@
 /* R interface to GDALAlgorithm and related classes that implement GDAL CLI
    GDAL >= 3.11
-   Chris Toney <chris.toney at usda.gov>
+   Chris Toney <jctoney at gmail.com>
    Copyright (c) 2023-2025 gdalraster authors
 */
 
@@ -45,6 +45,7 @@ class GDALAlg {
     std::string m_cmd_str {""};
     GDALAlgorithmH m_hAlg {nullptr};
     GDALAlgorithmH m_hActualAlg {nullptr};
+    Rcpp::List m_output {};
 };
 
 // cppcheck-suppress unknownMacro
