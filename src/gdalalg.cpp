@@ -16,9 +16,10 @@
 #include "gdalalg.h"
 #include "gdalraster.h"
 
-constexpr R_xlen_t CMD_TOKENS_MAX = 4;
+constexpr R_xlen_t CMD_TOKENS_MAX = 5;
 
-
+// internal helper to get subalgorithm names, descriptions and URLs,
+// potentially filtering on 'starts_with'
 void append_subalg_names_desc_(const GDALAlgorithmH alg,
                                const std::string &cmd_str,
                                std::vector<std::string> *names,
@@ -129,6 +130,8 @@ Rcpp::DataFrame gdal_commands(const std::string &starts_with = "",
     return df;
 }
 
+//  Implementation of exposed class GDALAlg, which wraps GDALAlgorithm and
+//  its related classes GDALAlgorithmArg and GDALArgDatasetValue
 
 GDALAlg::GDALAlg() : m_cmd(Rcpp::CharacterVector::create()),
                      m_cmd_str(""),
@@ -246,7 +249,8 @@ GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd,
 
 GDALAlg::~GDALAlg() {
     if (m_hActualAlg != nullptr) {
-        GDALAlgorithmFinalize(m_hActualAlg);
+        if (m_hasRun && !m_hasFinalized)
+            GDALAlgorithmFinalize(m_hActualAlg);
         GDALAlgorithmRelease(m_hActualAlg);
     }
 
@@ -281,6 +285,7 @@ Rcpp::List GDALAlg::info() const {
             alg_info.push_back(Rcpp::CharacterVector::create(),
                                "subalgorithm_names");
         }
+        CSLDestroy(papszNames);
     }
     else {
         alg_info.push_back(Rcpp::CharacterVector::create(),
@@ -297,8 +302,112 @@ Rcpp::List GDALAlg::info() const {
     else {
         alg_info.push_back(Rcpp::CharacterVector::create(), "arg_names");
     }
+    CSLDestroy(papszArgNames);
 
     return alg_info;
+}
+
+Rcpp::List GDALAlg::argInfo(Rcpp::String arg_name) const {
+    if (m_hAlg == nullptr)
+        Rcpp::stop("algorithm not instantiated");
+
+    if (arg_name == "" || arg_name == NA_STRING)
+        Rcpp::stop("'arg_name' is required");
+
+    Rcpp::List arg_info = Rcpp::List::create();
+
+    GDALAlgorithmArgH hArg = nullptr;
+    hArg = GDALAlgorithmGetArg(m_hActualAlg, arg_name.get_cstring());
+    if (hArg == nullptr)
+        Rcpp::stop("failed to obtain GDALAlgorithmArg object for 'arg_name'");
+
+    arg_info.push_back(GDALAlgorithmArgGetName(hArg), "name");
+
+    GDALAlgorithmArgType eType = GDALAlgorithmArgGetType(hArg);
+    std::string arg_type = "";
+    if (eType == GAAT_BOOLEAN)
+        arg_type = "BOOLEAN";
+    else if (eType == GAAT_STRING)
+        arg_type = "STRING";
+    else if (eType == GAAT_INTEGER)
+        arg_type = "INTEGER";
+    else if (eType == GAAT_REAL)
+        arg_type = "REAL";
+    else if (eType == GAAT_DATASET)
+        arg_type = "DATASET";
+    else if (eType == GAAT_STRING_LIST)
+        arg_type = "STRING_LIST";
+    else if (eType == GAAT_INTEGER_LIST)
+        arg_type = "INTEGER_LIST";
+    else if (eType == GAAT_REAL_LIST)
+        arg_type = "REAL_LIST";
+    else if (eType == GAAT_DATASET_LIST)
+        arg_type = "DATASET_LIST";
+    else
+        arg_type = "unrecognized";
+
+    arg_info.push_back(arg_type, "type");
+
+    arg_info.push_back(GDALAlgorithmArgGetDescription(hArg), "description");
+    arg_info.push_back(GDALAlgorithmArgGetShortName(hArg), "short_name");
+
+    char **papszAliases = GDALAlgorithmArgGetAliases(hArg);
+    int nCount = 0;
+    nCount = CSLCount(papszAliases);
+    if (papszAliases && nCount > 0) {
+        std::vector<std::string> v(papszAliases, papszAliases + nCount);
+        arg_info.push_back(Rcpp::wrap(v), "aliases");
+    }
+    else {
+        Rcpp::CharacterVector v =
+            Rcpp::CharacterVector::create(NA_STRING);
+        arg_info.push_back(v, "aliases");
+    }
+    CSLDestroy(papszAliases);
+
+    arg_info.push_back(GDALAlgorithmArgGetCategory(hArg), "category");
+    arg_info.push_back(GDALAlgorithmArgIsPositional(hArg), "is_positional");
+    arg_info.push_back(GDALAlgorithmArgIsRequired(hArg), "is_required");
+    arg_info.push_back(GDALAlgorithmArgGetMinCount(hArg), "min_count");
+    arg_info.push_back(GDALAlgorithmArgGetMaxCount(hArg), "max_count");
+    arg_info.push_back(GDALAlgorithmArgGetPackedValuesAllowed(hArg),
+                       "packed_values_allowed");
+    arg_info.push_back(GDALAlgorithmArgGetRepeatedArgAllowed(hArg),
+                       "repeated_arg_allowed");
+
+    if (arg_type == "STRING" || arg_type == "STRING_LIST") {
+        char **papszChoices = GDALAlgorithmArgGetChoices(hArg);
+        int nCount = 0;
+        nCount = CSLCount(papszChoices);
+        if (papszChoices && nCount > 0) {
+            std::vector<std::string> v(papszChoices, papszChoices + nCount);
+            arg_info.push_back(Rcpp::wrap(v), "choices");
+        }
+        else {
+            Rcpp::CharacterVector v =
+                Rcpp::CharacterVector::create(NA_STRING);
+            arg_info.push_back(v, "choices");
+        }
+        CSLDestroy(papszChoices);
+    }
+    else {
+        arg_info.push_back(R_NilValue, "choices");
+    }
+
+    arg_info.push_back(GDALAlgorithmArgIsExplicitlySet(hArg),
+                       "is_explicitly_set");
+    arg_info.push_back(GDALAlgorithmArgHasDefaultValue(hArg),
+                       "has_default_value");
+    arg_info.push_back(GDALAlgorithmArgIsHiddenForCLI(hArg),
+                       "is_hidden_for_cli");
+    arg_info.push_back(GDALAlgorithmArgIsOnlyForCLI(hArg),
+                       "is_only_for_cli");
+    arg_info.push_back(GDALAlgorithmArgIsInput(hArg), "is_input");
+    arg_info.push_back(GDALAlgorithmArgIsOutput(hArg), "is_output");
+    arg_info.push_back(GDALAlgorithmArgGetMutualExclusionGroup(hArg),
+                       "mutual_exclusion_group");
+
+    return arg_info;
 }
 
 Rcpp::String GDALAlg::usageAsJSON() const {
@@ -338,7 +447,7 @@ bool GDALAlg::run() {
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
-    if (m_has_run)
+    if (m_hasRun)
         Rcpp::stop("algorithm has already run");
 
     if (!m_haveParsedCmdLineArgs) {
@@ -347,6 +456,7 @@ bool GDALAlg::run() {
             Rcpp::Rcout << "parse command line arguments failed" << std::endl;
             return false;
         }
+        m_haveParsedCmdLineArgs = true;
     }
 
     m_hActualAlg = GDALAlgorithmGetActualAlgorithm(m_hAlg);
@@ -356,7 +466,7 @@ bool GDALAlg::run() {
                                 nullptr);
 
     if (res)
-        m_has_run = true;
+        m_hasRun = true;
 
     return res;
 }
@@ -365,7 +475,7 @@ SEXP GDALAlg::output() const {
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
-    if (!m_has_run || m_hActualAlg == nullptr)
+    if (!m_hasRun || m_hActualAlg == nullptr)
         Rcpp::stop("algorithm has not run");
 
     Rcpp::List out = Rcpp::List::create();
@@ -373,7 +483,7 @@ SEXP GDALAlg::output() const {
     char **papszArgNames = GDALAlgorithmGetArgNames(m_hActualAlg);
     int nCount = 0;
     nCount = CSLCount(papszArgNames);
-    if (nCount > 0) {
+    if (papszArgNames && nCount > 0) {
         std::vector<std::string> names(papszArgNames, papszArgNames + nCount);
         for (std::string arg_name : names) {
             GDALAlgorithmArgH hArg = nullptr;
@@ -391,22 +501,54 @@ SEXP GDALAlg::output() const {
                 s.replace_all("-", "_");
                 out.push_back(getOutputArgTypeValue_(hArg), s);
             }
+
+            GDALAlgorithmArgRelease(hArg);
         }
     }
     else {
         Rcpp::Rcout << "no arg names found" << std::endl;
         return R_NilValue;
     }
+    CSLDestroy(papszArgNames);
 
     return out;
 }
 
+bool GDALAlg::finalize() {
+    if (m_hAlg == nullptr)
+        Rcpp::stop("algorithm not instantiated");
+
+    if (!m_hasRun) {
+        if (!quiet)
+            Rcpp::Rcout << "algorithm has not run" << std::endl;
+        return false;
+    }
+
+    if (m_hasFinalized) {
+        if (!quiet)
+            Rcpp::Rcout << "algorithm has already been finalized" << std::endl;
+        return false;
+    }
+
+    if (m_hActualAlg != nullptr) {
+        return GDALAlgorithmFinalize(m_hActualAlg);
+    }
+    else {
+        if (!quiet)
+            Rcpp::Rcout << "actual algorithm is nullptr" << std::endl;
+        return false;
+    }
+}
 
 // ****************************************************************************
 // class methods for internal use not exposed in R
 // ****************************************************************************
 
 Rcpp::List GDALAlg::getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const {
+    // Returns a named list of $type, $value for an output algorith argument.
+    // $type is the R type (`typeof()`, e.g., "character", "integer", etc.), or
+    // `class()` for objects, e.g., "Rcpp_GDALRaster" or "Rcpp_GDALVector".
+
     if (hArg == nullptr)
         Rcpp::stop("got nullptr for GDALAlgorithmArgH hArg");
 
@@ -463,6 +605,7 @@ Rcpp::List GDALAlg::getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const {
                     Rcpp::CharacterVector::create(NA_STRING);
                 out.push_back(v, "value");
             }
+            CSLDestroy(papszValue);
         }
         break;
 
@@ -537,6 +680,7 @@ RCPP_MODULE(mod_GDALAlg) {
     // undocumented read-only fields for internal use
     .field_readonly("m_haveParsedCmdLineArgs",
                     &GDALAlg::m_haveParsedCmdLineArgs)
+    .field_readonly("m_hasRun", &GDALAlg::m_hasRun)
 
     // read/write fields
     .field("outputLayerNameForOpen", &GDALAlg::outputLayerNameForOpen)
@@ -545,6 +689,8 @@ RCPP_MODULE(mod_GDALAlg) {
     // methods
     .const_method("info", &GDALAlg::info,
         "Return a list of algorithm information")
+    .const_method("argInfo", &GDALAlg::argInfo,
+        "Return a list of information for an algorithm argument")
     .const_method("usageAsJSON", &GDALAlg::usageAsJSON,
         "Return a list of algorithm information")
     .method("parseCommandLineArguments", &GDALAlg::parseCommandLineArguments,
@@ -553,6 +699,8 @@ RCPP_MODULE(mod_GDALAlg) {
         "Execute the algorithm")
     .const_method("output", &GDALAlg::output,
         "Return a named list of output value(s) (as list of $type, $value)")
+    .method("finalize", &GDALAlg::finalize,
+        "Complete any pending actions, and return the final status")
 
     ;
 }
