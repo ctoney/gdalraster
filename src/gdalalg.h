@@ -19,32 +19,37 @@ class GDALAlg {
     GDALAlg();
     explicit GDALAlg(const Rcpp::CharacterVector &cmd);
     GDALAlg(const Rcpp::CharacterVector &cmd,
-            const Rcpp::Nullable<Rcpp::CharacterVector> &cl_arg);
+            const Rcpp::Nullable<Rcpp::CharacterVector> &args);
     ~GDALAlg();
 
     // undocumented, exposed read-only fields for internal use
     bool m_haveParsedCmdLineArgs {false};
 
     // exposed read/write fields
-    bool quiet {false};
     std::string outputLayerNameForOpen {""};
+    bool quiet {false};
 
     // exposed methods
-    Rcpp::List getAlgInfo() const;
-    Rcpp::List getArgInfo(std::string arg_name) const;
+    Rcpp::List info() const;
+    //Rcpp::List argInfo(std::string arg_name) const;
+    Rcpp::String usageAsJSON() const;
+    bool parseCommandLineArguments();
 
     bool run();
-    Rcpp::List output() const;
+    SEXP output() const;
 
-    void show() const;
+    //void show() const;
 
     // methods for internal use not exposed to R
-
+    Rcpp::List getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const;
 
  private:
+    Rcpp::CharacterVector m_cmd {};
     std::string m_cmd_str {""};
+    Rcpp::CharacterVector m_args {};
     GDALAlgorithmH m_hAlg {nullptr};
     GDALAlgorithmH m_hActualAlg {nullptr};
+    bool m_has_run {false};
     Rcpp::List m_output {};
 };
 
