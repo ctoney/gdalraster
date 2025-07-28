@@ -33,18 +33,23 @@ class GDALAlg {
 
     // exposed methods
     Rcpp::List info() const;
-    Rcpp::List argInfo(Rcpp::String arg_name) const;
+    Rcpp::List argInfo(const Rcpp::String &arg_name) const;
     Rcpp::String usageAsJSON() const;
-    bool parseCommandLineArguments();
 
+    // Rcpp::CharacterVector getArgVector() const;
+    // void setArgVector(const Rcpp::CharacterVector &args);
+
+    bool parseCommandLineArgs();
     bool run();
     SEXP output() const;
-
     bool finalize();
 
-    // void show() const;
+    // void reset();
+
+    void show() const;
 
     // methods for internal use not exposed to R
+    void instantiateAlg_();
     Rcpp::List getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const;
 
  private:

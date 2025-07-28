@@ -146,10 +146,14 @@ GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd) :
 GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd,
                  const Rcpp::Nullable<Rcpp::CharacterVector> &args) {
 
-    if (cmd.size() == 0 || (cmd.size() == 1 && EQUAL(cmd[0], "")) ||
-        Rcpp::String(cmd[0]) == NA_STRING) {
+    if (cmd.size() == 0 ||
+        (cmd.size() == 1 && EQUAL(cmd[0], "")) ||
+        (cmd.size() == 1 && Rcpp::String(cmd[0]) == NA_STRING)) {
 
         Rcpp::stop("'cmd' is empty");
+    }
+    else if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(cmd)))) {
+        Rcpp::stop("'cmd' contains one or more NA values");
     }
     else if (cmd.size() > CMD_TOKENS_MAX) {
         Rcpp::stop("number of elements in 'cmd' is out of range");
@@ -190,61 +194,7 @@ GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd,
         m_args = Rcpp::CharacterVector::create();
     }
 
-    auto reg = GDALGetGlobalAlgorithmRegistry();
-    if (reg == nullptr) {
-        Rcpp::stop("failed to obtain global algorithm registry");
-    }
-
-    if (m_cmd.size() == 1) {
-        m_hAlg = GDALAlgorithmRegistryInstantiateAlg(reg, m_cmd[0]);
-        if (m_hAlg == nullptr) {
-            GDALAlgorithmRegistryRelease(reg);
-            Rcpp::stop("failed to instantiate CLI algorithm from 'cmd'");
-        }
-    }
-    else {
-        std::vector<GDALAlgorithmH> alg_tmp;
-        alg_tmp.push_back(GDALAlgorithmRegistryInstantiateAlg(reg, m_cmd[0]));
-        if (alg_tmp[0] == nullptr) {
-            GDALAlgorithmRegistryRelease(reg);
-            Rcpp::stop("failed to instantiate CLI algorithm from 'cmd'");
-        }
-        for (R_xlen_t i = 1; i < m_cmd.size(); ++i) {
-            if (i == (m_cmd.size() - 1)) {
-                m_hAlg = GDALAlgorithmInstantiateSubAlgorithm(alg_tmp[i - 1],
-                                                              m_cmd[i]);
-                if (m_hAlg == nullptr) {
-                    for (GDALAlgorithmH alg : alg_tmp) {
-                        if (alg)
-                            GDALAlgorithmRelease(alg);
-                    }
-                    GDALAlgorithmRegistryRelease(reg);
-                    Rcpp::stop(
-                        "failed to instantiate CLI algorithm from 'cmd'");
-                }
-            }
-            else {
-                alg_tmp.push_back(
-                    GDALAlgorithmInstantiateSubAlgorithm(alg_tmp[i - 1],
-                                                         m_cmd[i]));
-
-                if (alg_tmp.back() == nullptr) {
-                    for (GDALAlgorithmH alg : alg_tmp) {
-                        if (alg)
-                            GDALAlgorithmRelease(alg);
-                    }
-                    GDALAlgorithmRegistryRelease(reg);
-                    Rcpp::stop(
-                        "failed to instantiate CLI algorithm from 'cmd'");
-                }
-            }
-        }
-
-        for (GDALAlgorithmH alg : alg_tmp) {
-            if (alg)
-                GDALAlgorithmRelease(alg);
-        }
-    }
+    instantiateAlg_();
 }
 
 GDALAlg::~GDALAlg() {
@@ -264,17 +214,18 @@ Rcpp::List GDALAlg::info() const {
         Rcpp::stop("algorithm not instantiated");
 
     Rcpp::List alg_info = Rcpp::List::create();
+    GDALAlgorithmH alg = m_hActualAlg ? m_hActualAlg : m_hAlg;
 
-    alg_info.push_back(GDALAlgorithmGetName(m_hAlg), "name");
-    alg_info.push_back(GDALAlgorithmGetDescription(m_hAlg), "description");
-    alg_info.push_back(GDALAlgorithmGetLongDescription(m_hAlg),
+    alg_info.push_back(GDALAlgorithmGetName(alg), "name");
+    alg_info.push_back(GDALAlgorithmGetDescription(alg), "description");
+    alg_info.push_back(GDALAlgorithmGetLongDescription(alg),
                        "long_description");
-    alg_info.push_back(GDALAlgorithmGetHelpFullURL(m_hAlg), "URL");
-    alg_info.push_back(GDALAlgorithmHasSubAlgorithms(m_hAlg),
+    alg_info.push_back(GDALAlgorithmGetHelpFullURL(alg), "URL");
+    alg_info.push_back(GDALAlgorithmHasSubAlgorithms(alg),
                        "has_subalgorithms");
 
-    if (GDALAlgorithmHasSubAlgorithms(m_hAlg)) {
-        char **papszNames = GDALAlgorithmGetSubAlgorithmNames(m_hAlg);
+    if (GDALAlgorithmHasSubAlgorithms(alg)) {
+        char **papszNames = GDALAlgorithmGetSubAlgorithmNames(alg);
         int nCount = 0;
         nCount = CSLCount(papszNames);
         if (nCount > 0) {
@@ -292,7 +243,7 @@ Rcpp::List GDALAlg::info() const {
                            "subalgorithm_names");
     }
 
-    char **papszArgNames = GDALAlgorithmGetArgNames(m_hAlg);
+    char **papszArgNames = GDALAlgorithmGetArgNames(alg);
     int nCount = 0;
     nCount = CSLCount(papszArgNames);
     if (nCount > 0) {
@@ -307,7 +258,7 @@ Rcpp::List GDALAlg::info() const {
     return alg_info;
 }
 
-Rcpp::List GDALAlg::argInfo(Rcpp::String arg_name) const {
+Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
@@ -317,7 +268,9 @@ Rcpp::List GDALAlg::argInfo(Rcpp::String arg_name) const {
     Rcpp::List arg_info = Rcpp::List::create();
 
     GDALAlgorithmArgH hArg = nullptr;
-    hArg = GDALAlgorithmGetArg(m_hActualAlg, arg_name.get_cstring());
+    hArg = GDALAlgorithmGetArg(m_hActualAlg ? m_hActualAlg : m_hAlg,
+                               arg_name.get_cstring());
+
     if (hArg == nullptr)
         Rcpp::stop("failed to obtain GDALAlgorithmArg object for 'arg_name'");
 
@@ -365,6 +318,7 @@ Rcpp::List GDALAlg::argInfo(Rcpp::String arg_name) const {
     }
     CSLDestroy(papszAliases);
 
+    arg_info.push_back(GDALAlgorithmArgGetMetaVar(hArg), "meta_var");
     arg_info.push_back(GDALAlgorithmArgGetCategory(hArg), "category");
     arg_info.push_back(GDALAlgorithmArgIsPositional(hArg), "is_positional");
     arg_info.push_back(GDALAlgorithmArgIsRequired(hArg), "is_required");
@@ -415,7 +369,9 @@ Rcpp::String GDALAlg::usageAsJSON() const {
         Rcpp::stop("algorithm not instantiated");
 
     char *pszUsage = nullptr;
-    pszUsage = GDALAlgorithmGetUsageAsJSON(m_hAlg);
+    pszUsage = GDALAlgorithmGetUsageAsJSON(
+                    m_hActualAlg ? m_hActualAlg : m_hAlg);
+
     Rcpp::String json = "";
     if (pszUsage)
         json = Rcpp::String(pszUsage);
@@ -424,9 +380,16 @@ Rcpp::String GDALAlg::usageAsJSON() const {
     return json;
 }
 
-bool GDALAlg::parseCommandLineArguments() {
+bool GDALAlg::parseCommandLineArgs() {
+    // parses cl args which sets the values, and also instantiates m_hActualAlg
+
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
+
+    if (m_haveParsedCmdLineArgs) {
+        Rcpp::stop(
+            "parseCommandLineArgs() can only be called once per instance");
+    }
 
     std::vector<const char*> arg_list = {};
     if (m_args.size() > 0) {
@@ -437,8 +400,12 @@ bool GDALAlg::parseCommandLineArguments() {
     arg_list.push_back(nullptr);
 
     bool res = GDALAlgorithmParseCommandLineArguments(m_hAlg, arg_list.data());
-    if (res)
+    if (res) {
         m_haveParsedCmdLineArgs = true;
+        if (m_hActualAlg == nullptr) {
+            m_hActualAlg = GDALAlgorithmGetActualAlgorithm(m_hAlg);
+        }
+    }
 
     return res;
 }
@@ -451,15 +418,21 @@ bool GDALAlg::run() {
         Rcpp::stop("algorithm has already run");
 
     if (!m_haveParsedCmdLineArgs) {
-        bool res = parseCommandLineArguments();
-        if (!res) {
-            Rcpp::Rcout << "parse command line arguments failed" << std::endl;
+        if (!parseCommandLineArgs()) {
+            if (!quiet) {
+                Rcpp::Rcout << "parse command line arguments failed" <<
+                    std::endl;
+            }
             return false;
         }
-        m_haveParsedCmdLineArgs = true;
     }
 
-    m_hActualAlg = GDALAlgorithmGetActualAlgorithm(m_hAlg);
+    if (m_hActualAlg == nullptr) {
+        if (!quiet) {
+            Rcpp::Rcout << "actual algorithm handle is nullptr" << std::endl;
+        }
+        return false;
+    }
 
     bool res = GDALAlgorithmRun(m_hActualAlg,
                                 quiet ? nullptr : GDALTermProgressR,
@@ -535,14 +508,92 @@ bool GDALAlg::finalize() {
     }
     else {
         if (!quiet)
-            Rcpp::Rcout << "actual algorithm is nullptr" << std::endl;
+            Rcpp::Rcout << "actual algorithm handle is nullptr" << std::endl;
         return false;
     }
+}
+
+void GDALAlg::show() const {
+    if (m_hAlg == nullptr)
+        Rcpp::stop("algorithm not instantiated");
+
+    GDALAlgorithmH alg = m_hActualAlg ? m_hActualAlg : m_hAlg;
+
+    Rcpp::Rcout << "C++ object of class GDALAlg" << std::endl;
+    Rcpp::Rcout << " Name        : " << GDALAlgorithmGetName(alg) << std::endl;
+    Rcpp::Rcout << " Description : " << GDALAlgorithmGetDescription(alg) <<
+        std::endl;
+    Rcpp::Rcout << " Help URL    : " << GDALAlgorithmGetHelpFullURL(alg) <<
+        std::endl;
 }
 
 // ****************************************************************************
 // class methods for internal use not exposed in R
 // ****************************************************************************
+
+void GDALAlg::instantiateAlg_() {
+    // instantiate m_hAlg
+    if (m_hAlg != nullptr || m_hActualAlg != nullptr) {
+        Rcpp::stop(
+            "instantiateAlg_(): algorithm object appears already instantiated");
+    }
+
+    auto reg = GDALGetGlobalAlgorithmRegistry();
+    if (reg == nullptr) {
+        Rcpp::stop("failed to obtain global algorithm registry");
+    }
+
+    if (m_cmd.size() == 1) {
+        m_hAlg = GDALAlgorithmRegistryInstantiateAlg(reg, m_cmd[0]);
+        if (m_hAlg == nullptr) {
+            GDALAlgorithmRegistryRelease(reg);
+            Rcpp::stop("failed to instantiate CLI algorithm from 'cmd'");
+        }
+    }
+    else {
+        std::vector<GDALAlgorithmH> alg_tmp;
+        alg_tmp.push_back(GDALAlgorithmRegistryInstantiateAlg(reg, m_cmd[0]));
+        if (alg_tmp[0] == nullptr) {
+            GDALAlgorithmRegistryRelease(reg);
+            Rcpp::stop("failed to instantiate CLI algorithm from 'cmd'");
+        }
+        for (R_xlen_t i = 1; i < m_cmd.size(); ++i) {
+            if (i == (m_cmd.size() - 1)) {
+                m_hAlg = GDALAlgorithmInstantiateSubAlgorithm(alg_tmp[i - 1],
+                                                              m_cmd[i]);
+                if (m_hAlg == nullptr) {
+                    for (GDALAlgorithmH alg : alg_tmp) {
+                        if (alg)
+                            GDALAlgorithmRelease(alg);
+                    }
+                    GDALAlgorithmRegistryRelease(reg);
+                    Rcpp::stop(
+                        "failed to instantiate CLI algorithm from 'cmd'");
+                }
+            }
+            else {
+                alg_tmp.push_back(
+                    GDALAlgorithmInstantiateSubAlgorithm(alg_tmp[i - 1],
+                                                         m_cmd[i]));
+
+                if (alg_tmp.back() == nullptr) {
+                    for (GDALAlgorithmH alg : alg_tmp) {
+                        if (alg)
+                            GDALAlgorithmRelease(alg);
+                    }
+                    GDALAlgorithmRegistryRelease(reg);
+                    Rcpp::stop(
+                        "failed to instantiate CLI algorithm from 'cmd'");
+                }
+            }
+        }
+
+        for (GDALAlgorithmH alg : alg_tmp) {
+            if (alg)
+                GDALAlgorithmRelease(alg);
+        }
+    }
+}
 
 Rcpp::List GDALAlg::getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const {
     // Returns a named list of $type, $value for an output algorith argument.
@@ -645,7 +696,29 @@ Rcpp::List GDALAlg::getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const {
 
         case GAAT_DATASET:
         {
-            // TODO
+            GDALArgDatasetValueH hArgDSValue =
+                    GDALAlgorithmArgGetAsDatasetValue(hArg);
+
+            GDALArgDatasetType ds_type = GDALAlgorithmArgGetDatasetType(hArg);
+            bool with_update = false;
+            if (ds_type & GDAL_OF_UPDATE)
+                with_update = true;
+
+            if (ds_type & GDAL_OF_RASTER) {
+                GDALDatasetH hDS =
+                    GDALArgDatasetValueGetDatasetIncreaseRefCount(hArgDSValue);
+                std::string ds_name(GDALArgDatasetValueGetName(hArgDSValue));
+
+                GDALRaster *ds = new GDALRaster();
+                ds->setFilename(ds_name);
+                ds->setGDALDatasetH_(hDS, with_update);
+
+                out.push_back("Rcpp_GDALRaster", "type");
+                GDALRaster& ds_ref = *ds;
+                out.push_back(ds_ref, "value");
+            }
+
+            GDALArgDatasetValueRelease(hArgDSValue);
         }
         break;
 
@@ -693,7 +766,7 @@ RCPP_MODULE(mod_GDALAlg) {
         "Return a list of information for an algorithm argument")
     .const_method("usageAsJSON", &GDALAlg::usageAsJSON,
         "Return a list of algorithm information")
-    .method("parseCommandLineArguments", &GDALAlg::parseCommandLineArguments,
+    .method("parseCommandLineArgs", &GDALAlg::parseCommandLineArgs,
         "Parse command line arguments")
     .method("run", &GDALAlg::run,
         "Execute the algorithm")
@@ -701,6 +774,8 @@ RCPP_MODULE(mod_GDALAlg) {
         "Return a named list of output value(s) (as list of $type, $value)")
     .method("finalize", &GDALAlg::finalize,
         "Complete any pending actions, and return the final status")
+    .const_method("show", &GDALAlg::show,
+        "S4 show()")
 
     ;
 }
