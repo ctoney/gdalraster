@@ -15,6 +15,7 @@
 
 #include "gdalalg.h"
 #include "gdalraster.h"
+#include "gdalvector.h"
 
 constexpr R_xlen_t CMD_TOKENS_MAX = 5;
 
@@ -472,7 +473,7 @@ SEXP GDALAlg::output() const {
             if (GDALAlgorithmArgIsOutput(hArg)) {
                 Rcpp::String s(arg_name);
                 s.replace_all("-", "_");
-                out.push_back(getOutputArgTypeValue_(hArg), s);
+                out.push_back(getOutputArgValue_(hArg), s);
             }
 
             GDALAlgorithmArgRelease(hArg);
@@ -595,66 +596,56 @@ void GDALAlg::instantiateAlg_() {
     }
 }
 
-Rcpp::List GDALAlg::getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const {
-    // Returns a named list of $type, $value for an output algorith argument.
-    // $type is the R type (`typeof()`, e.g., "character", "integer", etc.), or
-    // `class()` for objects, e.g., "Rcpp_GDALRaster" or "Rcpp_GDALVector".
-
+SEXP GDALAlg::getOutputArgValue_(const GDALAlgorithmArgH hArg) const {
     if (hArg == nullptr)
         Rcpp::stop("got nullptr for GDALAlgorithmArgH hArg");
 
-    Rcpp::List out = Rcpp::List::create();
+    SEXP out = R_NilValue;
 
     switch (GDALAlgorithmArgGetType(hArg)) {
         case GAAT_BOOLEAN:
         {
-            out.push_back("logical", "type");
             Rcpp::LogicalVector v =
                 Rcpp::LogicalVector::create(GDALAlgorithmArgGetAsBoolean(hArg));
-            out.push_back(v, "value");
+            out = v;
         }
         break;
 
         case GAAT_STRING:
         {
-            out.push_back("character", "type");
-            Rcpp::String s = Rcpp::String(GDALAlgorithmArgGetAsString(hArg));
-            out.push_back(s, "value");
+            out = Rcpp::wrap(GDALAlgorithmArgGetAsString(hArg));
         }
         break;
 
         case GAAT_INTEGER:
         {
-            out.push_back("integer", "type");
             Rcpp::IntegerVector v =
                 Rcpp::IntegerVector::create(GDALAlgorithmArgGetAsInteger(hArg));
-            out.push_back(v, "value");
+            out = v;
         }
         break;
 
         case GAAT_REAL:
         {
-            out.push_back("double", "type");
             Rcpp::NumericVector v =
                 Rcpp::NumericVector::create(GDALAlgorithmArgGetAsDouble(hArg));
-            out.push_back(v, "value");
+            out = v;
         }
         break;
 
         case GAAT_STRING_LIST:
         {
-            out.push_back("character", "type");
             char **papszValue = GDALAlgorithmArgGetAsStringList(hArg);
             int nCount = 0;
             nCount = CSLCount(papszValue);
             if (papszValue && nCount > 0) {
                 std::vector<std::string> v(papszValue, papszValue + nCount);
-                out.push_back(Rcpp::wrap(v), "value");
+                out = Rcpp::wrap(v);
             }
             else {
                 Rcpp::CharacterVector v =
                     Rcpp::CharacterVector::create(NA_STRING);
-                out.push_back(v, "value");
+                out = v;
             }
             CSLDestroy(papszValue);
         }
@@ -662,34 +653,32 @@ Rcpp::List GDALAlg::getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const {
 
         case GAAT_INTEGER_LIST:
         {
-            out.push_back("integer", "type");
             size_t nCount = 0;
             const int *panValue = GDALAlgorithmArgGetAsIntegerList(hArg, &nCount);
             if (panValue && nCount > 0) {
                 std::vector<int> v(panValue, panValue + nCount);
-                out.push_back(Rcpp::wrap(v), "value");
+                out = Rcpp::wrap(v);
             }
             else {
                 Rcpp::IntegerVector v =
                     Rcpp::IntegerVector::create(NA_INTEGER);
-                out.push_back(v, "value");
+                out = v;
             }
         }
         break;
 
         case GAAT_REAL_LIST:
         {
-            out.push_back("double", "type");
             size_t nCount = 0;
             const double *padfValue = GDALAlgorithmArgGetAsDoubleList(hArg, &nCount);
             if (padfValue && nCount > 0) {
                 std::vector<double> v(padfValue, padfValue + nCount);
-                out.push_back(Rcpp::wrap(v), "value");
+                out = Rcpp::wrap(v);
             }
             else {
                 Rcpp::NumericVector v =
                     Rcpp::NumericVector::create(NA_REAL);
-                out.push_back(v, "value");
+                out = v;
             }
         }
         break;
@@ -704,18 +693,66 @@ Rcpp::List GDALAlg::getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const {
             if (ds_type & GDAL_OF_UPDATE)
                 with_update = true;
 
+            // raster
             if (ds_type & GDAL_OF_RASTER) {
                 GDALDatasetH hDS =
                     GDALArgDatasetValueGetDatasetIncreaseRefCount(hArgDSValue);
+
                 std::string ds_name(GDALArgDatasetValueGetName(hArgDSValue));
 
                 GDALRaster *ds = new GDALRaster();
                 ds->setFilename(ds_name);
                 ds->setGDALDatasetH_(hDS, with_update);
-
-                out.push_back("Rcpp_GDALRaster", "type");
                 GDALRaster& ds_ref = *ds;
-                out.push_back(ds_ref, "value");
+                out = Rcpp::wrap(ds_ref);
+            }
+            // vector
+            else if (ds_type & GDAL_OF_VECTOR) {
+                GDALDatasetH hDS =
+                    GDALArgDatasetValueGetDatasetIncreaseRefCount(hArgDSValue);
+                if (hDS == nullptr) {
+                    GDALArgDatasetValueRelease(hArgDSValue);
+                    Rcpp::stop("GDAL dataset object is NULL");
+                }
+
+                std::string ds_name(GDALArgDatasetValueGetName(hArgDSValue));
+
+                OGRLayerH hLayer = nullptr;
+                std::string layer_name = "";
+                if (this->outputLayerNameForOpen == "" ||
+                    this->outputLayerNameForOpen == NA_STRING) {
+
+                    hLayer = GDALDatasetGetLayer(hDS, 0);
+                }
+                else {
+                    layer_name = this->outputLayerNameForOpen;
+                    hLayer = GDALDatasetGetLayerByName(hDS, layer_name.c_str());
+                }
+
+                if (layer_name == "") {
+                    // default layer first by index was opened
+                    if (hLayer != nullptr)
+                        layer_name = OGR_L_GetName(hLayer);
+                }
+
+                GDALVector *lyr = new GDALVector();
+                lyr->setDsn_(ds_name);
+                lyr->setGDALDatasetH_(hDS, true);
+                lyr->setOGRLayerH_(hLayer, layer_name);
+                if (hLayer != nullptr)
+                    lyr->setFieldNames_();
+
+                GDALVector& lyr_ref = *lyr;
+                out = Rcpp::wrap(lyr_ref);
+            }
+            // multidim raster - currently only as dataset name
+            else if (ds_type & GDAL_OF_MULTIDIM_RASTER) {
+
+                out = Rcpp::wrap(GDALArgDatasetValueGetName(hArgDSValue));
+            }
+            // unrecognized dataset type - should not occur
+            else {
+                out = Rcpp::wrap("unrecognized dataset type");
             }
 
             GDALArgDatasetValueRelease(hArgDSValue);
@@ -730,7 +767,7 @@ Rcpp::List GDALAlg::getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const {
 
         default:
         {
-            // TODO
+            out = Rcpp::wrap("unrecognized arg type");
         }
         break;
     }
@@ -754,6 +791,7 @@ RCPP_MODULE(mod_GDALAlg) {
     .field_readonly("m_haveParsedCmdLineArgs",
                     &GDALAlg::m_haveParsedCmdLineArgs)
     .field_readonly("m_hasRun", &GDALAlg::m_hasRun)
+    .field_readonly("m_hasFinalized", &GDALAlg::m_hasFinalized)
 
     // read/write fields
     .field("outputLayerNameForOpen", &GDALAlg::outputLayerNameForOpen)

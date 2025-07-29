@@ -50,7 +50,7 @@ class GDALAlg {
 
     // methods for internal use not exposed to R
     void instantiateAlg_();
-    Rcpp::List getOutputArgTypeValue_(const GDALAlgorithmArgH hArg) const;
+    SEXP getOutputArgValue_(const GDALAlgorithmArgH hArg) const;
 
  private:
     Rcpp::CharacterVector m_cmd {};
