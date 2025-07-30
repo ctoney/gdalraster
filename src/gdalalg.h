@@ -19,7 +19,7 @@ class GDALAlg {
     GDALAlg();
     explicit GDALAlg(const Rcpp::CharacterVector &cmd);
     GDALAlg(const Rcpp::CharacterVector &cmd,
-            const Rcpp::Nullable<Rcpp::CharacterVector> &args);
+            const Rcpp::RObject &args);
     ~GDALAlg();
 
     // undocumented, exposed read-only fields for internal use
@@ -42,6 +42,7 @@ class GDALAlg {
     bool parseCommandLineArgs();
     bool run();
     SEXP output() const;
+    Rcpp::List outputs() const;
     bool finalize();
 
     // void reset();
@@ -50,6 +51,7 @@ class GDALAlg {
 
     // methods for internal use not exposed to R
     void instantiateAlg_();
+    std::vector<std::string> getOutputArgNames_() const;
     SEXP getOutputArgValue_(const GDALAlgorithmArgH hArg) const;
 
  private:
@@ -58,7 +60,6 @@ class GDALAlg {
     Rcpp::CharacterVector m_args {};
     GDALAlgorithmH m_hAlg {nullptr};
     GDALAlgorithmH m_hActualAlg {nullptr};
-    Rcpp::List m_output {};
 };
 
 // cppcheck-suppress unknownMacro

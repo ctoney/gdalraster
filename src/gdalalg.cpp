@@ -144,8 +144,7 @@ GDALAlg::GDALAlg() : m_cmd(Rcpp::CharacterVector::create()),
 GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd) :
             GDALAlg(cmd, Rcpp::CharacterVector::create()) {}
 
-GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd,
-                 const Rcpp::Nullable<Rcpp::CharacterVector> &args) {
+GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd, const Rcpp::RObject &args) {
 
     if (cmd.size() == 0 ||
         (cmd.size() == 1 && EQUAL(cmd[0], "")) ||
@@ -188,8 +187,14 @@ GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd,
         m_cmd = Rcpp::clone(cmd);
     }
 
-    if (args.isNotNull()) {
-        m_args = Rcpp::clone(args);
+    if (!args.isNULL()) {
+        if (Rcpp::is<Rcpp::CharacterVector>(args)) {
+            m_args = Rcpp::clone(args);
+        }
+        // TODO: support args as a named list
+        else {
+            Rcpp::stop("'args' must be a character vector");
+        }
     }
     else {
         m_args = Rcpp::CharacterVector::create();
@@ -452,38 +457,51 @@ SEXP GDALAlg::output() const {
     if (!m_hasRun || m_hActualAlg == nullptr)
         Rcpp::stop("algorithm has not run");
 
+    std::vector<std::string> out_arg_names = getOutputArgNames_();
+    if (out_arg_names.size() == 0) {
+        Rcpp::stop("no output arg names found");
+    }
+    if (out_arg_names.size() > 1) {
+        Rcpp::stop(
+            "algorithm has multiple outputs, use method `outputs()` instead");
+    }
+
+    Rcpp::List out = outputs();
+    return out[0];
+}
+
+Rcpp::List GDALAlg::outputs() const {
+    if (m_hAlg == nullptr)
+        Rcpp::stop("algorithm not instantiated");
+
+    if (!m_hasRun || m_hActualAlg == nullptr)
+        Rcpp::stop("algorithm has not run");
+
+    std::vector<std::string> out_arg_names = getOutputArgNames_();
+    if (out_arg_names.size() == 0)
+        Rcpp::stop("no output arg names found");
+
     Rcpp::List out = Rcpp::List::create();
 
-    char **papszArgNames = GDALAlgorithmGetArgNames(m_hActualAlg);
-    int nCount = 0;
-    nCount = CSLCount(papszArgNames);
-    if (papszArgNames && nCount > 0) {
-        std::vector<std::string> names(papszArgNames, papszArgNames + nCount);
-        for (std::string arg_name : names) {
-            GDALAlgorithmArgH hArg = nullptr;
-            hArg = GDALAlgorithmGetArg(m_hActualAlg, arg_name.c_str());
-            if (hArg == nullptr) {
-                if (!quiet) {
-                    Rcpp::Rcout << "got nullptr for arg: " << arg_name.c_str()
-                        << std::endl;
-                }
-                continue;
+    for (std::string arg_name : out_arg_names) {
+        GDALAlgorithmArgH hArg = nullptr;
+        hArg = GDALAlgorithmGetArg(m_hActualAlg, arg_name.c_str());
+        if (hArg == nullptr) {
+            if (!quiet) {
+                Rcpp::Rcout << "got nullptr for arg: " << arg_name.c_str()
+                    << std::endl;
             }
-
-            if (GDALAlgorithmArgIsOutput(hArg)) {
-                Rcpp::String s(arg_name);
-                s.replace_all("-", "_");
-                out.push_back(getOutputArgValue_(hArg), s);
-            }
-
-            GDALAlgorithmArgRelease(hArg);
+            continue;
         }
+
+        if (GDALAlgorithmArgIsOutput(hArg)) {
+            Rcpp::String s(arg_name);
+            s.replace_all("-", "_");
+            out.push_back(getOutputArgValue_(hArg), s);
+        }
+
+        GDALAlgorithmArgRelease(hArg);
     }
-    else {
-        Rcpp::Rcout << "no arg names found" << std::endl;
-        return R_NilValue;
-    }
-    CSLDestroy(papszArgNames);
 
     return out;
 }
@@ -594,6 +612,35 @@ void GDALAlg::instantiateAlg_() {
                 GDALAlgorithmRelease(alg);
         }
     }
+}
+
+std::vector<std::string> GDALAlg::getOutputArgNames_() const {
+    std::vector<std::string> names_out = {};
+
+    char **papszArgNames = GDALAlgorithmGetArgNames(m_hActualAlg);
+    int nCount = 0;
+    nCount = CSLCount(papszArgNames);
+    if (papszArgNames && nCount > 0) {
+        std::vector<std::string> names(papszArgNames, papszArgNames + nCount);
+        for (std::string arg_name : names) {
+            GDALAlgorithmArgH hArg = nullptr;
+            hArg = GDALAlgorithmGetArg(m_hActualAlg, arg_name.c_str());
+            if (hArg == nullptr) {
+                if (!quiet) {
+                    Rcpp::Rcout << "got nullptr for arg: " << arg_name.c_str()
+                        << std::endl;
+                }
+                continue;
+            }
+            if (GDALAlgorithmArgIsOutput(hArg)) {
+                names_out.push_back(arg_name);
+            }
+            GDALAlgorithmArgRelease(hArg);
+        }
+    }
+    CSLDestroy(papszArgNames);
+
+    return names_out;
 }
 
 SEXP GDALAlg::getOutputArgValue_(const GDALAlgorithmArgH hArg) const {
@@ -784,7 +831,7 @@ RCPP_MODULE(mod_GDALAlg) {
         ("Default constructor")
     .constructor<Rcpp::CharacterVector>
         ("Usage: new(GDALAlg, cmd)")
-    .constructor<Rcpp::CharacterVector, Rcpp::Nullable<Rcpp::CharacterVector>>
+    .constructor<Rcpp::CharacterVector, Rcpp::RObject>
         ("Usage: new(GDALAlg, cmd, cl_arg)")
 
     // undocumented read-only fields for internal use
@@ -809,7 +856,9 @@ RCPP_MODULE(mod_GDALAlg) {
     .method("run", &GDALAlg::run,
         "Execute the algorithm")
     .const_method("output", &GDALAlg::output,
-        "Return a named list of output value(s) (as list of $type, $value)")
+        "Return the single output value of this algorithm")
+    .const_method("outputs", &GDALAlg::output,
+        "Return the output value(s) of this algorithm as a named list")
     .method("finalize", &GDALAlg::finalize,
         "Complete any pending actions, and return the final status")
     .const_method("show", &GDALAlg::show,
