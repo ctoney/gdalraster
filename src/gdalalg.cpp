@@ -3,15 +3,12 @@
    Copyright (c) 2023-2025 gdalraster authors
 */
 
-#if __has_include("gdalalgorithm.h")
+#include <gdal.h>
+#include <cpl_port.h>
+#include <cpl_string.h>
 
 #include <cctype>
 #include <sstream>
-
-#include "gdalalgorithm.h"
-#include "gdal.h"
-#include "cpl_port.h"
-#include "cpl_string.h"
 
 #include "gdalalg.h"
 #include "gdalraster.h"
@@ -19,6 +16,7 @@
 
 constexpr R_xlen_t CMD_TOKENS_MAX = 5;
 
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 11, 0)
 // internal helper to get subalgorithm names, descriptions and URLs,
 // potentially filtering on 'starts_with'
 void append_subalg_names_desc_(const GDALAlgorithmH alg,
@@ -67,11 +65,16 @@ void append_subalg_names_desc_(const GDALAlgorithmH alg,
 
     CSLDestroy(subnames);
 }
+#endif  // GDAL >= 3.11
 
 // [[Rcpp::export(invisible = true)]]
 Rcpp::DataFrame gdal_commands(const std::string &starts_with = "",
                               bool cout = true) {
 
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("gdal_commands() requires GDAL >= 3.11");
+
+#else
     auto reg = GDALGetGlobalAlgorithmRegistry();
     if (reg == nullptr) {
         Rcpp::stop("failed to obtain global algorithm registry");
@@ -129,10 +132,13 @@ Rcpp::DataFrame gdal_commands(const std::string &starts_with = "",
         Rcpp::Named("URL") = Rcpp::wrap(cmd_urls));
 
     return df;
+#endif  // GDAL >= 3.11
 }
 
-//  Implementation of exposed class GDALAlg, which wraps GDALAlgorithm and
-//  its related classes GDALAlgorithmArg and GDALArgDatasetValue
+/*
+    Implementation of exposed class GDALAlg, which wraps GDALAlgorithm and
+    its related classes GDALAlgorithmArg and GDALArgDatasetValue
+*/
 
 GDALAlg::GDALAlg() : m_cmd(Rcpp::CharacterVector::create()),
                      m_cmd_str(""),
@@ -145,6 +151,9 @@ GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd) :
             GDALAlg(cmd, Rcpp::CharacterVector::create()) {}
 
 GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd, const Rcpp::RObject &args) {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
 
     if (cmd.size() == 0 ||
         (cmd.size() == 1 && EQUAL(cmd[0], "")) ||
@@ -201,9 +210,11 @@ GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd, const Rcpp::RObject &args) {
     }
 
     instantiateAlg_();
+#endif  // GDAL >= 3.11
 }
 
 GDALAlg::~GDALAlg() {
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 11, 0)
     if (m_hActualAlg != nullptr) {
         if (m_hasRun && !m_hasFinalized)
             GDALAlgorithmFinalize(m_hActualAlg);
@@ -213,9 +224,14 @@ GDALAlg::~GDALAlg() {
     if (m_hAlg != nullptr) {
         GDALAlgorithmRelease(m_hAlg);
     }
+#endif  // GDAL >= 3.11
 }
 
 Rcpp::List GDALAlg::info() const {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
@@ -262,9 +278,14 @@ Rcpp::List GDALAlg::info() const {
     CSLDestroy(papszArgNames);
 
     return alg_info;
+#endif  // GDAL >= 3.11
 }
 
 Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
@@ -368,9 +389,14 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
                        "mutual_exclusion_group");
 
     return arg_info;
+#endif  // GDAL >= 3.11
 }
 
 Rcpp::String GDALAlg::usageAsJSON() const {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
@@ -384,9 +410,14 @@ Rcpp::String GDALAlg::usageAsJSON() const {
     CPLFree(pszUsage);
 
     return json;
+#endif  // GDAL >= 3.11
 }
 
 bool GDALAlg::parseCommandLineArgs() {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
     // parses cl args which sets the values, and also instantiates m_hActualAlg
 
     if (m_hAlg == nullptr)
@@ -414,9 +445,14 @@ bool GDALAlg::parseCommandLineArgs() {
     }
 
     return res;
+#endif  // GDAL >= 3.11
 }
 
 bool GDALAlg::run() {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
@@ -448,9 +484,14 @@ bool GDALAlg::run() {
         m_hasRun = true;
 
     return res;
+#endif  // GDAL >= 3.11
 }
 
 SEXP GDALAlg::output() const {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
@@ -468,9 +509,14 @@ SEXP GDALAlg::output() const {
 
     Rcpp::List out = outputs();
     return out[0];
+#endif  // GDAL >= 3.11
 }
 
 Rcpp::List GDALAlg::outputs() const {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
@@ -504,9 +550,14 @@ Rcpp::List GDALAlg::outputs() const {
     }
 
     return out;
+#endif  // GDAL >= 3.11
 }
 
 bool GDALAlg::finalize() {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
@@ -530,9 +581,14 @@ bool GDALAlg::finalize() {
             Rcpp::Rcout << "actual algorithm handle is nullptr" << std::endl;
         return false;
     }
+#endif  // GDAL >= 3.11
 }
 
 void GDALAlg::show() const {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::Rcout << "class GDALAlg requires GDAL >= 3.11" << std::endl;
+#else
+
     if (m_hAlg == nullptr)
         Rcpp::stop("algorithm not instantiated");
 
@@ -544,6 +600,7 @@ void GDALAlg::show() const {
         std::endl;
     Rcpp::Rcout << " Help URL    : " << GDALAlgorithmGetHelpFullURL(alg) <<
         std::endl;
+#endif  // GDAL >= 3.11
 }
 
 // ****************************************************************************
@@ -551,6 +608,10 @@ void GDALAlg::show() const {
 // ****************************************************************************
 
 void GDALAlg::instantiateAlg_() {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
     // instantiate m_hAlg
     if (m_hAlg != nullptr || m_hActualAlg != nullptr) {
         Rcpp::stop(
@@ -612,10 +673,15 @@ void GDALAlg::instantiateAlg_() {
                 GDALAlgorithmRelease(alg);
         }
     }
+#endif  // GDAL >= 3.11
 }
 
 std::vector<std::string> GDALAlg::getOutputArgNames_() const {
     std::vector<std::string> names_out = {};
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    return names_out;
+#else
 
     char **papszArgNames = GDALAlgorithmGetArgNames(m_hActualAlg);
     int nCount = 0;
@@ -641,8 +707,10 @@ std::vector<std::string> GDALAlg::getOutputArgNames_() const {
     CSLDestroy(papszArgNames);
 
     return names_out;
+#endif  // GDAL >= 3.11
 }
 
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 11, 0)
 SEXP GDALAlg::getOutputArgValue_(const GDALAlgorithmArgH hArg) const {
     if (hArg == nullptr)
         Rcpp::stop("got nullptr for GDALAlgorithmArgH hArg");
@@ -701,7 +769,9 @@ SEXP GDALAlg::getOutputArgValue_(const GDALAlgorithmArgH hArg) const {
         case GAAT_INTEGER_LIST:
         {
             size_t nCount = 0;
-            const int *panValue = GDALAlgorithmArgGetAsIntegerList(hArg, &nCount);
+            const int *panValue =
+                GDALAlgorithmArgGetAsIntegerList(hArg, &nCount);
+
             if (panValue && nCount > 0) {
                 std::vector<int> v(panValue, panValue + nCount);
                 out = Rcpp::wrap(v);
@@ -717,7 +787,9 @@ SEXP GDALAlg::getOutputArgValue_(const GDALAlgorithmArgH hArg) const {
         case GAAT_REAL_LIST:
         {
             size_t nCount = 0;
-            const double *padfValue = GDALAlgorithmArgGetAsDoubleList(hArg, &nCount);
+            const double *padfValue =
+                GDALAlgorithmArgGetAsDoubleList(hArg, &nCount);
+
             if (padfValue && nCount > 0) {
                 std::vector<double> v(padfValue, padfValue + nCount);
                 out = Rcpp::wrap(v);
@@ -821,6 +893,7 @@ SEXP GDALAlg::getOutputArgValue_(const GDALAlgorithmArgH hArg) const {
 
     return out;
 }
+#endif  // GDAL >= 3.11
 
 // ****************************************************************************
 
@@ -866,6 +939,3 @@ RCPP_MODULE(mod_GDALAlg) {
 
     ;
 }
-
-
-#endif  // __has_include("gdalalgorithm.h")
