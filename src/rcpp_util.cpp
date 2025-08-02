@@ -5,8 +5,7 @@
 
 #include "rcpp_util.h"
 
-//' convert data frame to numeric matrix in Rcpp
-//' @noRd
+// convert data frame to numeric matrix in Rcpp
 Rcpp::NumericMatrix df_to_matrix_(const Rcpp::DataFrame &df) {
     Rcpp::NumericMatrix m = Rcpp::no_init(df.nrows(), df.size());
     for (R_xlen_t i = 0; i < df.size(); ++i) {
@@ -23,8 +22,7 @@ Rcpp::NumericMatrix df_to_matrix_(const Rcpp::DataFrame &df) {
     return m;
 }
 
-//' convert data frame to integer matrix in Rcpp
-//' @noRd
+// convert data frame to integer matrix in Rcpp
 Rcpp::IntegerMatrix df_to_int_matrix_(const Rcpp::DataFrame &df) {
     Rcpp::IntegerMatrix m = Rcpp::no_init(df.nrows(), df.size());
     for (R_xlen_t i = 0; i < df.size(); ++i) {
@@ -41,8 +39,7 @@ Rcpp::IntegerMatrix df_to_int_matrix_(const Rcpp::DataFrame &df) {
     return m;
 }
 
-//' convert allowed xy inputs to numeric matrix
-//' @noRd
+// convert allowed xy inputs to numeric matrix
 Rcpp::NumericMatrix xy_robject_to_matrix_(const Rcpp::RObject &xy) {
     if (xy.isNULL())
         Rcpp::stop("NULL was given for the input coordinates");
@@ -74,16 +71,14 @@ Rcpp::NumericMatrix xy_robject_to_matrix_(const Rcpp::RObject &xy) {
     return xy_ret;
 }
 
-//' wrapper for base R path.expand()
-//' @noRd
+// wrapper for base R path.expand()
 Rcpp::CharacterVector path_expand_(const Rcpp::CharacterVector &path) {
     Rcpp::Function f("path.expand");
     return f(path);
 }
 
-//' wrapper for base R normalizePath()
-//' int must_work should be NA_LOGICAL (the default), 0 or 1
-//' @noRd
+// wrapper for base R normalizePath()
+// int must_work should be NA_LOGICAL (the default), 0 or 1
 Rcpp::CharacterVector normalize_path_(const Rcpp::CharacterVector &path,
                                       int must_work) {
 
@@ -91,23 +86,29 @@ Rcpp::CharacterVector normalize_path_(const Rcpp::CharacterVector &path,
     return f(path, Rcpp::Named("mustWork") = must_work);
 }
 
-//' wrapper for base R enc2utf8()
-//' @noRd
+// wrapper for base R enc2utf8()
 Rcpp::CharacterVector enc_to_utf8_(const Rcpp::CharacterVector &x) {
     Rcpp::Function f("enc2utf8");
     return f(x);
 }
 
-//' wrapper for base R strsplit()
-//' @noRd
+// wrapper for base R strsplit()
 Rcpp::CharacterVector strsplit_(const Rcpp::CharacterVector &x,
                                 const Rcpp::CharacterVector &split) {
     Rcpp::Function f("strsplit");
     return f(x, split);
 }
 
-//' std::string to uppercase
-//' @noRd
+// wrapper for base R paste() with a value for collapse
+// the single input x is expected to be a vector of values to collapse
+Rcpp::String paste_collapse_(const SEXP &x, const Rcpp::String &s) {
+    Rcpp::Function f("paste");
+    Rcpp::CharacterVector tmp = f(x, Rcpp::Named("collapse") = s);
+    Rcpp::CharacterVector ret = enc_to_utf8_(tmp);
+    return ret[0];
+}
+
+// std::string to uppercase
 std::string str_toupper_(const std::string &s) {
     std::string s_out = s;
     std::transform(s_out.begin(), s_out.end(), s_out.begin(),

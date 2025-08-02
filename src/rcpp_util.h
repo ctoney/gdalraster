@@ -42,6 +42,8 @@ Rcpp::CharacterVector enc_to_utf8_(const Rcpp::CharacterVector &x);
 Rcpp::CharacterVector strsplit_(const Rcpp::CharacterVector &x,
                                 const Rcpp::CharacterVector &split);
 
+Rcpp::String paste_collapse_(const SEXP &x, const Rcpp::String &s);
+
 std::string str_toupper_(const std::string &s);
 
 // case-insensitive comparator for std::map

@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+#include <gdal.h>
+
 #if __has_include("gdalalgorithm.h")
     #include "gdalalgorithm.h"
 #endif
@@ -40,20 +42,20 @@ class GDALAlg {
     Rcpp::List argInfo(const Rcpp::String &arg_name) const;
     Rcpp::String usageAsJSON() const;
 
-    // Rcpp::CharacterVector getArgVector() const;
-    // void setArgVector(const Rcpp::CharacterVector &args);
+    // Rcpp::List getExplicitlySetArgs() const;
+    // void setArg(const Rcpp::String &arg_name, const SEXP &arg_value);
 
     bool parseCommandLineArgs();
     bool run();
     SEXP output() const;
     Rcpp::List outputs() const;
     bool finalize();
-
-    // void reset();
+    void release();
 
     void show() const;
 
     // methods for internal use not exposed to R
+    Rcpp::CharacterVector listArgsToVector_(const Rcpp::List &list_args);
     void instantiateAlg_();
     std::vector<std::string> getOutputArgNames_() const;
 #if __has_include("gdalalgorithm.h")
@@ -64,6 +66,7 @@ class GDALAlg {
     Rcpp::CharacterVector m_cmd {};
     std::string m_cmd_str {""};
     Rcpp::CharacterVector m_args {};
+    GDALDatasetH m_input_hDS {nullptr};
 #if __has_include("gdalalgorithm.h")
     GDALAlgorithmH m_hAlg {nullptr};
     GDALAlgorithmH m_hActualAlg {nullptr};

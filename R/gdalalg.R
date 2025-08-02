@@ -48,6 +48,7 @@
 #' alg$outputs()
 #'
 #' alg$finalize()
+#' alg$release()
 #' }
 #' @section Details:
 #' ## Constructors
@@ -124,6 +125,17 @@
 #' during the execution of the algorithm
 #' * `is_output`: logical, `TRUE` if (at least part of) the value of the
 #' argument is set during the execution of the algorithm
+#' * `dataset_type_flags`: character vector containing strings `"RASTER"`,
+#' `"VECTOR"`, `"MULTIDIM_RASTER"`, possibly with `"UPDATE"` (`NULL` if
+#' the argument is not a dataset type)
+#' * `dataset_input_flags`: character vector indicating if a dataset argument
+#' supports specifying only the dataset name (`"NAME"`), only the dataset
+#' object (`"OBJECT"`), or both (`"NAME", "OBJECT"`) when it is used as an
+#' input (`NULL` if the argument is not a dataset type)
+#' * `dataset_output_flags`: character vector indicating if a dataset argument
+#' supports specifying only the dataset name (`"NAME"`), only the dataset
+#' object (`"OBJECT"`), or both (`"NAME", "OBJECT"`) when it is used as an
+#' output (`NULL` if the argument is not a dataset type)
 #' * `mutual_exclusion_group`: character string, the name of the mutual
 #' exclusion group to which this argument belongs
 #'
@@ -169,9 +181,14 @@
 #' \code{$finalize()}\cr
 #' Completes any pending actions, and returns the final status as a logical
 #' value (`TRUE` if no errors occur during finalize). This is typically useful
-#' for algorithms that generate an output dataset and would be called after
-#' datasets have been assigned using either the \code{$output()} or
-#' \code{$outputs()} method.
+#' for algorithms that generate an output dataset. It closes datasets and gets
+#' back potential error status resulting from that, e.g., if an error occurs
+#' during flushing to disk of the output dataset after successful \code{$run()}
+#' execution.
+#'
+#' \code{$release()}\cr
+#' Release memory associated with the algorithm, potentially after attempting
+#' to finalize. No return value, called for side-effects.
 #'
 #' @seealso
 #'

@@ -3,7 +3,6 @@
    Copyright (c) 2023-2025 gdalraster authors
 */
 
-#include <gdal.h>
 #include <cpl_port.h>
 #include <cpl_string.h>
 
@@ -200,9 +199,11 @@ GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd, const Rcpp::RObject &args) {
         if (Rcpp::is<Rcpp::CharacterVector>(args)) {
             m_args = Rcpp::clone(args);
         }
-        // TODO: support args as a named list
+        else if (Rcpp::is<Rcpp::List>(args)) {
+            m_args = listArgsToVector_(Rcpp::as<Rcpp::List>(args));
+        }
         else {
-            Rcpp::stop("'args' must be a character vector");
+            Rcpp::stop("'args' must be a character vector or named list");
         }
     }
     else {
@@ -304,28 +305,7 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
     arg_info.push_back(GDALAlgorithmArgGetName(hArg), "name");
 
     GDALAlgorithmArgType eType = GDALAlgorithmArgGetType(hArg);
-    std::string arg_type = "";
-    if (eType == GAAT_BOOLEAN)
-        arg_type = "BOOLEAN";
-    else if (eType == GAAT_STRING)
-        arg_type = "STRING";
-    else if (eType == GAAT_INTEGER)
-        arg_type = "INTEGER";
-    else if (eType == GAAT_REAL)
-        arg_type = "REAL";
-    else if (eType == GAAT_DATASET)
-        arg_type = "DATASET";
-    else if (eType == GAAT_STRING_LIST)
-        arg_type = "STRING_LIST";
-    else if (eType == GAAT_INTEGER_LIST)
-        arg_type = "INTEGER_LIST";
-    else if (eType == GAAT_REAL_LIST)
-        arg_type = "REAL_LIST";
-    else if (eType == GAAT_DATASET_LIST)
-        arg_type = "DATASET_LIST";
-    else
-        arg_type = "unrecognized";
-
+    std::string arg_type = str_toupper_(GDALAlgorithmArgTypeName(eType));
     arg_info.push_back(arg_type, "type");
 
     arg_info.push_back(GDALAlgorithmArgGetDescription(hArg), "description");
@@ -356,7 +336,7 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
     arg_info.push_back(GDALAlgorithmArgGetRepeatedArgAllowed(hArg),
                        "repeated_arg_allowed");
 
-    if (arg_type == "STRING" || arg_type == "STRING_LIST") {
+    if (eType == GAAT_STRING || eType == GAAT_STRING_LIST) {
         char **papszChoices = GDALAlgorithmArgGetChoices(hArg);
         int nCount = 0;
         nCount = CSLCount(papszChoices);
@@ -385,6 +365,53 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
                        "is_only_for_cli");
     arg_info.push_back(GDALAlgorithmArgIsInput(hArg), "is_input");
     arg_info.push_back(GDALAlgorithmArgIsOutput(hArg), "is_output");
+
+    if (eType == GAAT_DATASET || eType == GAAT_DATASET_LIST) {
+
+        //  type flags
+        GDALArgDatasetType ds_type = GDALAlgorithmArgGetDatasetType(hArg);
+        Rcpp::CharacterVector ds_type_flags = Rcpp::CharacterVector::create();
+        if (ds_type & GDAL_OF_RASTER)
+            ds_type_flags.push_back("RASTER");
+        if (ds_type & GDAL_OF_VECTOR)
+            ds_type_flags.push_back("VECTOR");
+        if (ds_type & GDAL_OF_MULTIDIM_RASTER)
+            ds_type_flags.push_back("MULTIDIM_RASTER");
+        if (ds_type & GDAL_OF_UPDATE)
+            ds_type_flags.push_back("UPDATE");
+
+        arg_info.push_back(ds_type_flags, "dataset_type_flags");
+
+        // input flags
+        int ds_input_flags = GDALAlgorithmArgGetDatasetInputFlags(hArg);
+        Rcpp::CharacterVector ds_input_flags_out =
+            Rcpp::CharacterVector::create();
+
+        if (ds_input_flags & GADV_NAME)
+            ds_input_flags_out.push_back("NAME");
+        if (ds_input_flags & GADV_OBJECT)
+            ds_input_flags_out.push_back("OBJECT");
+
+        arg_info.push_back(ds_input_flags_out, "dataset_input_flags");
+
+        // output flags
+        int ds_output_flags = GDALAlgorithmArgGetDatasetOutputFlags(hArg);
+        Rcpp::CharacterVector ds_output_flags_out =
+            Rcpp::CharacterVector::create();
+
+        if (ds_output_flags & GADV_NAME)
+            ds_output_flags_out.push_back("NAME");
+        if (ds_output_flags & GADV_OBJECT)
+            ds_output_flags_out.push_back("OBJECT");
+
+        arg_info.push_back(ds_output_flags_out, "dataset_output_flags");
+    }
+    else {
+        arg_info.push_back(R_NilValue, "dataset_type_flags");
+        arg_info.push_back(R_NilValue, "dataset_input_flags");
+        arg_info.push_back(R_NilValue, "dataset_output_flags");
+    }
+
     arg_info.push_back(GDALAlgorithmArgGetMutualExclusionGroup(hArg),
                        "mutual_exclusion_group");
 
@@ -436,7 +463,18 @@ bool GDALAlg::parseCommandLineArgs() {
     }
     arg_list.push_back(nullptr);
 
-    bool res = GDALAlgorithmParseCommandLineArguments(m_hAlg, arg_list.data());
+    bool res = true;
+    if (m_input_hDS != nullptr) {
+        GDALAlgorithmArgH hArg = nullptr;
+        hArg = GDALAlgorithmGetArg(m_hAlg, "input");
+        if (hArg)
+            res = GDALAlgorithmArgSetDataset(hArg, m_input_hDS);
+    }
+
+    if (res && arg_list.size() > 0) {
+        res = GDALAlgorithmParseCommandLineArguments(m_hAlg, arg_list.data());
+    }
+
     if (res) {
         m_haveParsedCmdLineArgs = true;
         if (m_hActualAlg == nullptr) {
@@ -584,6 +622,26 @@ bool GDALAlg::finalize() {
 #endif  // GDAL >= 3.11
 }
 
+void GDALAlg::release() {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
+#else
+
+    if (m_hActualAlg != nullptr) {
+        if (m_hasRun && !m_hasFinalized)
+            GDALAlgorithmFinalize(m_hActualAlg);
+        GDALAlgorithmRelease(m_hActualAlg);
+        m_hActualAlg = nullptr;
+    }
+
+    if (m_hAlg != nullptr) {
+        GDALAlgorithmRelease(m_hAlg);
+        m_hAlg = nullptr;
+    }
+
+#endif  // GDAL >= 3.11
+}
+
 void GDALAlg::show() const {
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
     Rcpp::Rcout << "class GDALAlg requires GDAL >= 3.11" << std::endl;
@@ -606,6 +664,56 @@ void GDALAlg::show() const {
 // ****************************************************************************
 // class methods for internal use not exposed in R
 // ****************************************************************************
+
+Rcpp::CharacterVector GDALAlg::listArgsToVector_(
+        const Rcpp::List &list_args) {
+
+    // convert arguments as named list to character vector
+    // arguments in list form must use arg long names
+
+    Rcpp::CharacterVector arg_vec = Rcpp::CharacterVector::create();
+
+    R_xlen_t num_args = 0;
+    if (list_args.size() == 0)
+        return arg_vec;
+    else
+        num_args = list_args.size();
+
+    Rcpp::CharacterVector arg_names = list_args.names();
+    if (arg_names.size() == 0 || arg_names.size() != num_args)
+        Rcpp::stop("arg list must have named elements");
+
+    for (R_xlen_t i = 0; i < num_args; ++i) {
+        Rcpp::String nm = arg_names[i];
+        nm.replace_all("_", "-");
+        nm.push_front("--");
+        if (Rcpp::is<Rcpp::LogicalVector>(list_args[i]) &&
+                list_args[i] == TRUE) {
+
+            arg_vec.push_back(nm);
+            continue;
+        }
+        Rcpp::RObject val = list_args[i];
+        if (!val.isNULL() && val.isObject()) {
+            Rcpp::String cls = val.attr("class");
+            if (cls == "Rcpp_GDALRaster") {
+                GDALRaster *ds = list_args[i];
+                m_input_hDS = ds->getGDALDatasetH_();
+                continue;
+            }
+            if (cls == "Rcpp_GDALVector") {
+                GDALVector *ds = list_args[i];
+                m_input_hDS = ds->getGDALDatasetH_();
+                continue;
+            }
+        }
+        nm += "=";
+        nm += paste_collapse_(list_args[i], ",");
+        arg_vec.push_back(nm);
+    }
+
+    return arg_vec;
+}
 
 void GDALAlg::instantiateAlg_() {
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
@@ -930,10 +1038,12 @@ RCPP_MODULE(mod_GDALAlg) {
         "Execute the algorithm")
     .const_method("output", &GDALAlg::output,
         "Return the single output value of this algorithm")
-    .const_method("outputs", &GDALAlg::output,
+    .const_method("outputs", &GDALAlg::outputs,
         "Return the output value(s) of this algorithm as a named list")
     .method("finalize", &GDALAlg::finalize,
         "Complete any pending actions, and return the final status")
+    .method("release", &GDALAlg::release,
+        "Release memory associated with the algorithm (potentially finalize)")
     .const_method("show", &GDALAlg::show,
         "S4 show()")
 
