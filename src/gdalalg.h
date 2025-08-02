@@ -7,6 +7,7 @@
 #ifndef SRC_GDALALG_H_
 #define SRC_GDALALG_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -49,7 +50,7 @@ class GDALAlg {
     bool run();
     SEXP output() const;
     Rcpp::List outputs() const;
-    bool finalize();
+    bool close();
     void release();
 
     void show() const;
@@ -66,7 +67,7 @@ class GDALAlg {
     Rcpp::CharacterVector m_cmd {};
     std::string m_cmd_str {""};
     Rcpp::CharacterVector m_args {};
-    GDALDatasetH m_input_hDS {nullptr};
+    std::map<std::string, std::vector<GDALDatasetH>> m_map_in_hDS {};
 #if __has_include("gdalalgorithm.h")
     GDALAlgorithmH m_hAlg {nullptr};
     GDALAlgorithmH m_hActualAlg {nullptr};

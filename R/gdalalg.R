@@ -47,7 +47,7 @@
 #' alg$output()
 #' alg$outputs()
 #'
-#' alg$finalize()
+#' alg$close()
 #' alg$release()
 #' }
 #' @section Details:
@@ -178,13 +178,13 @@
 #' (with any dash characters replaced by underscore), and the values are the
 #' argument values which may include `GDALRaster` or `GDALVector` objects.
 #'
-#' \code{$finalize()}\cr
+#' \code{$close()}\cr
 #' Completes any pending actions, and returns the final status as a logical
-#' value (`TRUE` if no errors occur during finalize). This is typically useful
-#' for algorithms that generate an output dataset. It closes datasets and gets
-#' back potential error status resulting from that, e.g., if an error occurs
-#' during flushing to disk of the output dataset after successful \code{$run()}
-#' execution.
+#' value (`TRUE` if no errors occur during the underlying call to
+#' `GDALAlgorithmFinalize()`). This is typically useful for algorithms that
+#' generate an output dataset. It closes datasets and gets back potential error
+#' status resulting from that, e.g., if an error occurs during flushing to disk
+#' of the output dataset after successful \code{$run()} execution.
 #'
 #' \code{$release()}\cr
 #' Release memory associated with the algorithm, potentially after attempting

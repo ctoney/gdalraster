@@ -150,6 +150,7 @@ GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd) :
             GDALAlg(cmd, Rcpp::CharacterVector::create()) {}
 
 GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd, const Rcpp::RObject &args) {
+
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
     Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
 #else
@@ -464,14 +465,29 @@ bool GDALAlg::parseCommandLineArgs() {
     arg_list.push_back(nullptr);
 
     bool res = true;
-    if (m_input_hDS != nullptr) {
-        GDALAlgorithmArgH hArg = nullptr;
-        hArg = GDALAlgorithmGetArg(m_hAlg, "input");
-        if (hArg)
-            res = GDALAlgorithmArgSetDataset(hArg, m_input_hDS);
+    if (!m_map_in_hDS.empty()) {
+        for (auto it = m_map_in_hDS.begin(); it != m_map_in_hDS.end(); ++it) {
+            GDALAlgorithmArgH hArg = GDALAlgorithmGetArg(m_hAlg,
+                                                         it->first.c_str());
+            if (hArg) {
+                if (GDALAlgorithmArgGetType(hArg) == GAAT_DATASET) {
+                    res = GDALAlgorithmArgSetDataset(hArg, it->second[0]);
+                }
+                else if (GDALAlgorithmArgGetType(hArg) == GAAT_DATASET_LIST) {
+                    res = GDALAlgorithmArgSetDatasets(hArg, it->second.size(),
+                                                      it->second.data());
+                }
+                else {
+                    res = false;
+                }
+
+                GDALAlgorithmArgRelease(hArg);
+                if (!res) break;
+            }
+        }
     }
 
-    if (res && arg_list.size() > 0) {
+    if (res && arg_list.size() > 1) {
         res = GDALAlgorithmParseCommandLineArguments(m_hAlg, arg_list.data());
     }
 
@@ -591,7 +607,7 @@ Rcpp::List GDALAlg::outputs() const {
 #endif  // GDAL >= 3.11
 }
 
-bool GDALAlg::finalize() {
+bool GDALAlg::close() {
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
     Rcpp::stop("class GDALAlg requires GDAL >= 3.11");
 #else
@@ -647,17 +663,20 @@ void GDALAlg::show() const {
     Rcpp::Rcout << "class GDALAlg requires GDAL >= 3.11" << std::endl;
 #else
 
-    if (m_hAlg == nullptr)
-        Rcpp::stop("algorithm not instantiated");
-
-    GDALAlgorithmH alg = m_hActualAlg ? m_hActualAlg : m_hAlg;
-
     Rcpp::Rcout << "C++ object of class GDALAlg" << std::endl;
-    Rcpp::Rcout << " Name        : " << GDALAlgorithmGetName(alg) << std::endl;
-    Rcpp::Rcout << " Description : " << GDALAlgorithmGetDescription(alg) <<
-        std::endl;
-    Rcpp::Rcout << " Help URL    : " << GDALAlgorithmGetHelpFullURL(alg) <<
-        std::endl;
+
+    if (m_hAlg == nullptr) {
+        Rcpp::Rcout << " algorithm not instantiated" << std::endl;
+    }
+    else {
+        GDALAlgorithmH alg = m_hActualAlg ? m_hActualAlg : m_hAlg;
+
+        Rcpp::Rcout << " Name        : " << GDALAlgorithmGetName(alg) << std::endl;
+        Rcpp::Rcout << " Description : " << GDALAlgorithmGetDescription(alg) <<
+            std::endl;
+        Rcpp::Rcout << " Help URL    : " << GDALAlgorithmGetHelpFullURL(alg) <<
+            std::endl;
+    }
 #endif  // GDAL >= 3.11
 }
 
@@ -668,7 +687,7 @@ void GDALAlg::show() const {
 Rcpp::CharacterVector GDALAlg::listArgsToVector_(
         const Rcpp::List &list_args) {
 
-    // convert arguments as named list to character vector
+    // convert arguments in a named list to a character vector
     // arguments in list form must use arg long names
 
     Rcpp::CharacterVector arg_vec = Rcpp::CharacterVector::create();
@@ -693,19 +712,24 @@ Rcpp::CharacterVector GDALAlg::listArgsToVector_(
             arg_vec.push_back(nm);
             continue;
         }
-        Rcpp::RObject val = list_args[i];
+        const Rcpp::RObject &val = list_args[i];
         if (!val.isNULL() && val.isObject()) {
             Rcpp::String cls = val.attr("class");
             if (cls == "Rcpp_GDALRaster") {
-                GDALRaster *ds = list_args[i];
-                m_input_hDS = ds->getGDALDatasetH_();
+                const GDALRaster* const &ds = list_args[i];
+                std::vector<GDALDatasetH> ds_list = {};
+                ds_list.push_back(ds->getGDALDatasetH_());
+                m_map_in_hDS[Rcpp::as<std::string>(arg_names[i])] = ds_list;
                 continue;
             }
             if (cls == "Rcpp_GDALVector") {
-                GDALVector *ds = list_args[i];
-                m_input_hDS = ds->getGDALDatasetH_();
+                const GDALVector* const &ds = list_args[i];
+                std::vector<GDALDatasetH> ds_list = {};
+                ds_list.push_back(ds->getGDALDatasetH_());
+                m_map_in_hDS[Rcpp::as<std::string>(arg_names[i])] = ds_list;
                 continue;
             }
+            // TODO: accept a list of datasets
         }
         nm += "=";
         nm += paste_collapse_(list_args[i], ",");
@@ -930,7 +954,7 @@ SEXP GDALAlg::getOutputArgValue_(const GDALAlgorithmArgH hArg) const {
                 GDALRaster *ds = new GDALRaster();
                 ds->setFilename(ds_name);
                 ds->setGDALDatasetH_(hDS, with_update);
-                GDALRaster& ds_ref = *ds;
+                const GDALRaster& ds_ref = *ds;
                 out = Rcpp::wrap(ds_ref);
             }
             // vector
@@ -969,7 +993,7 @@ SEXP GDALAlg::getOutputArgValue_(const GDALAlgorithmArgH hArg) const {
                 if (hLayer != nullptr)
                     lyr->setFieldNames_();
 
-                GDALVector& lyr_ref = *lyr;
+                const GDALVector& lyr_ref = *lyr;
                 out = Rcpp::wrap(lyr_ref);
             }
             // multidim raster - currently only as dataset name
@@ -1040,7 +1064,7 @@ RCPP_MODULE(mod_GDALAlg) {
         "Return the single output value of this algorithm")
     .const_method("outputs", &GDALAlg::outputs,
         "Return the output value(s) of this algorithm as a named list")
-    .method("finalize", &GDALAlg::finalize,
+    .method("close", &GDALAlg::close,
         "Complete any pending actions, and return the final status")
     .method("release", &GDALAlg::release,
         "Release memory associated with the algorithm (potentially finalize)")
