@@ -1,7 +1,10 @@
 /* Implementation of class CmbTable
-Chris Toney <chris.toney at usda.gov> */
+   Chris Toney <chris.toney at usda.gov>
+*/
 
 #include "cmb_table.h"
+
+#include <Rcpp.h>
 
 #include <string>
 #include <vector>
@@ -9,8 +12,8 @@ Chris Toney <chris.toney at usda.gov> */
 
 CmbTable::CmbTable() {}
 
-CmbTable::CmbTable(unsigned int keyLen) :
-    m_key_len(keyLen), m_last_ID(0)  {
+CmbTable::CmbTable(unsigned int keyLen)
+        : m_key_len(keyLen), m_last_ID(0)  {
 
     for (unsigned int i = 1; i <= m_key_len; ++i) {
         std::string s = "V" + std::to_string(i);
@@ -18,8 +21,8 @@ CmbTable::CmbTable(unsigned int keyLen) :
     }
 }
 
-CmbTable::CmbTable(unsigned int keyLen, const Rcpp::CharacterVector &varNames) :
-    m_key_len(keyLen), m_var_names(varNames), m_last_ID(0)  {
+CmbTable::CmbTable(unsigned int keyLen, const Rcpp::CharacterVector &varNames)
+        : m_key_len(keyLen), m_var_names(varNames), m_last_ID(0)  {
 
     if (m_key_len != m_var_names.size())
         Rcpp::stop("'keyLen' must equal 'length(varNames)'");
@@ -41,8 +44,7 @@ double CmbTable::update(const Rcpp::IntegerVector &int_cmb, double incr) {
 }
 
 Rcpp::NumericVector CmbTable::updateFromMatrix(
-        const Rcpp::IntegerMatrix &int_cmbs,
-        double incr) {
+    const Rcpp::IntegerMatrix &int_cmbs, double incr) {
 
     // int combinations (int_cmbs) are columns of a matrix (nrow = m_key_len).
     // Increment count for existing int_cmb,
@@ -59,8 +61,7 @@ Rcpp::NumericVector CmbTable::updateFromMatrix(
 }
 
 Rcpp::NumericVector CmbTable::updateFromMatrixByRow(
-        const Rcpp::IntegerMatrix &int_cmbs,
-        double incr) {
+    const Rcpp::IntegerMatrix &int_cmbs, double incr) {
 
     // int combinations (int_cmbs) are rows of a matrix (ncol = m_key_len).
     // Same as updateFromMatrix() except by row instead of by column

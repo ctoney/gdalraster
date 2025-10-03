@@ -1,14 +1,17 @@
 /* Implementation of class RunningStats
    One-pass algorithm for mean and variance.
-   Chris Toney <chris.toney at usda.gov> */
+   Chris Toney <chris.toney at usda.gov>
+*/
 
 #include "running_stats.h"
 
-RunningStats::RunningStats():
-    m_na_rm(true), m_count(0) {}
+#include <Rcpp.h>
 
-RunningStats::RunningStats(bool na_rm):
-    m_na_rm(na_rm), m_count(0) {}
+RunningStats::RunningStats()
+        : m_na_rm(true), m_count(0) {}
+
+RunningStats::RunningStats(bool na_rm)
+        : m_na_rm(na_rm), m_count(0) {}
 
 void RunningStats::update(const Rcpp::NumericVector& newvalues) {
     for (auto const& i : newvalues) {

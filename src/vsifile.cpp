@@ -19,26 +19,26 @@
 
 constexpr uint64_t VSI_L_OFFSET_MAX_R = 9223372036854775807;
 
-VSIFile::VSIFile() :
-            m_filename(""),
-            m_access("r"),
-            m_options(Rcpp::CharacterVector::create()),
-            m_fp(nullptr) {}
+VSIFile::VSIFile()
+        : m_filename(""), m_access("r"),
+          m_options(Rcpp::CharacterVector::create()), m_fp(nullptr) {}
 
-VSIFile::VSIFile(Rcpp::CharacterVector filename) :
-            VSIFile(filename, "r", Rcpp::CharacterVector::create()) {}
+VSIFile::VSIFile(Rcpp::CharacterVector filename)
+        : VSIFile(filename, "r", Rcpp::CharacterVector::create()) {}
 
-VSIFile::VSIFile(Rcpp::CharacterVector filename, std::string access) :
-            VSIFile(filename, access, Rcpp::CharacterVector::create()) {}
+VSIFile::VSIFile(Rcpp::CharacterVector filename, std::string access)
+        : VSIFile(filename, access, Rcpp::CharacterVector::create()) {}
 
 VSIFile::VSIFile(Rcpp::CharacterVector filename, std::string access,
-                 Rcpp::CharacterVector options) : m_fp(nullptr) {
+                 Rcpp::CharacterVector options)
+        : m_fp(nullptr) {
 
     m_filename = Rcpp::as<std::string>(check_gdal_filename(filename));
     if (access.length() > 0 && access.length() < 4)
         m_access = access;
     else
         Rcpp::stop("'access' should be 'r', 'r+', 'w' or 'w+'");
+
     m_options = options;
     open();
 }

@@ -35,59 +35,48 @@
 // value for marking FID when used along with regular attribute field indexes
 constexpr int FID_MARKER = -999;
 
-GDALVector::GDALVector() : m_open_options(Rcpp::CharacterVector::create()),
-                           m_ignored_fields(Rcpp::CharacterVector::create()) {
+GDALVector::GDALVector()
+        : m_open_options(Rcpp::CharacterVector::create()),
+          m_ignored_fields(Rcpp::CharacterVector::create()) {
+
     // undocumented default constructor with no arguments
     // currently not intended for user code
-
 #if __has_include(<ogr_recordbatch.h>)
     // initialize the release callback since it will be checked at closing
     m_stream.release = nullptr;
 #endif
 }
 
-GDALVector::GDALVector(const Rcpp::CharacterVector &dsn) :
-
-            GDALVector(dsn, "", true, Rcpp::CharacterVector::create(),
-                       "", "") {}
+GDALVector::GDALVector(const Rcpp::CharacterVector &dsn)
+        : GDALVector(dsn, "", true, Rcpp::CharacterVector::create(), "", "") {}
 
 GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
-                       const std::string &layer) :
-
-            GDALVector(dsn, layer, true, Rcpp::CharacterVector::create(),
-                       "", "") {}
-
-GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
-                       const std::string &layer,
-                       bool read_only) :
-
-            GDALVector(dsn, layer, read_only, Rcpp::CharacterVector::create(),
-                       "", "") {}
+                       const std::string &layer)
+        : GDALVector(dsn, layer, true, Rcpp::CharacterVector::create(), "",
+                     "") {}
 
 GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
-                       const std::string &layer,
-                       bool read_only,
-                       const Rcpp::CharacterVector &open_options) :
-
-            GDALVector(dsn, layer, read_only, open_options, "", "") {}
+                       const std::string &layer, bool read_only)
+        : GDALVector(dsn, layer, read_only, Rcpp::CharacterVector::create(), "",
+                     "") {}
 
 GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
-                       const std::string &layer,
-                       bool read_only,
+                       const std::string &layer, bool read_only,
+                       const Rcpp::CharacterVector &open_options)
+        : GDALVector(dsn, layer, read_only, open_options, "", "") {}
+
+GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
+                       const std::string &layer, bool read_only,
                        const Rcpp::Nullable<Rcpp::CharacterVector>
                            &open_options,
                        const std::string &spatial_filter,
-                       const std::string &dialect = "") :
-
-            m_layer_name(layer),
-            m_dialect(dialect),
-            m_open_options(open_options.isNotNull() ?
-                           open_options : Rcpp::CharacterVector::create()),
-            m_spatial_filter(spatial_filter),
-            m_ignored_fields(Rcpp::CharacterVector::create()),
-            m_hDataset(nullptr),
-            m_eAccess(GA_ReadOnly),
-            m_hLayer(nullptr) {
+                       const std::string &dialect = "")
+        : m_layer_name(layer), m_dialect(dialect),
+          m_open_options(open_options.isNotNull() ?
+                         open_options : Rcpp::CharacterVector::create()),
+          m_spatial_filter(spatial_filter),
+          m_ignored_fields(Rcpp::CharacterVector::create()),
+          m_hDataset(nullptr), m_eAccess(GA_ReadOnly), m_hLayer(nullptr) {
 
     m_dsn = Rcpp::as<std::string>(check_gdal_filename(dsn));
     open(read_only);

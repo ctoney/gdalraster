@@ -5,8 +5,14 @@
 
 #include "gdalalg.h"
 
+#if __has_include(<gdalalgorithm.h>)
+    #include <gdalalgorithm.h>
+#endif
+#include <gdal.h>
 #include <cpl_port.h>
 #include <cpl_string.h>
+
+#include <Rcpp.h>
 
 #include <algorithm>
 #include <cctype>
@@ -219,14 +225,13 @@ Rcpp::CharacterVector gdal_global_reg_names() {
 //  Documented in R/gdalalg.R.
 // ****************************************************************************
 
-GDALAlg::GDALAlg() :
-            GDALAlg("gdal", Rcpp::CharacterVector::create())  {}
+GDALAlg::GDALAlg()
+        : GDALAlg("gdal", Rcpp::CharacterVector::create())  {}
 
-GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd) :
-            GDALAlg(cmd, Rcpp::CharacterVector::create()) {}
+GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd)
+        : GDALAlg(cmd, Rcpp::CharacterVector::create()) {}
 
 GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd, const Rcpp::RObject &args) {
-
 #if GDAL_VERSION_NUM < GDALALG_MIN_GDAL_
     Rcpp::stop(GDALALG_MIN_GDAL_MSG_);
 #else
