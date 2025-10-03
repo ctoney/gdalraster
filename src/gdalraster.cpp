@@ -1607,7 +1607,8 @@ Rcpp::CharacterVector GDALRaster::getMetadataDomainList(int band) const {
 SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
                       int out_xsize, int out_ysize) const {
 
-    checkAccess_(GA_ReadOnly);
+    if (!isOpen())
+        Rcpp::stop("dataset is not open");
 
     GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
     if (hBand == nullptr)
@@ -1627,6 +1628,9 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
         catch (const std::exception &) {
             Rcpp::stop("failed to allocate memory for read");
         }
+
+        if (buf.empty())
+            return Rcpp::wrap(Rcpp::ComplexVector::create());
 
         err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize, buf.data(),
                            out_xsize, out_ysize, GDT_CFloat64, 0, 0);
@@ -1656,6 +1660,9 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
                     Rcpp::stop("failed to allocate memory for read");
                 }
 
+                if (buf.empty())
+                    return Rcpp::wrap(Rcpp::RawVector::create());
+
                 err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
                                    buf.data(), out_xsize, out_ysize, GDT_Byte,
                                    0, 0);
@@ -1674,6 +1681,9 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
                 catch (const std::exception &) {
                     Rcpp::stop("failed to allocate memory for read");
                 }
+
+                if (buf.empty())
+                    return Rcpp::wrap(Rcpp::IntegerVector::create());
 
                 err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
                                    buf.data(), out_xsize, out_ysize, GDT_Int32,
@@ -1708,6 +1718,9 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
             catch (const std::exception &) {
                 Rcpp::stop("failed to allocate memory for read");
             }
+
+            if (buf.empty())
+                return Rcpp::wrap(Rcpp::NumericVector::create());
 
             err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
                                buf.data(), out_xsize, out_ysize,
