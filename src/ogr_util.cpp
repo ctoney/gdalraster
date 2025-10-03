@@ -3,13 +3,17 @@
    Copyright (c) 2023-2025 gdalraster authors
 */
 
+#include <gdal.h>
 #include <cpl_port.h>
 #include <cpl_error.h>
 #include <cpl_string.h>
 #include <cpl_time.h>
 #include <ogr_srs_api.h>
 
+#include <Rcpp.h>
+
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,6 +21,108 @@
 #include "ogr_util.h"
 #include "gdalraster.h"
 
+// map OGRwkbGeometryType enum to string names for use in R
+const std::map<std::string, OGRwkbGeometryType> MAP_OGR_GEOM_TYPE{
+    {"UNKNOWN", wkbUnknown},
+    {"POINT", wkbPoint},
+    {"LINESTRING", wkbLineString},
+    {"POLYGON", wkbPolygon},
+    {"MULTIPOINT", wkbMultiPoint},
+    {"MULTILINESTRING", wkbMultiLineString},
+    {"MULTIPOLYGON", wkbMultiPolygon},
+    {"GEOMETRYCOLLECTION", wkbGeometryCollection},
+    {"CIRCULARSTRING", wkbCircularString},
+    {"COMPOUNDCURVE", wkbCompoundCurve},
+    {"CURVEPOLYGON", wkbCurvePolygon},
+    {"MULTICURVE", wkbMultiCurve},
+    {"MULTISURFACE", wkbMultiSurface},
+    {"CURVE", wkbCurve},
+    {"SURFACE", wkbSurface},
+    {"POLYHEDRALSURFACE", wkbPolyhedralSurface},
+    {"TIN", wkbTIN},
+    {"TRIANGLE", wkbTriangle},
+    {"NONE", wkbNone},
+    {"LINEARRING", wkbLinearRing},
+    {"CIRCULARSTRINGZ", wkbCircularStringZ},
+    {"COMPOUNDCURVEZ", wkbCompoundCurveZ},
+    {"CURVEPOLYGONZ", wkbCurvePolygonZ},
+    {"MULTICURVEZ", wkbMultiCurveZ},
+    {"MULTISURFACEZ", wkbMultiSurfaceZ},
+    {"CURVEZ", wkbCurveZ},
+    {"SURFACEZ", wkbSurfaceZ},
+    {"POLYHEDRALSURFACEZ", wkbPolyhedralSurfaceZ},
+    {"TINZ", wkbTINZ},
+    {"TRIANGLEZ", wkbTriangleZ},
+    {"POINTM", wkbPointM},
+    {"LINESTRINGM", wkbLineStringM},
+    {"POLYGONM", wkbPolygonM},
+    {"MULTIPOINTM", wkbMultiPointM},
+    {"MULTILINESTRINGM", wkbMultiLineStringM},
+    {"MULTIPOLYGONM", wkbMultiPolygonM},
+    {"GEOMETRYCOLLECTIONM", wkbGeometryCollectionM},
+    {"CIRCULARSTRINGM", wkbCircularStringM},
+    {"COMPOUNDCURVEM", wkbCompoundCurveM},
+    {"CURVEPOLYGONM", wkbCurvePolygonM},
+    {"MULTICURVEM", wkbMultiCurveM},
+    {"MULTISURFACEM", wkbMultiSurfaceM},
+    {"CURVEM", wkbCurveM},
+    {"SURFACEM", wkbSurfaceM},
+    {"POLYHEDRALSURFACEM", wkbPolyhedralSurfaceM},
+    {"TINM", wkbTINM},
+    {"TRIANGLEM", wkbTriangleM},
+    {"POINTZM", wkbPointZM},
+    {"LINESTRINGZM", wkbLineStringZM},
+    {"POLYGONZM", wkbPolygonZM},
+    {"MULTIPOINTZM", wkbMultiPointZM},
+    {"MULTILINESTRINGZM", wkbMultiLineStringZM},
+    {"MULTIPOLYGONZM", wkbMultiPolygonZM},
+    {"GEOMETRYCOLLECTIONZM", wkbGeometryCollectionZM},
+    {"CIRCULARSTRINGZM", wkbCircularStringZM},
+    {"COMPOUNDCURVEZM", wkbCompoundCurveZM},
+    {"CURVEPOLYGONZM", wkbCurvePolygonZM},
+    {"MULTICURVEZM", wkbMultiCurveZM},
+    {"MULTISURFACEZM", wkbMultiSurfaceZM},
+    {"CURVEZM", wkbCurveZM},
+    {"SURFACEZM", wkbSurfaceZM},
+    {"POLYHEDRALSURFACEZM", wkbPolyhedralSurfaceZM},
+    {"TINZM", wkbTINZM},
+    {"TRIANGLEZM", wkbTriangleZM},
+    {"POINT25D", wkbPoint25D},
+    {"LINESTRING25D", wkbLineString25D},
+    {"POLYGON25D", wkbPolygon25D},
+    {"MULTIPOINT25D", wkbMultiPoint25D},
+    {"MULTILINESTRING25D", wkbMultiLineString25D},
+    {"MULTIPOLYGON25D", wkbMultiPolygon25D},
+    {"GEOMETRYCOLLECTION25D", wkbGeometryCollection25D}
+};
+
+// map OGRFieldType enum to string names for use in R
+const std::map<std::string, OGRFieldType, _ci_less> MAP_OGR_FLD_TYPE{
+    {"OFTInteger", OFTInteger},
+    {"OFTIntegerList", OFTIntegerList},
+    {"OFTReal", OFTReal},
+    {"OFTRealList", OFTRealList},
+    {"OFTString", OFTString},
+    {"OFTStringList", OFTStringList},
+    {"OFTBinary", OFTBinary},
+    {"OFTDate", OFTDate},
+    {"OFTTime", OFTTime},
+    {"OFTDateTime", OFTDateTime},
+    {"OFTInteger64", OFTInteger64},
+    {"OFTInteger64List", OFTInteger64List}
+};
+
+// map OGRFieldSubType enum to string names for use in R
+// A subtype represents a hint, a restriction of the main type, that is not
+// strictly necessary to consult.
+const std::map<std::string, OGRFieldSubType, _ci_less> MAP_OGR_FLD_SUBTYPE{
+    {"OFSTNone", OFSTNone},
+    {"OFSTBoolean", OFSTBoolean},
+    {"OFSTInt16", OFSTInt16},
+    {"OFSTFloat32", OFSTFloat32},
+    {"OFSTJSON", OFSTJSON},
+    {"OFSTUUID", OFSTUUID}
+};
 
 OGRwkbGeometryType getWkbGeomType_(const std::string &geom_type) {
     std::string geom_type_in = str_toupper_(geom_type);
@@ -592,7 +698,8 @@ bool ogr_ds_add_field_domain(const std::string &dsn,
                         }
                     }
                     Rcpp::stop(
-                        "elements of 'coded_values' must be \"CODE\" or \"CODE=VALUE\"");
+                        "elements of 'coded_values' must be \"CODE\" or "
+                        "\"CODE=VALUE\"");
                 }
 
                 OGRCodedValue cv;
