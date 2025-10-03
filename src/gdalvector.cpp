@@ -204,7 +204,7 @@ Rcpp::CharacterVector GDALVector::getFileList() const {
 
     char **papszFiles = GDALGetFileList(m_hDataset);
 
-    const int items = CSLCount(papszFiles);
+    int items = CSLCount(papszFiles);
     if (items > 0) {
         Rcpp::CharacterVector files(items);
         for (int i=0; i < items; ++i) {
@@ -265,6 +265,9 @@ std::string GDALVector::getDriverShortName() const {
     checkAccess_(GA_ReadOnly);
 
     GDALDriverH hDriver = GDALGetDatasetDriver(m_hDataset);
+    if (!hDriver)
+        return "";
+
     return GDALGetDriverShortName(hDriver);
 }
 
@@ -272,6 +275,9 @@ std::string GDALVector::getDriverLongName() const {
     checkAccess_(GA_ReadOnly);
 
     GDALDriverH hDriver = GDALGetDatasetDriver(m_hDataset);
+    if (!hDriver)
+        return "";
+
     return GDALGetDriverLongName(hDriver);
 }
 
@@ -544,33 +550,33 @@ SEXP GDALVector::getFieldDomain(const std::string &domain_name) const {
         OGR_GetFieldSubTypeName(OGR_FldDomain_GetFieldSubType(hDomain)));
     list_out.push_back(fld_subtype_name, "field_subtype");
 
-    const char *pszSplitPolicy = "";
+    std::string split_policy = "";
     switch (OGR_FldDomain_GetSplitPolicy(hDomain)) {
         case OFDSP_DEFAULT_VALUE:
-            pszSplitPolicy = "DEFAULT_VALUE";
+            split_policy = "DEFAULT_VALUE";
             break;
         case OFDSP_DUPLICATE:
-            pszSplitPolicy = "DUPLICATE";
+            split_policy = "DUPLICATE";
             break;
         case OFDSP_GEOMETRY_RATIO:
-            pszSplitPolicy = "GEOMETRY_RATIO";
+            split_policy = "GEOMETRY_RATIO";
             break;
     }
-    list_out.push_back(pszSplitPolicy, "split_policy");
+    list_out.push_back(split_policy, "split_policy");
 
-    const char *pszMergePolicy = "";
+    std::string merge_policy = "";
     switch (OGR_FldDomain_GetMergePolicy(hDomain)) {
         case OFDMP_DEFAULT_VALUE:
-            pszMergePolicy = "DEFAULT_VALUE";
+            merge_policy = "DEFAULT_VALUE";
             break;
         case OFDMP_SUM:
-            pszMergePolicy = "SUM";
+            merge_policy = "SUM";
             break;
         case OFDMP_GEOMETRY_WEIGHTED:
-            pszMergePolicy = "GEOMETRY_WEIGHTED";
+            merge_policy = "GEOMETRY_WEIGHTED";
             break;
     }
-    list_out.push_back(pszMergePolicy, "merge_policy");
+    list_out.push_back(merge_policy, "merge_policy");
 
     switch (OGR_FldDomain_GetDomainType(hDomain)) {
         case OFDT_CODED:
@@ -709,7 +715,7 @@ SEXP GDALVector::getFieldDomain(const std::string &domain_name) const {
                         static_cast<int>(sMin->Date.Second + 0.5);
 
                     int64_t nUnixTime = CPLYMDHMSToUnixTime(&brokendowntime);
-                    int nTZflag = static_cast<int>(sMin->Date.TZFlag);
+                    const int nTZflag = static_cast<int>(sMin->Date.TZFlag);
                     if (nTZflag > 1 && nTZflag != 100) {
                         // convert to UTC
                         const int tzoffset = std::abs(nTZflag - 100) * 15;
@@ -721,8 +727,10 @@ SEXP GDALVector::getFieldDomain(const std::string &domain_name) const {
                         else
                             nUnixTime += offset_sec;
                     }
+
                     Rcpp::NumericVector dt_min =
-                            {static_cast<double>(nUnixTime)};
+                        {static_cast<double>(nUnixTime)};
+
                     Rcpp::CharacterVector classes = {"POSIXct", "POSIXt"};
                     dt_min.attr("class") = classes;
                     dt_min.attr("tzone") = "UTC";
@@ -749,7 +757,7 @@ SEXP GDALVector::getFieldDomain(const std::string &domain_name) const {
                         static_cast<int>(sMax->Date.Second + 0.5);
 
                     int64_t nUnixTime = CPLYMDHMSToUnixTime(&brokendowntime);
-                    int nTZflag = static_cast<int>(sMin->Date.TZFlag);
+                    const int nTZflag = static_cast<int>(sMin->Date.TZFlag);
                     if (nTZflag > 1 && nTZflag != 100) {
                         // convert to UTC
                         const int tzoffset = std::abs(nTZflag - 100) * 15;
@@ -761,6 +769,7 @@ SEXP GDALVector::getFieldDomain(const std::string &domain_name) const {
                         else
                             nUnixTime += offset_sec;
                     }
+
                     Rcpp::NumericVector dt_max =
                         {static_cast<double>(nUnixTime)};
 
@@ -780,8 +789,7 @@ SEXP GDALVector::getFieldDomain(const std::string &domain_name) const {
 
         case OFDT_GLOB:
         {
-            const char *pszGlob = nullptr;
-            pszGlob = OGR_GlobFldDomain_GetGlob(hDomain);
+            const char *pszGlob = OGR_GlobFldDomain_GetGlob(hDomain);
             if (pszGlob)
                 list_out.push_back(pszGlob, "glob");
             else
@@ -797,9 +805,11 @@ SEXP GDALVector::getFieldDomain(const std::string &domain_name) const {
 void GDALVector::setAttributeFilter(const std::string &query) {
     checkAccess_(GA_ReadOnly);
 
-    const char *query_in = nullptr;
+    const char *query_in;
     if (query != "")
         query_in = query.c_str();
+    else
+        query_in = nullptr;
 
     if (OGR_L_SetAttributeFilter(m_hLayer, query_in) != OGRERR_NONE) {
         Rcpp::stop("error setting attribute filter");
@@ -870,15 +880,15 @@ void GDALVector::setSelectedFields(const Rcpp::RObject &fields) {
     // if special field "OGR_GEOMETRY" is used here, we need to replace with
     // the geometry column name
     if (getGeometryColumn() != "") {
-        for (auto& x : fields_in) {
+        for (auto &x : fields_in) {
             if (EQUAL(x, "OGR_GEOMETRY")) {
                 x = getGeometryColumn();
             }
         }
     }
 
-    Rcpp::CharacterVector unmatched_fields_in = Rcpp::setdiff(fields_in,
-                                                              m_field_names);
+    Rcpp::CharacterVector unmatched_fields_in =
+        Rcpp::setdiff(fields_in, m_field_names);
 
     if (unmatched_fields_in.size() == fields_in.size()) {
         Rcpp::stop("none of the input field names could be resolved");
@@ -888,8 +898,8 @@ void GDALVector::setSelectedFields(const Rcpp::RObject &fields) {
         Rcpp::Rcout << unmatched_fields_in << "\n";
     }
 
-    Rcpp::CharacterVector ignore_fields = Rcpp::setdiff(m_field_names,
-                                                        fields_in);
+    Rcpp::CharacterVector ignore_fields =
+        Rcpp::setdiff(m_field_names, fields_in);
 
     std::vector<const char *> oFields(ignore_fields.begin(),
                                       ignore_fields.end());
@@ -1056,7 +1066,7 @@ SEXP GDALVector::getFeature(const Rcpp::RObject &fid) {
         fid_in = static_cast<int64_t>(fid_[0]);
 
     // save the current attribute and spatial filters
-    std::string orig_filter = m_attr_filter;
+    const std::string orig_filter = m_attr_filter;
     OGRGeometryH hOrigFilterGeom = nullptr;
     OGRGeometryH hFilterGeom = nullptr;
     hFilterGeom = OGR_L_GetSpatialFilter(m_hLayer);
@@ -1145,10 +1155,10 @@ Rcpp::DataFrame GDALVector::fetch(double n) {
     const int nFields = OGR_FD_GetFieldCount(hFDefn);
     const int nGeomFields = OGR_FD_GetGeomFieldCount(hFDefn);
     bool include_geom = true;
-    Rcpp::CharacterVector geom_column{};  // column name(s) for gis attributes
-    Rcpp::CharacterVector geom_col_type{};  // geom type(s) for gis attributes
-    Rcpp::CharacterVector geom_col_srs{};  // SRS for gis attributes
-    std::string geom_format{};   // taken from this->returnGeomAs;
+    Rcpp::CharacterVector geom_column = {};  // column name(s) for gis attributes
+    Rcpp::CharacterVector geom_col_type = {};  // geom type(s) for gis attributes
+    Rcpp::CharacterVector geom_col_srs = {};  // SRS for gis attributes
+    std::string geom_format = "";   // taken from this->returnGeomAs;
 
     if (EQUAL(this->returnGeomAs.c_str(), "NONE")) {
         include_geom = false;
@@ -1298,7 +1308,7 @@ Rcpp::DataFrame GDALVector::fetch(double n) {
                         col[row_num] = Rcpp::toInteger64(NA_INTEGER64)[0];
                     }
                     else {
-                        const int64_t value = static_cast<int64_t>(
+                        int64_t value = static_cast<int64_t>(
                                 OGR_F_GetFieldAsInteger64(hFeat, i));
 
                         col[row_num] = Rcpp::toInteger64(value)[0];
@@ -1654,9 +1664,12 @@ Rcpp::DataFrame GDALVector::fetch(double n) {
         if (hFeat != nullptr) {
             Rcpp::Rcout << "`getFeatureCount()` reported: " << row_num << "\n";
             std::string msg =
-                "more features potentially available than reported by `getFeatureCount()`";
+                "more features potentially available than reported by "
+                "`getFeatureCount()`";
+
             if (!quiet)
                 Rcpp::warning(msg);
+
             OGR_F_Destroy(hFeat);
             hFeat = nullptr;
         }
@@ -1750,7 +1763,7 @@ Rcpp::DataFrame GDALVector::fetch(double n) {
         if (include_geom) {
             for (int i = 0; i < nGeomFields; ++i) {
                 OGRGeomFieldDefnH hGeomFldDefn =
-                        OGR_FD_GetGeomFieldDefn(hFDefn, i);
+                    OGR_FD_GetGeomFieldDefn(hFDefn, i);
 
                 if (OGR_GFld_IsIgnored(hGeomFldDefn))
                     continue;
@@ -1851,7 +1864,7 @@ bool GDALVector::setFeature(const Rcpp::List &feature) {
     }
 
     std::vector<std::map<R_xlen_t, int>> fld_maps =
-            validateFeatInput_(feature);
+        validateFeatInput_(feature);
 
     if (fld_maps.size() != 2)
         Rcpp::stop("failed to obtain field index mappings");
@@ -1884,7 +1897,7 @@ bool GDALVector::createFeature(const Rcpp::List &feature) {
     }
 
     std::vector<std::map<R_xlen_t, int>> fld_maps =
-            validateFeatInput_(feature);
+        validateFeatInput_(feature);
 
     if (fld_maps.size() != 2)
         Rcpp::stop("failed to obtain field index mappings");
@@ -1913,7 +1926,7 @@ Rcpp::LogicalVector GDALVector::batchCreateFeature(
     checkAccess_(GA_Update);
 
     std::vector<std::map<R_xlen_t, int>> fld_maps =
-            validateFeatInput_(feature_set);
+        validateFeatInput_(feature_set);
 
     if (fld_maps.size() != 2)
         Rcpp::stop("failed to obtain field index mappings");
@@ -1965,7 +1978,7 @@ bool GDALVector::upsertFeature(const Rcpp::List &feature) {
     }
 
     std::vector<std::map<R_xlen_t, int>> fld_maps =
-            validateFeatInput_(feature);
+        validateFeatInput_(feature);
 
     if (fld_maps.size() != 2)
         Rcpp::stop("failed to obtain field index mappings");
@@ -2107,7 +2120,6 @@ bool GDALVector::rollbackTransaction() {
 }
 
 Rcpp::CharacterVector GDALVector::getMetadata() const {
-
     checkAccess_(GA_ReadOnly);
 
     char **papszMD = nullptr;
@@ -2417,10 +2429,9 @@ void GDALVector::close() {
 }
 
 void GDALVector::OGRFeatureFromList_dumpReadble(
-                 const Rcpp::List &feat) const {
+                    const Rcpp::List &feat) const {
 
     // undocumented method exposed in R for diagnostic use
-
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 8, 0)
     Rcpp::stop("'OGRFeatureFromList_dumpReadble()' requires GDAL >= 3.8");
 
@@ -2479,7 +2490,7 @@ void GDALVector::checkAccess_(GDALAccess access_needed) const {
 
 void GDALVector::setDsn_(const std::string &dsn) {
     if (m_hDataset != nullptr) {
-        std::string desc(GDALGetDescription(m_hDataset));
+        const std::string desc(GDALGetDescription(m_hDataset));
         if (m_dsn == "" && desc == "") {
             m_dsn = Rcpp::as<std::string>(check_gdal_filename(dsn));
             GDALSetDescription(m_hDataset, m_dsn.c_str());
@@ -2769,7 +2780,8 @@ SEXP GDALVector::createDF_(R_xlen_t nrow) const {
     return df;
 }
 
-void GDALVector::attachGISattributes_(Rcpp::List *ogr_feat_obj,
+void GDALVector::attachGISattributes_(
+        Rcpp::List *ogr_feat_obj,
         const Rcpp::CharacterVector &geom_col,
         const Rcpp::CharacterVector &geom_col_type,
         const Rcpp::CharacterVector &geom_col_srs,
@@ -3123,8 +3135,9 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
     return ret;
 }
 
-OGRFeatureH GDALVector::OGRFeatureFromList_(const Rcpp::List &feature,
-        R_xlen_t row_idx, const std::map<R_xlen_t, int> &map_flds,
+OGRFeatureH GDALVector::OGRFeatureFromList_(
+        const Rcpp::List &feature, R_xlen_t row_idx,
+        const std::map<R_xlen_t, int> &map_flds,
         const std::map<R_xlen_t, int> &map_geom_flds) const {
 
     // Returns an OGRFeature object from input given as R named list, which

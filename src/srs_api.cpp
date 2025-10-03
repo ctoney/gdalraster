@@ -205,7 +205,6 @@ std::string srs_to_projjson(const std::string &srs,
         Rcpp::stop("srs_to_projjson() requires PROJ >= 6.2");
 
     OGRSpatialReferenceH hSRS = OSRNewSpatialReference(nullptr);
-    char *pszSRS_PROJJSON = nullptr;
 
     if (OSRSetFromUserInput(hSRS, srs.c_str()) != OGRERR_NONE) {
         if (hSRS != nullptr)
@@ -229,6 +228,7 @@ std::string srs_to_projjson(const std::string &srs,
     }
     opt_list.push_back(nullptr);
 
+    char *pszSRS_PROJJSON = nullptr;
     if (OSRExportToPROJJSON(hSRS, &pszSRS_PROJJSON, opt_list.data())
         != OGRERR_NONE) {
 
@@ -422,7 +422,6 @@ std::string srs_get_name(const std::string &srs) {
     if (srs == "")
         return "";
 
-    const char *pszName = nullptr;
     OGRSpatialReferenceH hSRS = OSRNewSpatialReference(nullptr);
 
     if (OSRSetFromUserInput(hSRS, srs.c_str()) != OGRERR_NONE) {
@@ -431,9 +430,9 @@ std::string srs_get_name(const std::string &srs) {
         Rcpp::stop("error importing SRS from user input");
     }
 
-    pszName = OSRGetName(hSRS);
+    const char *pszName = OSRGetName(hSRS);
     std::string ret = "";
-    if (pszName != nullptr)
+    if (pszName)
         ret = pszName;
 
     OSRDestroySpatialReference(hSRS);
@@ -741,9 +740,9 @@ SEXP srs_get_angular_units(const std::string &srs) {
         Rcpp::stop("error importing SRS from user input");
     }
 
-    char *name_tmp = nullptr;
-    double to_rad = OSRGetAngularUnits(hSRS, &name_tmp);
-    std::string name_out = std::string(name_tmp);
+    char *pszNameTmp = nullptr;
+    double to_rad = OSRGetAngularUnits(hSRS, &pszNameTmp);
+    std::string name_out(pszNameTmp);
 
     Rcpp::List list_out = Rcpp::List::create();
     list_out.push_back(name_out, "unit_name");
@@ -767,9 +766,9 @@ SEXP srs_get_linear_units(const std::string &srs) {
         Rcpp::stop("error importing SRS from user input");
     }
 
-    char *name_tmp = nullptr;
-    double to_m = OSRGetLinearUnits(hSRS, &name_tmp);
-    std::string name_out = std::string(name_tmp);
+    char *pszNameTmp = nullptr;
+    double to_m = OSRGetLinearUnits(hSRS, &pszNameTmp);
+    std::string name_out(pszNameTmp);
 
     Rcpp::List list_out = Rcpp::List::create();
     list_out.push_back(name_out, "unit_name");

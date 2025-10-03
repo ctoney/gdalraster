@@ -184,7 +184,7 @@ Rcpp::CharacterVector g_wkb_list2wkt(const Rcpp::List &geom,
             wkt[i] = NA_STRING;
         }
         else {
-            Rcpp::RawVector v = Rcpp::as<Rcpp::RawVector>(geom[i]);
+            const Rcpp::RawVector v = Rcpp::as<Rcpp::RawVector>(geom[i]);
             if (v.size() > 0) {
                 wkt[i] = g_wkb2wkt(v, as_iso);
             }
@@ -230,7 +230,7 @@ SEXP g_wkt2wkb(const std::string &geom, bool as_iso = false,
             "POINT EMPTY is exported to WKB as if it were POINT(0 0)");
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom);
+    int nWKBSize = OGR_G_WkbSize(hGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         Rcpp::stop("failed to obtain WKB size of geometry object");
@@ -443,7 +443,7 @@ Rcpp::RawVector g_create(const std::string &geom_type,
         }
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom_out);
+    int nWKBSize = OGR_G_WkbSize(hGeom_out);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom_out);
         Rcpp::stop("failed to obtain WKB size of output geometry");
@@ -488,9 +488,8 @@ Rcpp::RawVector g_add_geom(const Rcpp::RawVector &sub_geom,
         Rcpp::stop("failed to create object from 'container' WKB");
     }
 
-    const char *save_opt = nullptr;
-    save_opt = CPLGetConfigOption("OGR_GEOMETRY_ACCEPT_UNCLOSED_RING",
-                                   nullptr);
+    const char *save_opt =
+        CPLGetConfigOption("OGR_GEOMETRY_ACCEPT_UNCLOSED_RING", nullptr);
 
     if (save_opt == nullptr)
         CPLSetConfigOption("OGR_GEOMETRY_ACCEPT_UNCLOSED_RING", "NO");
@@ -526,7 +525,7 @@ Rcpp::RawVector g_add_geom(const Rcpp::RawVector &sub_geom,
     if (save_opt == nullptr)
         CPLSetConfigOption("OGR_GEOMETRY_ACCEPT_UNCLOSED_RING", nullptr);
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom);
+    int nWKBSize = OGR_G_WkbSize(hGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         Rcpp::stop("failed to obtain WKB size of output geometry");
@@ -619,7 +618,7 @@ SEXP g_get_geom(const Rcpp::RawVector &container, int sub_geom_idx,
         destroy_sub_geom = true;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hSubGeom);
+    int nWKBSize = OGR_G_WkbSize(hSubGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         if (destroy_sub_geom)
@@ -783,7 +782,7 @@ SEXP g_make_valid(const Rcpp::RObject &geom,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeomValid);
+    int nWKBSize = OGR_G_WkbSize(hGeomValid);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         OGR_G_DestroyGeometry(hGeomValid);
@@ -853,7 +852,7 @@ SEXP g_normalize(const Rcpp::RObject &geom, bool as_iso,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hNormal);
+    int nWKBSize = OGR_G_WkbSize(hNormal);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         OGR_G_DestroyGeometry(hNormal);
@@ -918,7 +917,7 @@ SEXP g_set_3D(const Rcpp::RObject &geom, bool is_3d, bool as_iso,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom);
+    int nWKBSize = OGR_G_WkbSize(hGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         if (!quiet) {
@@ -980,7 +979,7 @@ SEXP g_set_measured(const Rcpp::RObject &geom, bool is_measured, bool as_iso,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom);
+    int nWKBSize = OGR_G_WkbSize(hGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         if (!quiet) {
@@ -1036,7 +1035,7 @@ SEXP g_swap_xy(const Rcpp::RObject &geom, bool as_iso = false,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom);
+    int nWKBSize = OGR_G_WkbSize(hGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         if (!quiet) {
@@ -1780,7 +1779,7 @@ SEXP g_boundary(const Rcpp::RObject &geom, bool as_iso,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hBoundaryGeom);
+    int nWKBSize = OGR_G_WkbSize(hBoundaryGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         OGR_G_DestroyGeometry(hBoundaryGeom);
@@ -1849,7 +1848,7 @@ SEXP g_buffer(const Rcpp::RObject &geom, double dist, int quad_segs = 30,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hBufferGeom);
+    int nWKBSize = OGR_G_WkbSize(hBufferGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         OGR_G_DestroyGeometry(hBufferGeom);
@@ -1915,7 +1914,7 @@ SEXP g_convex_hull(const Rcpp::RObject &geom, bool as_iso,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hConvHullGeom);
+    int nWKBSize = OGR_G_WkbSize(hConvHullGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         OGR_G_DestroyGeometry(hConvHullGeom);
@@ -2001,7 +2000,7 @@ SEXP g_concave_hull(const Rcpp::RObject &geom, double ratio, bool allow_holes,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hHullGeom);
+    int nWKBSize = OGR_G_WkbSize(hHullGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         OGR_G_DestroyGeometry(hHullGeom);
@@ -2093,7 +2092,7 @@ SEXP g_delaunay_triangulation(const Rcpp::RObject &geom,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hTriangulatedGeom);
+    int nWKBSize = OGR_G_WkbSize(hTriangulatedGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         OGR_G_DestroyGeometry(hTriangulatedGeom);
@@ -2184,7 +2183,7 @@ SEXP g_simplify(const Rcpp::RObject &geom, double tolerance,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hSimplifiedGeom);
+    int nWKBSize = OGR_G_WkbSize(hSimplifiedGeom);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         OGR_G_DestroyGeometry(hSimplifiedGeom);
@@ -2250,7 +2249,7 @@ SEXP g_unary_union(const Rcpp::RObject &geom, bool as_iso,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hUnion);
+    int nWKBSize = OGR_G_WkbSize(hUnion);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom);
         OGR_G_DestroyGeometry(hUnion);
@@ -2343,7 +2342,7 @@ SEXP g_intersection(const Rcpp::RObject &this_geom,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom_out);
+    int nWKBSize = OGR_G_WkbSize(hGeom_out);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom_out);
         OGR_G_DestroyGeometry(hGeom_other);
@@ -2432,7 +2431,7 @@ SEXP g_union(const Rcpp::RObject &this_geom,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom_out);
+    int nWKBSize = OGR_G_WkbSize(hGeom_out);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom_out);
         OGR_G_DestroyGeometry(hGeom_other);
@@ -2521,7 +2520,7 @@ SEXP g_difference(const Rcpp::RObject &this_geom,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom_out);
+    int nWKBSize = OGR_G_WkbSize(hGeom_out);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom_out);
         OGR_G_DestroyGeometry(hGeom_other);
@@ -2610,7 +2609,7 @@ SEXP g_sym_difference(const Rcpp::RObject &this_geom,
         return R_NilValue;
     }
 
-    const int nWKBSize = OGR_G_WkbSize(hGeom_out);
+    int nWKBSize = OGR_G_WkbSize(hGeom_out);
     if (!nWKBSize) {
         OGR_G_DestroyGeometry(hGeom_out);
         OGR_G_DestroyGeometry(hGeom_other);
@@ -2936,8 +2935,8 @@ Rcpp::NumericVector g_centroid(const Rcpp::RObject &geom,
         return Rcpp::NumericVector::create(NA_REAL, NA_REAL);
     }
 
-    double x = OGR_G_GetX(hPoint, 0);
-    double y = OGR_G_GetY(hPoint, 0);
+    const double x = OGR_G_GetX(hPoint, 0);
+    const double y = OGR_G_GetY(hPoint, 0);
     Rcpp::NumericVector pt = {x, y};
     OGR_G_DestroyGeometry(hPoint);
     OGR_G_DestroyGeometry(hGeom);
@@ -3100,7 +3099,7 @@ SEXP g_transform(const Rcpp::RObject &geom, const std::string &srs_from,
             continue;
         }
 
-        const int nWKBSize = OGR_G_WkbSize(hGeom2);
+        int nWKBSize = OGR_G_WkbSize(hGeom2);
         if (!nWKBSize) {
             OGR_G_DestroyGeometry(hGeom2);
             OGR_G_DestroyGeometry(hGeom);

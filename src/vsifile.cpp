@@ -166,7 +166,7 @@ SEXP VSIFile::read(Rcpp::NumericVector nbytes) {
         return R_NilValue;
     }
 
-    Rcpp::RawVector raw(nRead);
+    Rcpp::RawVector raw = Rcpp::no_init(nRead);
     std::memcpy(&raw[0], buf, nRead);
     VSIFree(buf);
     return raw;
@@ -255,7 +255,7 @@ SEXP VSIFile::ingest(Rcpp::NumericVector max_size) {
         return R_NilValue;
     }
 
-    Rcpp::RawVector raw(nSize);
+    Rcpp::RawVector raw = Rcpp::no_init(nSize);
     std::memcpy(&raw[0], paby, nSize);
     VSIFree(paby);
     return raw;

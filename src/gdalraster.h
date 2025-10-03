@@ -113,7 +113,7 @@ class GDALRaster {
     double getRasterXSize() const;
     double getRasterYSize() const;
     std::vector<double> getGeoTransform() const;
-    bool setGeoTransform(std::vector<double> transform);
+    bool setGeoTransform(const std::vector<double> &transform);
     int getRasterCount() const;
     bool addBand(const std::string &dataType,
                  const Rcpp::Nullable<Rcpp::CharacterVector> &options);
@@ -135,11 +135,13 @@ class GDALRaster {
 
     Rcpp::NumericMatrix get_block_indexing(int band) const;
     std::vector<int> getBlockSize(int band) const;
-    std::vector<int> getActualBlockSize(int band, int xblockoff,
-                                        int yblockoff) const;
+    std::vector<int> getActualBlockSize(
+        int band, int xblockoff, int yblockoff) const;
+
     int getOverviewCount(int band) const;
     void buildOverviews(const std::string &resampling, std::vector<int> levels,
                         std::vector<int> bands);
+
     std::string getDataTypeName(int band) const;
     bool hasNoDataValue(int band) const;
     double getNoDataValue(int band) const;
