@@ -2504,18 +2504,6 @@ vsi_is_local <- function(filename) {
     .Call(`_gdalraster_gdal_global_reg_names`)
 }
 
-#' @noRd
-NULL
-
-#' @noRd
-NULL
-
-#' @noRd
-NULL
-
-#' @noRd
-NULL
-
 #' get GEOS version
 #' @noRd
 .getGEOSVersion <- function() {

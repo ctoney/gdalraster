@@ -20,6 +20,7 @@
 #include <cmath>
 #include <complex>
 #include <cstdint>
+#include <map>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -99,9 +100,51 @@ void gdal_init(DllInfo *dll) {
     CPLSetConfigOption("OGR_CT_FORCE_TRADITIONAL_GIS_ORDER", "YES");
 }
 
+// Map certain GDAL enums to string names for use in R
+// GDALColorInterp (GCI)
+const std::map<std::string, GDALColorInterp> MAP_GCI{
+    {"Undefined", GCI_Undefined},
+    {"Gray", GCI_GrayIndex},
+    {"Palette", GCI_PaletteIndex},
+    {"Red", GCI_RedBand},
+    {"Green", GCI_GreenBand},
+    {"Blue", GCI_BlueBand},
+    {"Alpha", GCI_AlphaBand},
+    {"Hue", GCI_HueBand},
+    {"Saturation", GCI_SaturationBand},
+    {"Lightness", GCI_LightnessBand},
+    {"Cyan", GCI_CyanBand},
+    {"Magenta", GCI_MagentaBand},
+    {"Yellow", GCI_YellowBand},
+    {"Black", GCI_BlackBand},
+    {"YCbCr_Y", GCI_YCbCr_YBand},
+    {"YCbCr_Cb", GCI_YCbCr_CbBand},
+    {"YCbCr_Cr", GCI_YCbCr_CrBand}
+};
+// GDALRATFieldUsage (GFU)
+const std::map<std::string, GDALRATFieldUsage> MAP_GFU{
+    {"Generic", GFU_Generic},
+    {"PixelCount", GFU_PixelCount},
+    {"Name", GFU_Name},
+    {"Min", GFU_Min},
+    {"Max", GFU_Max},
+    {"MinMax", GFU_MinMax},
+    {"Red", GFU_Red},
+    {"Green", GFU_Green},
+    {"Blue", GFU_Blue},
+    {"Alpha", GFU_Alpha},
+    {"RedMin", GFU_RedMin},
+    {"GreenMin", GFU_GreenMin},
+    {"BlueMin", GFU_BlueMin},
+    {"AlphaMin", GFU_AlphaMin},
+    {"RedMax", GFU_RedMax},
+    {"GreenMax", GFU_GreenMax},
+    {"BlueMax", GFU_BlueMax},
+    {"AlphaMax", GFU_AlphaMax}
+};
+
 // Internal lookup of GDALColorInterp by string descriptor
 // Returns GCI_Undefined if no match
-//' @noRd
 GDALColorInterp getGCI_(const std::string &col_interp) {
     if (MAP_GCI.count(col_interp) == 0) {
         return GCI_Undefined;
@@ -114,7 +157,6 @@ GDALColorInterp getGCI_(const std::string &col_interp) {
 
 // Internal lookup of GCI string by GDALColorInterp
 // Returns "Undefined" if no match
-//' @noRd
 std::string getGCI_string_(GDALColorInterp gci) {
     for (auto it = MAP_GCI.begin(); it != MAP_GCI.end(); ++it)
         if (it->second == gci)
@@ -125,7 +167,6 @@ std::string getGCI_string_(GDALColorInterp gci) {
 
 // Internal lookup of GDALRATFieldUsage by string descriptor
 // Returns GFU_Generic if no match
-//' @noRd
 GDALRATFieldUsage getGFU_(const std::string &fld_usage) {
     if (MAP_GFU.count(fld_usage) == 0) {
         Rcpp::warning("unrecognized GFU string, using GFU_Generic");
@@ -139,7 +180,6 @@ GDALRATFieldUsage getGFU_(const std::string &fld_usage) {
 
 // Internal lookup of GFU string by GDALRATFieldUsage
 // Returns "Generic" if no match
-//' @noRd
 std::string getGFU_string_(GDALRATFieldUsage gfu) {
     for (auto it = MAP_GFU.begin(); it != MAP_GFU.end(); ++it)
         if (it->second == gfu)

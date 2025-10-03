@@ -14,6 +14,8 @@
 #include <gdal_utils.h>
 #include <gdalwarper.h>
 
+#include <Rcpp.h>
+
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -24,7 +26,6 @@
 #include <vector>
 
 #include "gdalraster.h"
-
 #include "cmb_table.h"
 #include "ogr_util.h"
 

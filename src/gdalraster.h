@@ -19,7 +19,6 @@ void gdal_error_handler_r(CPLErr err_class, int err_no, const char *msg);
 void gdal_silent_errors_r(CPLErr err_class, int err_no, const char *msg);
 #endif
 
-#include <map>
 #include <string>
 #include <vector>
 
@@ -28,51 +27,6 @@ void gdal_silent_errors_r(CPLErr err_class, int err_no, const char *msg);
 typedef void *GDALDatasetH;
 typedef void *GDALRasterBandH;
 typedef enum {GA_ReadOnly = 0, GA_Update = 1} GDALAccess;
-#endif
-
-#ifdef GDAL_H_INCLUDED
-// Map certain GDAL enums to string names for use in R
-// GDALColorInterp (GCI)
-const std::map<std::string, GDALColorInterp> MAP_GCI{
-    {"Undefined", GCI_Undefined},
-    {"Gray", GCI_GrayIndex},
-    {"Palette", GCI_PaletteIndex},
-    {"Red", GCI_RedBand},
-    {"Green", GCI_GreenBand},
-    {"Blue", GCI_BlueBand},
-    {"Alpha", GCI_AlphaBand},
-    {"Hue", GCI_HueBand},
-    {"Saturation", GCI_SaturationBand},
-    {"Lightness", GCI_LightnessBand},
-    {"Cyan", GCI_CyanBand},
-    {"Magenta", GCI_MagentaBand},
-    {"Yellow", GCI_YellowBand},
-    {"Black", GCI_BlackBand},
-    {"YCbCr_Y", GCI_YCbCr_YBand},
-    {"YCbCr_Cb", GCI_YCbCr_CbBand},
-    {"YCbCr_Cr", GCI_YCbCr_CrBand}
-};
-// GDALRATFieldUsage (GFU)
-const std::map<std::string, GDALRATFieldUsage> MAP_GFU{
-    {"Generic", GFU_Generic},
-    {"PixelCount", GFU_PixelCount},
-    {"Name", GFU_Name},
-    {"Min", GFU_Min},
-    {"Max", GFU_Max},
-    {"MinMax", GFU_MinMax},
-    {"Red", GFU_Red},
-    {"Green", GFU_Green},
-    {"Blue", GFU_Blue},
-    {"Alpha", GFU_Alpha},
-    {"RedMin", GFU_RedMin},
-    {"GreenMin", GFU_GreenMin},
-    {"BlueMin", GFU_BlueMin},
-    {"AlphaMin", GFU_AlphaMin},
-    {"RedMax", GFU_RedMax},
-    {"GreenMax", GFU_GreenMax},
-    {"BlueMax", GFU_BlueMax},
-    {"AlphaMax", GFU_AlphaMax}
-};
 #endif
 
 
@@ -249,7 +203,7 @@ std::string cpl_get_basename(const Rcpp::CharacterVector &full_filename);
 std::string cpl_get_extension(const Rcpp::CharacterVector &full_filename);
 
 Rcpp::CharacterVector check_gdal_filename(
-        const Rcpp::CharacterVector &filename);
+    const Rcpp::CharacterVector &filename);
 
 GDALRaster *create(const std::string &format,
                    const Rcpp::CharacterVector &dst_filename,
