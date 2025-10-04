@@ -5,6 +5,7 @@
 
 #include "gdal_vsi.h"
 
+#include <Rcpp.h>
 #include <RcppInt64>
 
 #include <gdal.h>

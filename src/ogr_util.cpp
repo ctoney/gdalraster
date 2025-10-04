@@ -1406,9 +1406,9 @@ OGRLayerH CreateLayer_(GDALDatasetH hDS, const std::string &layer,
                         fld_type = Rcpp::as<std::string>(fld["type"]);
                     }
                     else {
-                        Rcpp::Rcerr << "$type missing in field definition\n" <<
-                                "could not create field: " <<
-                                fld_name.c_str() << "\n";
+                        Rcpp::Rcout << "$type missing in field definition\n" <<
+                            "could not create field: " << fld_name.c_str() <<
+                            "\n";
 
                         continue;
                     }
@@ -1439,8 +1439,8 @@ OGRLayerH CreateLayer_(GDALDatasetH hDS, const std::string &layer,
                                       is_nullable, is_unique, default_value,
                                       domain_name)) {
 
-                        Rcpp::Rcerr << "failed to create field: " <<
-                                fld_name.c_str() << "\n";
+                        Rcpp::Rcout << "failed to create field: " <<
+                            fld_name.c_str() << "\n";
                     }
                 }
                 else {
@@ -1459,9 +1459,9 @@ OGRLayerH CreateLayer_(GDALDatasetH hDS, const std::string &layer,
                         }
                     }
                     else {
-                        Rcpp::Rcerr << "$type missing in field definition\n" <<
-                                "could not create geom field: " <<
-                                fld_name.c_str() << "\n";
+                        Rcpp::Rcout << "$type missing in field definition\n" <<
+                            "could not create geom field: " << fld_name.c_str()
+                            << "\n";
 
                         continue;
                     }
@@ -1478,8 +1478,8 @@ OGRLayerH CreateLayer_(GDALDatasetH hDS, const std::string &layer,
                     if (!CreateGeomField_(hDS, hLayer, fld_name, eThisGeomType,
                                           srs, is_nullable)) {
 
-                        Rcpp::Rcerr << "failed to create geom field: " <<
-                                fld_name.c_str() << "\n";
+                        Rcpp::Rcout << "failed to create geom field: " <<
+                            fld_name.c_str() << "\n";
                     }
                 }
             }
@@ -1560,13 +1560,13 @@ bool ogr_layer_rename(const std::string &dsn, const std::string &layer,
 
     hLayer = GDALDatasetGetLayerByName(hDS, layer.c_str());
     if (hLayer == nullptr) {
-        Rcpp::Rcerr << "failed to access 'layer'\n";
+        Rcpp::Rcout << "failed to access 'layer'\n";
         GDALReleaseDataset(hDS);
         return false;
     }
 
     if (!OGR_L_TestCapability(hLayer, OLCRename)) {
-        Rcpp::Rcerr << "layer does not have Rename capability\n";
+        Rcpp::Rcout << "layer does not have Rename capability\n";
         GDALReleaseDataset(hDS);
         return false;
     }
@@ -1599,14 +1599,14 @@ bool ogr_layer_delete(const std::string &dsn, const std::string &layer) {
         return false;
 
     if (!GDALDatasetTestCapability(hDS, ODsCDeleteLayer)) {
-        Rcpp::Rcerr << "dataset does not have DeleteLayer capability\n";
+        Rcpp::Rcout << "dataset does not have DeleteLayer capability\n";
         GDALReleaseDataset(hDS);
         return false;
     }
 
     hLayer = GDALDatasetGetLayerByName(hDS, layer.c_str());
     if (hLayer == nullptr) {
-        Rcpp::Rcerr << "failed to access 'layer'\n";
+        Rcpp::Rcout << "failed to access 'layer'\n";
         GDALReleaseDataset(hDS);
         return false;
     }
@@ -1847,7 +1847,7 @@ bool ogr_field_create(const std::string &dsn, const std::string &layer,
 
     if (!OGR_L_TestCapability(hLayer, OLCCreateField)) {
         GDALReleaseDataset(hDS);
-        Rcpp::Rcerr << "'layer' does not have CreateField capability\n";
+        Rcpp::Rcout << "'layer' does not have CreateField capability\n";
         return false;
     }
 
@@ -1888,7 +1888,7 @@ bool CreateGeomField_(GDALDatasetH hDS, OGRLayerH hLayer,
         if (OSRSetFromUserInput(hSRS, srs.c_str()) != OGRERR_NONE) {
             if (hSRS != nullptr)
                 OSRDestroySpatialReference(hSRS);
-            Rcpp::Rcerr << "error importing SRS from user input\n";
+            Rcpp::Rcout << "error importing SRS from user input\n";
             return false;
         }
     }
@@ -1966,7 +1966,7 @@ bool ogr_geom_field_create(const std::string &dsn, const std::string &layer,
 
     if (!OGR_L_TestCapability(hLayer, OLCCreateGeomField)) {
         GDALReleaseDataset(hDS);
-        Rcpp::Rcerr << "'layer' does not have CreateGeomField capability\n";
+        Rcpp::Rcout << "'layer' does not have CreateGeomField capability\n";
         return false;
     }
 
@@ -2004,7 +2004,7 @@ bool ogr_field_rename(const std::string &dsn, const std::string &layer,
     hDS = GDALOpenEx(dsn_in.c_str(), GDAL_OF_VECTOR | GDAL_OF_UPDATE,
                      nullptr, nullptr, nullptr);
     if (hDS == nullptr) {
-        Rcpp::Rcerr << "failed to open 'dsn' for update\n";
+        Rcpp::Rcout << "failed to open 'dsn' for update\n";
         return false;
     }
 
@@ -2014,12 +2014,12 @@ bool ogr_field_rename(const std::string &dsn, const std::string &layer,
     else
         hLayer = GDALDatasetGetLayerByName(hDS, layer.c_str());
     if (hLayer == nullptr) {
-        Rcpp::Rcerr << "failed to access 'layer'\n";
+        Rcpp::Rcout << "failed to access 'layer'\n";
         GDALReleaseDataset(hDS);
         return false;
     }
     if (!OGR_L_TestCapability(hLayer, OLCAlterFieldDefn)) {
-        Rcpp::Rcerr << "'layer' does not have AlterFieldDefn capability\n";
+        Rcpp::Rcout << "'layer' does not have AlterFieldDefn capability\n";
         GDALReleaseDataset(hDS);
         return false;
     }
@@ -2035,7 +2035,7 @@ bool ogr_field_rename(const std::string &dsn, const std::string &layer,
         return false;
     }
     if (iField == -1) {
-        Rcpp::Rcerr << "'fld_name' not found on 'layer'\n";
+        Rcpp::Rcout << "'fld_name' not found on 'layer'\n";
         GDALReleaseDataset(hDS);
         return false;
     }
@@ -2056,7 +2056,7 @@ bool ogr_field_rename(const std::string &dsn, const std::string &layer,
     GDALReleaseDataset(hDS);
 
     if (err != OGRERR_NONE) {
-        Rcpp::Rcerr << "failed to rename field\n";
+        Rcpp::Rcout << "failed to rename field\n";
         return false;
     }
     else {
@@ -2082,7 +2082,7 @@ bool ogr_field_set_domain_name(const std::string &dsn,
     hDS = GDALOpenEx(dsn_in.c_str(), GDAL_OF_VECTOR | GDAL_OF_UPDATE,
                      nullptr, nullptr, nullptr);
     if (hDS == nullptr) {
-        Rcpp::Rcerr << "failed to open 'dsn' for update\n";
+        Rcpp::Rcout << "failed to open 'dsn' for update\n";
         return false;
     }
 
@@ -2092,12 +2092,12 @@ bool ogr_field_set_domain_name(const std::string &dsn,
     else
         hLayer = GDALDatasetGetLayerByName(hDS, layer.c_str());
     if (hLayer == nullptr) {
-        Rcpp::Rcerr << "failed to access 'layer'\n";
+        Rcpp::Rcout << "failed to access 'layer'\n";
         GDALReleaseDataset(hDS);
         return false;
     }
     if (!OGR_L_TestCapability(hLayer, OLCAlterFieldDefn)) {
-        Rcpp::Rcerr << "'layer' does not have AlterFieldDefn capability\n";
+        Rcpp::Rcout << "'layer' does not have AlterFieldDefn capability\n";
         GDALReleaseDataset(hDS);
         return false;
     }
@@ -2113,7 +2113,7 @@ bool ogr_field_set_domain_name(const std::string &dsn,
         return false;
     }
     if (iField == -1) {
-        Rcpp::Rcerr << "'fld_name' not found on 'layer'\n";
+        Rcpp::Rcout << "'fld_name' not found on 'layer'\n";
         GDALReleaseDataset(hDS);
         return false;
     }
@@ -2135,7 +2135,7 @@ bool ogr_field_set_domain_name(const std::string &dsn,
     GDALReleaseDataset(hDS);
 
     if (err != OGRERR_NONE) {
-        Rcpp::Rcerr << "failed to set field domain name\n";
+        Rcpp::Rcout << "failed to set field domain name\n";
         return false;
     }
     else {
@@ -2156,7 +2156,7 @@ bool ogr_field_delete(const std::string &dsn, const std::string &layer,
     hDS = GDALOpenEx(dsn_in.c_str(), GDAL_OF_VECTOR | GDAL_OF_UPDATE,
                      nullptr, nullptr, nullptr);
     if (hDS == nullptr) {
-        Rcpp::Rcerr << "failed to open 'dsn' for update\n";
+        Rcpp::Rcout << "failed to open 'dsn' for update\n";
         return false;
     }
 
@@ -2166,12 +2166,12 @@ bool ogr_field_delete(const std::string &dsn, const std::string &layer,
     else
         hLayer = GDALDatasetGetLayerByName(hDS, layer.c_str());
     if (hLayer == nullptr) {
-        Rcpp::Rcerr << "failed to access 'layer'\n";
+        Rcpp::Rcout << "failed to access 'layer'\n";
         GDALReleaseDataset(hDS);
         return false;
     }
     if (!OGR_L_TestCapability(hLayer, OLCDeleteField)) {
-        Rcpp::Rcerr << "'layer' does not have DeleteField capability\n";
+        Rcpp::Rcout << "'layer' does not have DeleteField capability\n";
         GDALReleaseDataset(hDS);
         return false;
     }
@@ -2183,12 +2183,12 @@ bool ogr_field_delete(const std::string &dsn, const std::string &layer,
         iField = OGR_FD_GetFieldIndex(hFDefn, fld_name.c_str());
     }
     else {
-        Rcpp::Rcerr << "failed to obtain OGRFeatureDefnH\n";
+        Rcpp::Rcout << "failed to obtain OGRFeatureDefnH\n";
         GDALReleaseDataset(hDS);
         return false;
     }
     if (iField == -1) {
-        Rcpp::Rcerr << "'fld_name' not found on 'layer'\n";
+        Rcpp::Rcout << "'fld_name' not found on 'layer'\n";
         GDALReleaseDataset(hDS);
         return false;
     }
@@ -2219,7 +2219,7 @@ SEXP ogr_execute_sql(const std::string &dsn, const std::string &sql,
                 OGRERR_NONE) {
             if (hGeom_filter != nullptr)
                 OGR_G_DestroyGeometry(hGeom_filter);
-            Rcpp::Rcerr << "failed to create geometry from 'spatial_filter'\n";
+            Rcpp::Rcout << "failed to create geometry from 'spatial_filter'\n";
             return R_NilValue;
         }
     }
@@ -2227,8 +2227,8 @@ SEXP ogr_execute_sql(const std::string &dsn, const std::string &sql,
     hDS = GDALOpenEx(dsn_in.c_str(), GDAL_OF_VECTOR | GDAL_OF_UPDATE,
                      nullptr, nullptr, nullptr);
     if (hDS == nullptr) {
-        Rcpp::Rcerr << "failed to open DSN for update:\n'" <<
-                dsn_in.c_str() << "'\n";
+        Rcpp::Rcout << "failed to open DSN for update:\n'" <<
+            dsn_in.c_str() << "'\n";
         return R_NilValue;
     }
     else {

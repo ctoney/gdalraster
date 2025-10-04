@@ -11,6 +11,8 @@
 #include <ogr_spatialref.h>
 #include <ogrsf_frmts.h>
 
+#include <Rcpp.h>
+
 #include <string>
 #include <vector>
 

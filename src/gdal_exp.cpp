@@ -15,6 +15,7 @@
 #include <gdalwarper.h>
 
 #include <Rcpp.h>
+#include <RcppInt64>
 
 #include <cmath>
 #include <cstdint>
@@ -133,12 +134,14 @@ Rcpp::DataFrame gdal_formats(const std::string &format = "") {
 
         if (CPLFetchBool(papszMD, GDAL_DCAP_OPEN, false))
             rw += "r";
+
         if (CPLFetchBool(papszMD, GDAL_DCAP_CREATE, false))
             rw += "w+";
         else if (CPLFetchBool(papszMD, GDAL_DCAP_CREATECOPY, false))
             rw += "w";
         else
             rw += "o";
+
         rw_flag.push_back(rw);
 
         CPLFetchBool(papszMD, GDAL_DCAP_VIRTUALIO, false) ?
@@ -1373,7 +1376,7 @@ Rcpp::DataFrame combine(const Rcpp::CharacterVector &src_files,
         }
 
         if (!quiet) {
-            pfnProgress(y / (nrows-1.0), nullptr, pProgressData);
+            pfnProgress(y / (nrows - 1.0), nullptr, pProgressData);
         }
     }
 
@@ -1406,6 +1409,11 @@ Rcpp::DataFrame value_count(const GDALRaster* const &src_ds, int band = 1,
     if (!quiet)
         Rcpp::Rcout << "scanning raster...\n";
 
+    // The counter in the unordered_map is a double since it will be returned
+    // as R numeric type, for greater range than int32 and R lacks a native
+    // int64 type.
+    // This could be changed to use bit64::integer64 type on the R side.
+    // NA is handled by the calling code, e.g., buildRAT() in R/gdal_rat.R.
     if (src_ds->readableAsInt_(band)) {
         // read pixel values as int
         std::unordered_map<int, double> tbl;
@@ -1414,8 +1422,9 @@ Rcpp::DataFrame value_count(const GDALRaster* const &src_ds, int band = 1,
                 Rcpp::as<Rcpp::IntegerVector>(src_ds->read(band, 0, y, ncols, 1,
                                                            ncols, 1));
 
-            for (auto const &i : rowdata)
+            for (auto const &i : rowdata) {
                 tbl[i] += 1.0;
+            }
 
             if (!quiet)
                 pfnProgress(y / (nrows-1.0), nullptr, pProgressData);
@@ -1434,14 +1443,18 @@ Rcpp::DataFrame value_count(const GDALRaster* const &src_ds, int band = 1,
     else {
         // UInt32, Float32, Float64
         // read pixel values as double
+        // Not intended to be used for floating point raster data, so this is
+        // mainly for UInt32 which must be represented in R as numeric type,
+        // i.e., double, which will work fine as a map key in that case.
         std::unordered_map<double, double> tbl;
         for (int y = 0; y < nrows; ++y) {
             Rcpp::NumericVector rowdata =
                 Rcpp::as<Rcpp::NumericVector>(src_ds->read(band, 0, y, ncols, 1,
                                                            ncols, 1));
 
-            for (auto const &i : rowdata)
+            for (auto const &i : rowdata) {
                 tbl[i] += 1.0;
+            }
 
             if (!quiet)
                 pfnProgress(y / (nrows-1.0), nullptr, pProgressData);
@@ -1983,15 +1996,15 @@ Rcpp::String ogrinfo(const Rcpp::CharacterVector &dsn,
     if (src_ds == nullptr)
         Rcpp::stop("failed to open the source dataset");
 
-    bool as_json = false;
+    // bool as_json = false;
     std::vector<char *> argv;
     if (cl_arg.isNotNull()) {
         Rcpp::CharacterVector cl_arg_in(cl_arg);
         for (R_xlen_t i = 0; i < cl_arg_in.size(); ++i) {
             argv.push_back((char *) cl_arg_in[i]);
-            if (EQUAL(cl_arg_in[i], "-json")) {
-                as_json = true;
-            }
+            // if (EQUAL(cl_arg_in[i], "-json")) {
+            //     as_json = true;
+            // }
         }
     }
     argv.push_back((char *) dsn_in.c_str());
@@ -2021,8 +2034,8 @@ Rcpp::String ogrinfo(const Rcpp::CharacterVector &dsn,
     if (cout)
         Rcpp::Rcout << info_out.get_cstring();
 
-    if (as_json)
-        info_out.replace_all("\n", " ");
+    // if (as_json)
+    //     info_out.replace_all("\n", " ");
 
     CPLFree(pszInfo);
 
@@ -2492,7 +2505,7 @@ bool warp(const Rcpp::List &src_datasets,
         GDALRaster *ds = src_datasets[i];
         GDALDatasetH hDS = ds->getGDALDatasetH_();
         if (hDS == nullptr) {
-            Rcpp::Rcerr << "error on source " << (i + 1) << "\n";
+            Rcpp::Rcout << "error on source " << (i + 1) << "\n";
             for (R_xlen_t j = 0; j < i; ++j)
                 GDALClose(src_hDS[j]);
             Rcpp::stop("open source raster failed");
@@ -2693,7 +2706,7 @@ Rcpp::IntegerMatrix createColorRamp(int start_index,
     }
 
     int idx = start_index;
-    for (int i=0; i < nEntries; ++i) {
+    for (int i = 0; i < nEntries; ++i) {
         const GDALColorEntry *colEntry = GDALGetColorEntry(hColTbl, idx);
         col_tbl(i, 0) = idx;
         col_tbl(i, 1) = colEntry->c1;
@@ -3233,10 +3246,10 @@ SEXP gdal_get_driver_md(const std::string &format,
     else {
         char **papszMD = nullptr;
         papszMD = GDALGetMetadata(hDriver, nullptr);
-        int items = CSLCount(papszMD);
-        if (items > 0) {
+        int nItems = CSLCount(papszMD);
+        if (nItems > 0) {
             Rcpp::List md = Rcpp::List::create();
-            for (int i = 0; i < items; ++i) {
+            for (int i = 0; i < nItems; ++i) {
                 char *pszKey = nullptr;
                 const char *pszValue = CPLParseNameValue(papszMD[i], &pszKey);
                 if (pszValue)

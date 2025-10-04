@@ -9,6 +9,8 @@
 #include <ogr_srs_api.h>
 #include <ogr_spatialref.h>
 
+#include <Rcpp.h>
+
 #include <string>
 #include <vector>
 
@@ -32,10 +34,10 @@ std::vector<int> getPROJVersion() {
 Rcpp::CharacterVector getPROJSearchPaths() {
     char **papszPaths = OSRGetPROJSearchPaths();
 
-    int items = CSLCount(papszPaths);
-    if (items > 0) {
-        Rcpp::CharacterVector paths(items);
-        for (int i=0; i < items; ++i) {
+    int nItems = CSLCount(papszPaths);
+    if (nItems > 0) {
+        Rcpp::CharacterVector paths(nItems);
+        for (int i = 0; i < nItems; ++i) {
             paths(i) = papszPaths[i];
         }
         CSLDestroy(papszPaths);
@@ -87,9 +89,9 @@ void setPROJEnableNetwork(int enabled) {
     if (getPROJVersion()[0] >= 7)
         OSRSetPROJEnableNetwork(enabled);
     else
-        Rcpp::Rcerr << "OSRSetPROJEnableNetwork() requires PROJ 7 or later\n";
+        Rcpp::Rcout << "OSRSetPROJEnableNetwork() requires PROJ 7 or later\n";
 #else
-    Rcpp::Rcerr << "OSRSetPROJEnableNetwork() requires GDAL 3.4 or later\n";
+    Rcpp::Rcout << "OSRSetPROJEnableNetwork() requires GDAL 3.4 or later\n";
 #endif
     return;
 }

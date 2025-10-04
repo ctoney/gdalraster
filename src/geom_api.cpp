@@ -11,6 +11,8 @@
 #include <ogr_api.h>
 #include <ogr_srs_api.h>
 
+#include <Rcpp.h>
+
 #include <string>
 #include <vector>
 
@@ -117,7 +119,7 @@ bool exportGeomToWkb(OGRGeometryH hGeom, unsigned char *wkb, bool as_iso,
         eOrder = wkbXDR;
     }
     else {
-        Rcpp::Rcerr << "invalid 'byte_order'\n";
+        Rcpp::Rcout << "invalid 'byte_order'\n";
         return false;
     }
 
@@ -337,7 +339,7 @@ Rcpp::RawVector g_create(const std::string &geom_type,
         Rcpp::stop("failed to create geometry object");
 
     if (eType == wkbGeometryCollection && nPts > 0) {
-        Rcpp::Rcerr << "g_create() only creates an empty geometry collection, "
+        Rcpp::Rcout << "g_create() only creates an empty geometry collection, "
             << "ignoring input points\n";
     }
 
@@ -3179,7 +3181,7 @@ Rcpp::NumericVector bbox_from_wkt(const std::string &wkt, double extend_x = 0,
     if (OGR_G_CreateFromWkt(&pszWKT, nullptr, &hGeometry) != OGRERR_NONE) {
         if (hGeometry != nullptr)
             OGR_G_DestroyGeometry(hGeometry);
-        Rcpp::Rcerr << "failed to create geometry object from WKT string\n";
+        Rcpp::Rcout << "failed to create geometry object from WKT string\n";
         Rcpp::NumericVector ret(4, NA_REAL);
         return ret;
     }

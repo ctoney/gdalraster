@@ -193,10 +193,10 @@ Rcpp::CharacterVector GDALVector::getFileList() const {
 
     char **papszFiles = GDALGetFileList(m_hDataset);
 
-    int items = CSLCount(papszFiles);
-    if (items > 0) {
-        Rcpp::CharacterVector files(items);
-        for (int i=0; i < items; ++i) {
+    int nItems = CSLCount(papszFiles);
+    if (nItems > 0) {
+        Rcpp::CharacterVector files(nItems);
+        for (int i = 0; i < nItems; ++i) {
             files(i) = papszFiles[i];
         }
         CSLDestroy(papszFiles);
@@ -2114,10 +2114,10 @@ Rcpp::CharacterVector GDALVector::getMetadata() const {
     char **papszMD = nullptr;
     papszMD = GDALGetMetadata(m_hLayer, nullptr);
 
-    int items = CSLCount(papszMD);
-    if (items > 0) {
-        Rcpp::CharacterVector md(items);
-        for (int i=0; i < items; ++i) {
+    int nItems = CSLCount(papszMD);
+    if (nItems > 0) {
+        Rcpp::CharacterVector md(nItems);
+        for (int i = 0; i < nItems; ++i) {
             md(i) = papszMD[i];
         }
         return md;
@@ -2190,7 +2190,7 @@ bool GDALVector::layerIntersection(
         ret = true;
     }
     else if (!quiet) {
-        Rcpp::Rcerr << "error during Intersection, or execution interrupted\n";
+        Rcpp::Rcout << "error during Intersection, or execution interrupted\n";
     }
 
     return ret;
@@ -2225,7 +2225,7 @@ bool GDALVector::layerUnion(
         ret = true;
     }
     else if (!quiet) {
-        Rcpp::Rcerr << "error during Union, or execution interrupted\n";
+        Rcpp::Rcout << "error during Union, or execution interrupted\n";
     }
 
     return ret;
@@ -2260,7 +2260,7 @@ bool GDALVector::layerSymDifference(
         ret = true;
     }
     else if (!quiet) {
-        Rcpp::Rcerr << "error during SymDifference, or execution interrupted\n";
+        Rcpp::Rcout << "error during SymDifference, or execution interrupted\n";
     }
 
     return ret;
@@ -2295,7 +2295,7 @@ bool GDALVector::layerIdentity(
         ret = true;
     }
     else if (!quiet) {
-        Rcpp::Rcerr << "error during Identity, or execution interrupted\n";
+        Rcpp::Rcout << "error during Identity, or execution interrupted\n";
     }
 
     return ret;
@@ -2330,7 +2330,7 @@ bool GDALVector::layerUpdate(
         ret = true;
     }
     else if (!quiet) {
-        Rcpp::Rcerr << "error during Update, or execution interrupted\n";
+        Rcpp::Rcout << "error during Update, or execution interrupted\n";
     }
 
     return ret;
@@ -2365,7 +2365,7 @@ bool GDALVector::layerClip(
         ret = true;
     }
     else if (!quiet) {
-        Rcpp::Rcerr << "error during Clip, or execution interrupted\n";
+        Rcpp::Rcout << "error during Clip, or execution interrupted\n";
     }
 
     return ret;
@@ -2400,7 +2400,7 @@ bool GDALVector::layerErase(
         ret = true;
     }
     else if (!quiet) {
-        Rcpp::Rcerr << "error during Erase, or execution interrupted\n";
+        Rcpp::Rcout << "error during Erase, or execution interrupted\n";
     }
 
     return ret;
@@ -2866,7 +2866,7 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
         }
 
         OGR_F_Destroy(hFeat);
-        Rcpp::Rcerr << "list element not matched: " << names[i] << "\n";
+        Rcpp::Rcout << "list element not matched: " << names[i] << "\n";
         Rcpp::stop("failed to map input field names to layer definition");
     }
 
