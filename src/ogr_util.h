@@ -15,30 +15,29 @@
 #include "gdalvector.h"
 #include "rcpp_util.h"
 
-// Internal lookup of OGRwkbGeometryType by string descriptor
+// Lookup of OGRwkbGeometryType by string descriptor
 // Returns wkbUnknown if no match
 OGRwkbGeometryType getWkbGeomType_(const std::string &geom_type);
 
-// Internal lookup of geometry type string by OGRwkbGeometryType
+// Lookup of geometry type string by OGRwkbGeometryType
 // Returns "UNKNOWN" if no match
 std::string getWkbGeomString_(OGRwkbGeometryType eType);
 
-// Internal lookup of OGRFieldType by string descriptor
+// Lookup of OGRFieldType by string descriptor
 // Error if no match
 OGRFieldType getOFT_(const std::string &fld_type);
 
-// Internal lookup of OGR field type string by OGRFieldType
+// Lookup of OGR field type string by OGRFieldType
 // Returns empty string if no match, with warning emitted
 std::string getOFTString_(OGRFieldType eType);
 
-// Internal lookup of OGRFieldSubType by string descriptor
+// Lookup of OGRFieldSubType by string descriptor
 // Returns OFSTNone if no match
 OGRFieldSubType getOFTSubtype_(const std::string &fld_subtype);
 
-// Internal lookup of OGR field subtype string by OGRFieldSubType
+// Lookup of OGR field subtype string by OGRFieldSubType
 // Returns "OFSTNone" if no match
 std::string getOFTSubtypeString_(OGRFieldSubType eType);
-
 
 bool ogr_ds_exists(const std::string &dsn, bool with_update);
 
@@ -74,12 +73,6 @@ bool ogr_layer_exists(const std::string &dsn, const std::string &layer);
 SEXP ogr_layer_test_cap(const std::string &dsn, const std::string &layer,
                          bool with_update);
 
-// internal CreateLayer
-OGRLayerH CreateLayer_(GDALDatasetH hDS, const std::string &layer,
-                       Rcpp::Nullable<Rcpp::List> layer_defn,
-                       const std::string &geom_type, const std::string &srs,
-                       Rcpp::Nullable<Rcpp::CharacterVector> options);
-
 GDALVector *ogr_layer_create(
         const std::string &dsn, const std::string &layer,
         const Rcpp::Nullable<Rcpp::List> &layer_defn,
@@ -97,26 +90,12 @@ SEXP ogr_layer_field_names(const std::string &dsn, const std::string &layer);
 int ogr_field_index(const std::string &dsn, const std::string &layer,
                     const std::string &fld_name);
 
-// internal CreateField
-bool CreateField_(GDALDatasetH hDS, OGRLayerH hLayer,
-                  const std::string &fld_name,
-                  const std::string &fld_type, const std::string &fld_subtype,
-                  int fld_width, int fld_precision, bool is_nullable,
-                  bool is_unique, const std::string &default_value,
-                  const std::string &domain_name);
-
 bool ogr_field_create(const std::string &dsn, const std::string &layer,
                       const std::string &fld_name, const std::string &fld_type,
                       const std::string &fld_subtype, int fld_width ,
                       int fld_precision, bool is_nullable,
                       bool is_unique, const std::string &default_value,
                       const std::string &domain_name);
-
-// internal CreateGeomField
-bool CreateGeomField_(GDALDatasetH hDS, OGRLayerH hLayer,
-                      const std::string &fld_name,
-                      OGRwkbGeometryType eGeomType, const std::string &srs,
-                      bool is_nullable);
 
 bool ogr_geom_field_create(const std::string &dsn, const std::string &layer,
                            const std::string &fld_name,

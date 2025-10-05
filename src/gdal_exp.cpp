@@ -978,7 +978,7 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
     const Rcpp::NumericMatrix xy_in = xy_robject_to_matrix_(xy);
 
     if (xy_in.nrow() == 0)
-        Rcpp::stop("input matrix is empty");
+        Rcpp::stop("input matri cox is empty");
 
     const Rcpp::LogicalVector na_in =
         Rcpp::is_na(xy_in.column(0)) | Rcpp::is_na(xy_in.column(1));
@@ -1081,20 +1081,19 @@ Rcpp::NumericVector flip_vertical(const Rcpp::NumericVector &v,
     if (v.size() != xsize * ysize * nbands)
         Rcpp::stop("invalid raster dimensions");
 
+    const size_t xsize_in = static_cast<size_t>(xsize);
+    const size_t ysize_in = static_cast<size_t>(ysize);
+    const size_t num_pixels = xsize_in * ysize_in;
+
     Rcpp::NumericVector out = Rcpp::no_init(v.size());
 
-    const size_t num_pixels = static_cast<size_t>(xsize) * ysize;
     for (int b = 0; b < nbands; ++b) {
         const size_t band_offset = b * num_pixels;
-        for (int line = 0; line < ysize; ++line) {
-            size_t line_offset =
-                band_offset + line * static_cast<size_t>(xsize);
-
+        for (size_t line = 0; line < ysize_in; ++line) {
+            size_t line_offset = band_offset + line * xsize_in;
             size_t dst_offset =
-                band_offset + num_pixels - ((line + 1) *
-                                            static_cast<size_t>(xsize));
-
-            std::copy_n(v.cbegin() + line_offset, xsize,
+                band_offset + num_pixels - ((line + 1) * xsize_in);
+            std::copy_n(v.cbegin() + line_offset, xsize_in,
                         out.begin() + dst_offset);
         }
     }
@@ -1344,11 +1343,6 @@ Rcpp::DataFrame combine(const Rcpp::CharacterVector &src_files,
             Rcpp::warning("failed to set output geotransform");
         if (!dst_ds->setProjection(srs))
             Rcpp::warning("failed to set output projection");
-        // } else {
-        //     for (std::size_t i = 0; i < nrasters; ++i)
-        //         src_ds[i].close();
-        //     Rcpp::stop("failed to create output raster");
-        // }
     }
 
     auto tbl = std::make_unique<CmbTable>(nrasters, var_names);
@@ -1815,7 +1809,8 @@ bool footprint(const Rcpp::CharacterVector &src_filename,
 //'
 //' # Dissolve features based on a shared attribute value
 //' if (has_spatialite()) {
-//'     sql <- "SELECT ig_year, ST_Union(geom) AS geom FROM mtbs_perims GROUP BY ig_year"
+//'     sql <- "SELECT ig_year, ST_Union(geom) AS geom
+//'               FROM mtbs_perims GROUP BY ig_year"
 //'     args <- c("-update", "-sql", sql, "-dialect", "SQLITE")
 //'     args <- c(args, "-nlt", "MULTIPOLYGON", "-nln", "dissolved_on_year")
 //'     ogr2ogr(src, ynp_gpkg, cl_arg = args)
@@ -2200,14 +2195,10 @@ bool rasterize(const std::string &src_dsn, const std::string &dst_filename,
         GDALRasterizeOptionsSetProgress(psOptions, GDALTermProgressR, nullptr);
 
     GDALDatasetH hDstDS = nullptr;
-    if (dst_dataset_in) {
-        hDstDS = GDALRasterize(nullptr, dst_dataset_in->getGDALDatasetH_(),
-                               hSrcDS, psOptions, nullptr);
-    }
-    else {
-        hDstDS = GDALRasterize(dst_filename_in.c_str(), nullptr, hSrcDS,
-                               psOptions, nullptr);
-    }
+    hDstDS = GDALRasterize(
+        dst_dataset_in ? nullptr : dst_filename_in.c_str(),
+        dst_dataset_in ? dst_dataset_in->getGDALDatasetH_() : nullptr,
+        hSrcDS, psOptions, nullptr);
 
     GDALRasterizeOptionsFree(psOptions);
     GDALReleaseDataset(hSrcDS);
@@ -2381,14 +2372,9 @@ bool sieveFilter(const Rcpp::CharacterVector &src_filename, int src_band,
         }
     }
 
-    if (in_place)
-        err = GDALSieveFilter(hSrcBand, hMaskBand, hSrcBand, size_threshold,
-                              connectedness, nullptr,
-                              quiet ? nullptr : GDALTermProgressR, nullptr);
-    else
-        err = GDALSieveFilter(hSrcBand, hMaskBand, hDstBand, size_threshold,
-                              connectedness, nullptr,
-                              quiet ? nullptr : GDALTermProgressR, nullptr);
+    err = GDALSieveFilter(hSrcBand, hMaskBand, in_place ? hSrcBand : hDstBand,
+                          size_threshold, connectedness, nullptr,
+                          quiet ? nullptr : GDALTermProgressR, nullptr);
 
     GDALClose(hSrcDS);
     if (hMaskDS != nullptr)
@@ -2540,16 +2526,10 @@ bool warp(const Rcpp::List &src_datasets,
         GDALWarpAppOptionsSetProgress(psOptions, GDALTermProgressR, nullptr);
 
     GDALDatasetH hDstDS = nullptr;
-    if (dst_dataset_in) {
-        hDstDS = GDALWarp(nullptr, dst_dataset_in->getGDALDatasetH_(),
-                          src_datasets.size(), src_hDS.data(),
-                          psOptions, nullptr);
-    }
-    else {
-        hDstDS = GDALWarp(dst_filename_in.c_str(), nullptr,
-                          src_datasets.size(), src_hDS.data(),
-                          psOptions, nullptr);
-    }
+    hDstDS = GDALWarp(
+        dst_dataset_in ? nullptr : dst_filename_in.c_str(),
+        dst_dataset_in ? dst_dataset_in->getGDALDatasetH_() : nullptr,
+        src_datasets.size(), src_hDS.data(), psOptions, nullptr);
 
     GDALWarpAppOptionsFree(psOptions);
 
@@ -3297,9 +3277,8 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
         VSIUnlink(zip_filename_in.c_str());
     } else {
         if (VSIStatExL(zip_filename_in.c_str(), &buf, VSI_STAT_EXISTS_FLAG)
-            == 0) {
-
-            opt_zip_create.push_back((char *) "APPEND=TRUE");
+                == 0) {
+            opt_zip_create.push_back(const_cast<char *>("APPEND=TRUE"));
         }
     }
     opt_zip_create.push_back(nullptr);

@@ -881,7 +881,8 @@ footprint <- function(src_filename, dst_filename, cl_arg = NULL) {
 #'
 #' # Dissolve features based on a shared attribute value
 #' if (has_spatialite()) {
-#'     sql <- "SELECT ig_year, ST_Union(geom) AS geom FROM mtbs_perims GROUP BY ig_year"
+#'     sql <- "SELECT ig_year, ST_Union(geom) AS geom
+#'               FROM mtbs_perims GROUP BY ig_year"
 #'     args <- c("-update", "-sql", sql, "-dialect", "SQLITE")
 #'     args <- c(args, "-nlt", "MULTIPOLYGON", "-nln", "dissolved_on_year")
 #'     ogr2ogr(src, ynp_gpkg, cl_arg = args)

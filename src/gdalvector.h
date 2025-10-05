@@ -203,6 +203,10 @@ class GDALVector {
     static void arrow_release_wrap(struct ArrowArrayStream* stream);
 #endif
 
+    // internal value for marking FID when used along with regular attribute
+    // field indexes
+    static constexpr int FID_MARKER_ = -999;
+
  private:
     std::string m_dsn {""};
     Rcpp::CharacterVector m_open_options {};

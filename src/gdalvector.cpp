@@ -32,8 +32,6 @@
 
 #include <nanoarrow/r.h>
 
-// value for marking FID when used along with regular attribute field indexes
-constexpr int FID_MARKER = -999;
 
 GDALVector::GDALVector()
         : m_open_options(Rcpp::CharacterVector::create()),
@@ -2836,7 +2834,7 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
                 OGR_F_Destroy(hFeat);
                 Rcpp::stop("FID must be `numeric` (may be `integer64`)");
             }
-            map_flds.insert({i, FID_MARKER});
+            map_flds.insert({i, FID_MARKER_});
             continue;
         }
 
@@ -2875,7 +2873,7 @@ std::vector<std::map<R_xlen_t, int>> GDALVector::validateFeatInput_(
         const R_xlen_t col_idx = it->first;
         const int fld_idx = it->second;
 
-        if (fld_idx == FID_MARKER)
+        if (fld_idx == FID_MARKER_)
             continue;
 
         OGRFieldDefnH hFieldDefn = nullptr;
@@ -3145,7 +3143,7 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(
     bool has_fid = false;
     R_xlen_t fid_col = 0;
     for (auto it = map_flds.cbegin(); it != map_flds.cend(); ++it) {
-        if (it->second == FID_MARKER) {
+        if (it->second == FID_MARKER_) {
             has_fid = true;
             fid_col = it->first;
         }
@@ -3184,7 +3182,7 @@ OGRFeatureH GDALVector::OGRFeatureFromList_(
         const R_xlen_t col_idx = it->first;
         const int fld_idx = it->second;
 
-        if (fld_idx == FID_MARKER)
+        if (fld_idx == FID_MARKER_)
             continue;
 
         const OGRFieldDefnH hFieldDefn = OGR_F_GetFieldDefnRef(hFeat, fld_idx);

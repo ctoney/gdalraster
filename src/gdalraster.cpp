@@ -102,7 +102,7 @@ void gdal_init(DllInfo *dll) {
 
 // Map certain GDAL enums to string names for use in R
 // GDALColorInterp (GCI)
-const std::map<std::string, GDALColorInterp> MAP_GCI{
+static const std::map<std::string, GDALColorInterp> MAP_GCI = {
     {"Undefined", GCI_Undefined},
     {"Gray", GCI_GrayIndex},
     {"Palette", GCI_PaletteIndex},
@@ -122,7 +122,7 @@ const std::map<std::string, GDALColorInterp> MAP_GCI{
     {"YCbCr_Cr", GCI_YCbCr_CrBand}
 };
 // GDALRATFieldUsage (GFU)
-const std::map<std::string, GDALRATFieldUsage> MAP_GFU{
+static const std::map<std::string, GDALRATFieldUsage> MAP_GFU = {
     {"Generic", GFU_Generic},
     {"PixelCount", GFU_PixelCount},
     {"Name", GFU_Name},
@@ -145,7 +145,7 @@ const std::map<std::string, GDALRATFieldUsage> MAP_GFU{
 
 // Internal lookup of GDALColorInterp by string descriptor
 // Returns GCI_Undefined if no match
-GDALColorInterp getGCI_(const std::string &col_interp) {
+static GDALColorInterp getGCI_(const std::string &col_interp) {
     if (MAP_GCI.count(col_interp) == 0) {
         return GCI_Undefined;
     }
@@ -157,7 +157,7 @@ GDALColorInterp getGCI_(const std::string &col_interp) {
 
 // Internal lookup of GCI string by GDALColorInterp
 // Returns "Undefined" if no match
-std::string getGCI_string_(GDALColorInterp gci) {
+static std::string getGCI_string_(GDALColorInterp gci) {
     for (auto it = MAP_GCI.begin(); it != MAP_GCI.end(); ++it)
         if (it->second == gci)
             return it->first;
@@ -167,7 +167,7 @@ std::string getGCI_string_(GDALColorInterp gci) {
 
 // Internal lookup of GDALRATFieldUsage by string descriptor
 // Returns GFU_Generic if no match
-GDALRATFieldUsage getGFU_(const std::string &fld_usage) {
+static GDALRATFieldUsage getGFU_(const std::string &fld_usage) {
     if (MAP_GFU.count(fld_usage) == 0) {
         Rcpp::warning("unrecognized GFU string, using GFU_Generic");
         return GFU_Generic;
@@ -180,7 +180,7 @@ GDALRATFieldUsage getGFU_(const std::string &fld_usage) {
 
 // Internal lookup of GFU string by GDALRATFieldUsage
 // Returns "Generic" if no match
-std::string getGFU_string_(GDALRATFieldUsage gfu) {
+static std::string getGFU_string_(GDALRATFieldUsage gfu) {
     for (auto it = MAP_GFU.begin(); it != MAP_GFU.end(); ++it)
         if (it->second == gfu)
             return it->first;
@@ -1630,41 +1630,18 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
         Rcpp::stop("failed to access the requested band");
 
     const GDALDataType eDT = GDALGetRasterDataType(hBand);
-
     CPLErr err = CE_None;
 
-    if (GDALDataTypeIsComplex(eDT)) {
-        // complex data types
-        std::vector<std::complex<double>> buf = {};
-        try {
-            buf.resize(static_cast<size_t>(out_xsize) * out_ysize);
-        }
-        catch (const std::exception &) {
-            Rcpp::stop("failed to allocate memory for read");
-        }
-
-        if (buf.empty())
-            return Rcpp::wrap(Rcpp::ComplexVector::create());
-
-        err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize, buf.data(),
-                           out_xsize, out_ysize, GDT_CFloat64, 0, 0);
-
-        if (err == CE_Failure)
-            Rcpp::stop("read raster failed");
-
-        Rcpp::ComplexVector v = Rcpp::wrap(buf);
-        return v;
-    }
-    else {
-        // real data types
+    if (!GDALDataTypeIsComplex(eDT)) {
+        // real data types read as either GDT_Byte, GDT_Int32 or GDT_Float64
         if (GDALDataTypeIsInteger(eDT) &&
                 (GDALGetDataTypeSizeBits(eDT) <= 16 ||
                  (GDALGetDataTypeSizeBits(eDT) <= 32 &&
                   GDALDataTypeIsSigned(eDT)))) {
 
             // if signed integer <= 32 bits or any integer <= 16 bits:
-            // use int32 buffer unless we are reading Byte as R raw type
-            if (eDT == GDT_Byte && this->readByteAsRaw) {
+            // use int32 buffer, unless we are reading Byte as R raw type
+            if (this->readByteAsRaw && eDT == GDT_Byte) {
                 std::vector<uint8_t> buf = {};
                 try {
                     buf.resize(static_cast<size_t>(out_xsize) * out_ysize);
@@ -1765,6 +1742,28 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
             Rcpp::NumericVector v = Rcpp::wrap(buf);
             return v;
         }
+    }
+    else {
+        // complex data types read as GDT_CFloat64
+        std::vector<std::complex<double>> buf = {};
+        try {
+            buf.resize(static_cast<size_t>(out_xsize) * out_ysize);
+        }
+        catch (const std::exception &) {
+            Rcpp::stop("failed to allocate memory for read");
+        }
+
+        if (buf.empty())
+            return Rcpp::wrap(Rcpp::ComplexVector::create());
+
+        err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize, buf.data(),
+                           out_xsize, out_ysize, GDT_CFloat64, 0, 0);
+
+        if (err == CE_Failure)
+            Rcpp::stop("read raster failed");
+
+        Rcpp::ComplexVector v = Rcpp::wrap(buf);
+        return v;
     }
 }
 
