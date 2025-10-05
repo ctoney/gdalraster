@@ -27,7 +27,7 @@ struct cmbData {
 
 struct cmbHasher {
     std::size_t operator()(const cmbKey &key) const {
-        // Boost hash_combine method
+        // Boost (v1.33 - v1.55) hash_combine method
         // Copyright 2005-2014 Daniel James.
         // Copyright 2021, 2022 Peter Dimov.
         // Distributed under the Boost Software License, Version 1.0.
