@@ -13,6 +13,7 @@
 
 #include <Rcpp.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -1231,12 +1232,13 @@ Rcpp::String g_summary(const Rcpp::RObject &geom, bool quiet = false) {
         return NA_STRING;
     }
 
-    const auto poGeom = OGRGeometry::FromHandle(hGeom);
+    const auto poGeom = std::unique_ptr<OGRGeometry>(
+        OGRGeometry::FromHandle(hGeom));
+
     std::vector<const char *> options = {"DISPLAY_GEOMETRY=SUMMARY", nullptr};
     CPLString s = poGeom->dumpReadable(nullptr, options.data());
     s.replaceAll('\n', ' ');
     std::string ret = s.Trim();
-    delete poGeom;
     return ret;
 #endif
 }
@@ -2988,7 +2990,7 @@ SEXP g_transform(const Rcpp::RObject &geom, const std::string &srs_from,
     OGRSpatialReferenceH hSRS_from = OSRNewSpatialReference(nullptr);
     OGRSpatialReferenceH hSRS_to = OSRNewSpatialReference(nullptr);
 
-    char *pszWKT1 = (char*) srs_from_in.c_str();
+    char *pszWKT1 = const_cast<char*>(srs_from_in.c_str());
     if (OSRImportFromWkt(hSRS_from, &pszWKT1) != OGRERR_NONE) {
         if (hSRS_from != nullptr)
             OSRDestroySpatialReference(hSRS_from);
@@ -2997,7 +2999,7 @@ SEXP g_transform(const Rcpp::RObject &geom, const std::string &srs_from,
         Rcpp::stop("error importing 'srs_from' from user input");
     }
 
-    char *pszWKT2 = (char*) srs_to_in.c_str();
+    char *pszWKT2 = const_cast<char*>(srs_to_in.c_str());
     if (OSRImportFromWkt(hSRS_to, &pszWKT2) != OGRERR_NONE) {
         if (hSRS_from != nullptr)
             OSRDestroySpatialReference(hSRS_from);

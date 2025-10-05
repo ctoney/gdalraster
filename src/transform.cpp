@@ -11,6 +11,7 @@
 
 #include <Rcpp.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -124,36 +125,29 @@ Rcpp::NumericMatrix inv_project(const Rcpp::RObject &pts,
 
     std::string srs_in = srs_to_wkt(srs, false);
     OGRSpatialReference oSourceSRS{};
-    OGRSpatialReference *poLongLat = nullptr;
-    OGRCoordinateTransformation *poCT = nullptr;
+    std::unique_ptr<OGRSpatialReference> poLongLat;
     OGRErr err = OGRERR_NONE;
 
     err = oSourceSRS.importFromWkt(srs_in.c_str());
     if (err != OGRERR_NONE)
         Rcpp::stop("failed to import SRS from WKT string");
-
     oSourceSRS.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
 
     if (well_known_gcs == "") {
-        poLongLat = oSourceSRS.CloneGeogCS();
-        if (poLongLat == nullptr)
-            Rcpp::stop("failed to clone GCS");
+        poLongLat = std::unique_ptr<OGRSpatialReference>(
+            oSourceSRS.CloneGeogCS());
     }
     else {
-        poLongLat = new OGRSpatialReference();
+        poLongLat = std::make_unique<OGRSpatialReference>();
         err = poLongLat->SetWellKnownGeogCS(well_known_gcs.c_str());
         if (err == OGRERR_FAILURE) {
-            poLongLat->Release();
             Rcpp::stop("failed to set well known GCS");
         }
     }
     poLongLat->SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
 
-    poCT = OGRCreateCoordinateTransformation(&oSourceSRS, poLongLat);
-    if (poCT == nullptr) {
-        poLongLat->Release();
-        Rcpp::stop("failed to create coordinate transformer");
-    }
+    auto poCT = std::unique_ptr<OGRCoordinateTransformation>(
+        OGRCreateCoordinateTransformation(&oSourceSRS, poLongLat.get()));
 
     Rcpp::NumericVector x = pts_in(Rcpp::_ , 0);
     Rcpp::NumericVector y = pts_in(Rcpp::_ , 1);
@@ -194,9 +188,6 @@ Rcpp::NumericMatrix inv_project(const Rcpp::RObject &pts,
                               has_z ? zbuf.data() : nullptr,
                               has_t ? tbuf.data() : nullptr,
                               success.data());
-
-    OGRCoordinateTransformation::DestroyCT(poCT);
-    poLongLat->Release();
 
     // behavior change at GDAL 3.11 (https://github.com/OSGeo/gdal/pull/11819)
     // if FALSE returned, we know at least one or more points failed so it's
@@ -292,7 +283,6 @@ Rcpp::NumericMatrix transform_xy(const Rcpp::RObject &pts,
     std::string srs_to_in = srs_to_wkt(srs_to, false);
 
     OGRSpatialReference oSourceSRS{}, oDestSRS{};
-    OGRCoordinateTransformation *poCT = nullptr;
     OGRErr err = OGRERR_NONE;
 
     err = oSourceSRS.importFromWkt(srs_from_in.c_str());
@@ -307,9 +297,8 @@ Rcpp::NumericMatrix transform_xy(const Rcpp::RObject &pts,
 
     oDestSRS.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
 
-    poCT = OGRCreateCoordinateTransformation(&oSourceSRS, &oDestSRS);
-    if (poCT == nullptr)
-        Rcpp::stop("failed to create coordinate transformer");
+    auto poCT = std::unique_ptr<OGRCoordinateTransformation>(
+        OGRCreateCoordinateTransformation(&oSourceSRS, &oDestSRS));
 
     Rcpp::NumericVector x = pts_in(Rcpp::_ , 0);
     Rcpp::NumericVector y = pts_in(Rcpp::_ , 1);
@@ -351,8 +340,6 @@ Rcpp::NumericMatrix transform_xy(const Rcpp::RObject &pts,
                               has_z ? zbuf.data() : nullptr,
                               has_t ? tbuf.data() : nullptr,
                               success.data());
-
-    OGRCoordinateTransformation::DestroyCT(poCT);
 
     // behavior change at GDAL 3.11 (https://github.com/OSGeo/gdal/pull/11819)
     // if FALSE returned, we know at least one or more points failed so it's
@@ -540,7 +527,7 @@ SEXP transform_bounds(const Rcpp::RObject &bbox,
     OGRSpatialReferenceH hSRS_from = OSRNewSpatialReference(nullptr);
     OGRSpatialReferenceH hSRS_to = OSRNewSpatialReference(nullptr);
 
-    char *pszWKT1 = (char*) srs_from_in.c_str();
+    char *pszWKT1 = const_cast<char*>(srs_from_in.c_str());
     if (OSRImportFromWkt(hSRS_from, &pszWKT1) != OGRERR_NONE) {
         if (hSRS_from != nullptr)
             OSRDestroySpatialReference(hSRS_from);
@@ -549,7 +536,7 @@ SEXP transform_bounds(const Rcpp::RObject &bbox,
         Rcpp::stop("error importing 'srs_from' from user input");
     }
 
-    char *pszWKT2 = (char*) srs_to_in.c_str();
+    char *pszWKT2 = const_cast<char*>(srs_to_in.c_str());
     if (OSRImportFromWkt(hSRS_to, &pszWKT2) != OGRERR_NONE) {
         if (hSRS_from != nullptr)
             OSRDestroySpatialReference(hSRS_from);

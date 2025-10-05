@@ -13,6 +13,7 @@
 
 #include <Rcpp.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -455,23 +456,22 @@ SEXP srs_find_epsg(const std::string &srs, bool all_matches = false) {
         Rcpp::stop("error importing SRS from user input");
     }
 
+    std::unique_ptr<OGRSpatialReferenceH> pahSRS;
     int nEntries = 0;
     int *panConfidence = nullptr;
-    OGRSpatialReferenceH *pahSRS = nullptr;
     OGRSpatialReference oSRS;
     std::string identified_code = "";
     Rcpp::CharacterVector authority_name = Rcpp::CharacterVector::create();
     Rcpp::CharacterVector authority_code = Rcpp::CharacterVector::create();
     Rcpp::IntegerVector confidence = Rcpp::IntegerVector::create();
 
-    pahSRS = OSRFindMatches(hSRS, nullptr, &nEntries, &panConfidence);
+    pahSRS = std::unique_ptr<OGRSpatialReferenceH>(
+        OSRFindMatches(hSRS, nullptr, &nEntries, &panConfidence));
+
     OSRDestroySpatialReference(hSRS);
 
-    if (pahSRS == nullptr)
-        return R_NilValue;
-
     for (int i = 0; i < nEntries; i++) {
-        oSRS = *reinterpret_cast<OGRSpatialReference *>(pahSRS[i]);
+        oSRS = *reinterpret_cast<OGRSpatialReference *>(pahSRS.get()[i]);
         const char *pszAuthorityName = oSRS.GetAuthorityName(nullptr);
         const char *pszAuthorityCode = oSRS.GetAuthorityCode(nullptr);
 
@@ -493,7 +493,7 @@ SEXP srs_find_epsg(const std::string &srs, bool all_matches = false) {
         confidence.push_back(panConfidence[i]);
     }
 
-    OSRFreeSRSArray(pahSRS);
+    OSRFreeSRSArray(pahSRS.release());
     CPLFree(panConfidence);
 
     if (nEntries == 0) {

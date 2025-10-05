@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -100,14 +101,14 @@ void GDALVector::open(bool read_only) {
     std::vector<char *> dsoo(m_open_options.size() + 1);
     if (m_open_options.size() > 0) {
         for (R_xlen_t i = 0; i < m_open_options.size(); ++i) {
-             dsoo[i] = (char *) (m_open_options[i]);
+             dsoo[i] = (char *) m_open_options[i];
         }
     }
     dsoo[m_open_options.size()] = nullptr;
 
     OGRGeometryH hGeom_filter = nullptr;
     if (m_spatial_filter != "") {
-        char *pszWKT = (char *) m_spatial_filter.c_str();
+        char *pszWKT = const_cast<char *>(m_spatial_filter.c_str());
         if (OGR_G_CreateFromWkt(&pszWKT, nullptr, &hGeom_filter) !=
                 OGRERR_NONE) {
             if (hGeom_filter != nullptr)
@@ -922,7 +923,7 @@ void GDALVector::setSpatialFilter(const std::string &wkt) {
     OGRSpatialReferenceH hSRS = OGR_L_GetSpatialRef(m_hLayer);
 
     if (wkt != "") {
-        char *pszWKT = (char *) wkt.c_str();
+        char *pszWKT = const_cast<char *>(wkt.c_str());
         if (OGR_G_CreateFromWkt(&pszWKT, hSRS, &hFilterGeom) !=
             OGRERR_NONE) {
 
@@ -1142,10 +1143,14 @@ Rcpp::DataFrame GDALVector::fetch(double n) {
     const int nFields = OGR_FD_GetFieldCount(hFDefn);
     const int nGeomFields = OGR_FD_GetGeomFieldCount(hFDefn);
     bool include_geom = true;
-    Rcpp::CharacterVector geom_column = {};  // column name(s) for gis attributes
-    Rcpp::CharacterVector geom_col_type = {};  // geom type(s) for gis attributes
-    Rcpp::CharacterVector geom_col_srs = {};  // SRS for gis attributes
-    std::string geom_format = "";   // taken from this->returnGeomAs;
+    // column name(s) for gis attributes
+    Rcpp::CharacterVector geom_column = {};
+    // geom type(s) for gis attributes
+    Rcpp::CharacterVector geom_col_type = {};
+    // SRS for gis attributes
+    Rcpp::CharacterVector geom_col_srs = {};
+    // taken from this->returnGeomAs
+    std::string geom_format = "";
 
     if (EQUAL(this->returnGeomAs.c_str(), "NONE")) {
         include_geom = false;
@@ -1584,7 +1589,9 @@ Rcpp::DataFrame GDALVector::fetch(double n) {
                         // fall back to geom type name
                         col[row_num] = OGR_G_GetGeometryName(hGeom);
 #else
-                        const auto poGeom = OGRGeometry::FromHandle(hGeom);
+                        const auto poGeom = std::unique_ptr<OGRGeometry>(
+                            OGRGeometry::FromHandle(hGeom));
+
                         std::vector<const char *> options =
                             {"DISPLAY_GEOMETRY=SUMMARY", nullptr};
 
@@ -1594,10 +1601,7 @@ Rcpp::DataFrame GDALVector::fetch(double n) {
                         s.replaceAll('\n', ' ');
                         col[row_num] = s.Trim();
 
-                        if (destroy_geom) {
-                            delete poGeom;
-                            destroy_geom = false;
-                        }
+                        destroy_geom = false;
 #endif
                     }
                 }
@@ -1633,6 +1637,7 @@ Rcpp::DataFrame GDALVector::fetch(double n) {
                   }
 
                 }
+
                 if (destroy_geom)
                     OGR_G_DestroyGeometry(hGeom);
             }
@@ -1792,7 +1797,7 @@ SEXP GDALVector::getArrowStream() {
     if (this->arrowStreamOptions.size() > 0) {
         for (R_xlen_t i = 0; i < this->arrowStreamOptions.size(); ++i) {
             if (!EQUAL(this->arrowStreamOptions[i], ""))
-                opt.push_back((char *) (this->arrowStreamOptions[i]));
+                opt.push_back((char *) this->arrowStreamOptions[i]);
         }
     }
     opt.push_back(nullptr);
@@ -2170,7 +2175,7 @@ bool GDALVector::layerIntersection(
         Rcpp::CharacterVector options_in(options);
         opt_list.resize(options_in.size() + 1);
         for (R_xlen_t i = 0; i < options_in.size(); ++i) {
-            opt_list[i] = (char *) (options_in[i]);
+            opt_list[i] = (char *) options_in[i];
         }
         opt_list[options_in.size()] = nullptr;
     }
@@ -2205,7 +2210,7 @@ bool GDALVector::layerUnion(
         Rcpp::CharacterVector options_in(options);
         opt_list.resize(options_in.size() + 1);
         for (R_xlen_t i = 0; i < options_in.size(); ++i) {
-            opt_list[i] = (char *) (options_in[i]);
+            opt_list[i] = (char *) options_in[i];
         }
         opt_list[options_in.size()] = nullptr;
     }
@@ -2240,7 +2245,7 @@ bool GDALVector::layerSymDifference(
         Rcpp::CharacterVector options_in(options);
         opt_list.resize(options_in.size() + 1);
         for (R_xlen_t i = 0; i < options_in.size(); ++i) {
-            opt_list[i] = (char *) (options_in[i]);
+            opt_list[i] = (char *) options_in[i];
         }
         opt_list[options_in.size()] = nullptr;
     }
@@ -2275,7 +2280,7 @@ bool GDALVector::layerIdentity(
         Rcpp::CharacterVector options_in(options);
         opt_list.resize(options_in.size() + 1);
         for (R_xlen_t i = 0; i < options_in.size(); ++i) {
-            opt_list[i] = (char *) (options_in[i]);
+            opt_list[i] = (char *) options_in[i];
         }
         opt_list[options_in.size()] = nullptr;
     }
@@ -2310,7 +2315,7 @@ bool GDALVector::layerUpdate(
         Rcpp::CharacterVector options_in(options);
         opt_list.resize(options_in.size() + 1);
         for (R_xlen_t i = 0; i < options_in.size(); ++i) {
-            opt_list[i] = (char *) (options_in[i]);
+            opt_list[i] = (char *) options_in[i];
         }
         opt_list[options_in.size()] = nullptr;
     }
@@ -2345,7 +2350,7 @@ bool GDALVector::layerClip(
         Rcpp::CharacterVector options_in(options);
         opt_list.resize(options_in.size() + 1);
         for (R_xlen_t i = 0; i < options_in.size(); ++i) {
-            opt_list[i] = (char *) (options_in[i]);
+            opt_list[i] = (char *) options_in[i];
         }
         opt_list[options_in.size()] = nullptr;
     }
@@ -2380,7 +2385,7 @@ bool GDALVector::layerErase(
         Rcpp::CharacterVector options_in(options);
         opt_list.resize(options_in.size() + 1);
         for (R_xlen_t i = 0; i < options_in.size(); ++i) {
-            opt_list[i] = (char *) (options_in[i]);
+            opt_list[i] = (char *) options_in[i];
         }
         opt_list[options_in.size()] = nullptr;
     }
@@ -3892,11 +3897,13 @@ RCPP_MODULE(mod_GDALVector) {
         ("Usage: new(GDALVector, dsn, layer, read_only, open_options)")
     .constructor<Rcpp::CharacterVector, std::string, bool,
                  Rcpp::Nullable<Rcpp::CharacterVector>, std::string>
-        ("Usage: new(GDALVector, dsn, layer, read_only, open_options, spatial_filter)")
+        ("Usage: new(GDALVector, dsn, layer, read_only, open_options, "
+         "spatial_filter)")
     .constructor<Rcpp::CharacterVector, std::string, bool,
                  Rcpp::Nullable<Rcpp::CharacterVector>, std::string,
                  std::string>
-        ("Usage: new(GDALVector, dsn, layer, read_only, open_options, spatial_filter, dialect)")
+        ("Usage: new(GDALVector, dsn, layer, read_only, open_options, "
+         "spatial_filter, dialect)")
 
     // create_ogr() object factory with 10 parameters
     .factory<const std::string&, const std::string&, const std::string&,
