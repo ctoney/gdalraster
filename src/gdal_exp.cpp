@@ -703,7 +703,7 @@ GDALRaster *create(const std::string &format,
 
     auto ds = std::make_unique<GDALRaster>();
     ds->setFilename(dst_filename_in);
-    ds->setGDALDatasetH_(hDstDS, true);
+    ds->setGDALDatasetH_(hDstDS);
     return ds.release();
 }
 
@@ -768,7 +768,7 @@ GDALRaster *createCopy(const std::string &format,
 
     auto ds = std::make_unique<GDALRaster>();
     ds->setFilename(dst_filename_in);
-    ds->setGDALDatasetH_(hDstDS, true);
+    ds->setGDALDatasetH_(hDstDS);
     return ds.release();
 }
 
@@ -942,7 +942,7 @@ Rcpp::IntegerMatrix get_pixel_line_gt(const Rcpp::RObject &xy,
                                 Rcpp::is_na(xy_in.column(1));
 
     const Rcpp::NumericVector inv_gt = inv_geotransform(gt);
-    if (Rcpp::any(Rcpp::is_na(inv_gt)))
+    if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(inv_gt))))
         Rcpp::stop("could not get inverse geotransform");
 
     Rcpp::IntegerMatrix pixel_line = Rcpp::no_init(xy_in.nrow(), 2);
@@ -985,7 +985,7 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
 
     const std::vector<double> gt = ds->getGeoTransform();
     const Rcpp::NumericVector inv_gt = inv_geotransform(gt);
-    if (Rcpp::any(Rcpp::is_na(inv_gt)))
+    if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(inv_gt))))
         Rcpp::stop("could not get inverse geotransform");
 
     Rcpp::IntegerMatrix pixel_line = Rcpp::no_init(xy_in.nrow(), 2);
@@ -1173,7 +1173,7 @@ GDALRaster *autoCreateWarpedVRT(const GDALRaster* const &src_ds,
 
     auto ds = std::make_unique<GDALRaster>();
     ds->setFilename("");
-    ds->setGDALDatasetH_(hWarpedDS, true);
+    ds->setGDALDatasetH_(hWarpedDS);
     return ds.release();
 }
 
@@ -1309,7 +1309,7 @@ Rcpp::DataFrame combine(const Rcpp::CharacterVector &src_files,
     int ncols = 0;
     std::vector<double> gt = {0, 1, 0, 0, 0, 1};
     std::string srs = "";
-    std::unique_ptr<GDALRaster> dst_ds{};
+    std::unique_ptr<GDALRaster> dst_ds;
     bool out_raster = false;
 
     if (nrasters != var_names.size() ||
@@ -1345,7 +1345,7 @@ Rcpp::DataFrame combine(const Rcpp::CharacterVector &src_files,
             Rcpp::warning("failed to set output projection");
     }
 
-    auto tbl = std::make_unique<CmbTable>(nrasters, var_names);
+    CmbTable tbl = CmbTable(nrasters, var_names);
     GDALProgressFunc pfnProgress = GDALTermProgressR;
     void *pProgressData = nullptr;
 
@@ -1363,7 +1363,7 @@ Rcpp::DataFrame combine(const Rcpp::CharacterVector &src_files,
                 src_ds[i]->read(bands[i], 0, y, ncols, 1, ncols, 1));
         }
 
-        Rcpp::NumericVector cmbid = tbl->updateFromMatrix(rowdata, 1);
+        Rcpp::NumericVector cmbid = tbl.updateFromMatrix(rowdata, 1);
 
         if (out_raster) {
             dst_ds->write(1, 0, y, ncols, 1, cmbid);
@@ -1377,10 +1377,10 @@ Rcpp::DataFrame combine(const Rcpp::CharacterVector &src_files,
     if (out_raster)
         dst_ds->close();
 
-    for (R_xlen_t i = 0; i < nrasters; ++i)
-        src_ds[i]->close();
+    for (auto &ds : src_ds)
+        ds->close();
 
-    return tbl->asDataFrame();
+    return tbl.asDataFrame();
 }
 
 
@@ -2002,7 +2002,7 @@ Rcpp::String ogrinfo(const Rcpp::CharacterVector &dsn,
             // }
         }
     }
-    argv.push_back((char *) dsn_in.c_str());
+    argv.push_back(const_cast<char *>(dsn_in.c_str()));
     if (layers.isNotNull()) {
         Rcpp::CharacterVector layers_in(layers);
         for (R_xlen_t i = 0; i < layers_in.size(); ++i) {
@@ -2130,7 +2130,7 @@ bool polygonize(const Rcpp::CharacterVector &src_filename, int src_band,
     std::vector<char *> opt_list = {nullptr};
     if (connectedness == 8) {
         auto it = opt_list.begin();
-        it = opt_list.insert(it, (char *) "8CONNECTED=8");
+        it = opt_list.insert(it, const_cast<char *>("8CONNECTED=8"));
     }
 
     CPLErr err = GDALPolygonize(hSrcBand, hMaskBand, hOutLayer, iPixValField,
@@ -2507,8 +2507,8 @@ bool warp(const Rcpp::List &src_datasets,
         t_srs_in = GDALGetProjectionRef(src_hDS[0]);
 
     std::vector<char *> argv;
-    argv.push_back((char *) "-t_srs");
-    argv.push_back((char *) t_srs_in.c_str());
+    argv.push_back(const_cast<char *>("-t_srs"));
+    argv.push_back(const_cast<char *>(t_srs_in.c_str()));
     if (cl_arg.isNotNull()) {
         Rcpp::CharacterVector cl_arg_in(cl_arg);
         for (R_xlen_t i = 0; i < cl_arg_in.size(); ++i) {

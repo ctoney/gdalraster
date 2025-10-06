@@ -44,7 +44,8 @@ void gdal_error_handler_r(CPLErr err_class, int err_no, const char *msg) {
 
         case CE_Warning:
         {
-            // try to be compatible with sf, and terra default level 2
+            // try to be compatible with sf, and terra default level 2, wrt to
+            // whether a warning is emitted in case sharing a GDAL instance
             if (is_namespace_loaded_("sf")) {
                 std::stringstream ss_msg;
                 ss_msg << "GDAL WARNING " << err_no << ": " << msg;
@@ -58,7 +59,8 @@ void gdal_error_handler_r(CPLErr err_class, int err_no, const char *msg) {
 
         case CE_Failure:
         {
-            // try to be compatible with sf, and terra default level 2
+            // try to be compatible with sf, and terra default level 2, wrt to
+            // whether a warning is emitted in case sharing a GDAL instance
             if (is_namespace_loaded_("sf") || is_namespace_loaded_("terra")) {
                 std::stringstream ss_msg;
                 ss_msg << "GDAL FAILURE " << err_no << ": " << msg;
@@ -382,11 +384,11 @@ Rcpp::String GDALRaster::infoAsJSON() const {
     std::vector<char *> opt = {nullptr};
     if (argv.size() == 1 && argv[0] == "") {
         opt.resize(2);
-        opt[0] = (char *) "-json";
+        opt[0] = const_cast<char *>("-json");
         opt[1] = nullptr;
     }
     else {
-        opt[0] = (char *) "-json";
+        opt[0] = const_cast<char *>("-json");
         for (R_xlen_t i = 0; i < argv.size(); ++i) {
             if (EQUAL(argv[i], "-json"))
                 continue;
@@ -650,6 +652,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
 
     checkAccess_(GA_ReadOnly);
 
+    constexpr int KRNL_DIM_MAX_ = 1000;
+
     Rcpp::NumericMatrix xy_in;
     if (Rcpp::is<Rcpp::NumericVector>(xy) ||
         Rcpp::is<Rcpp::IntegerVector>(xy)) {
@@ -731,8 +735,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
 
     if (krnl_dim < 1)
         Rcpp::stop("'krnl_dim' must be a positive number");
-    if (krnl_dim > 1000)
-        Rcpp::stop("'krnl_dim' must be <= 1000");
+    if (krnl_dim > KRNL_DIM_MAX_)
+        Rcpp::stop("'krnl_dim' must be <= " + std::to_string(KRNL_DIM_MAX_));
 
     if (eResampleAlg == GRIORA_NearestNeighbour && krnl_dim > 1 &&
         num_bands > 1) {
@@ -742,7 +746,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
     }
 
     const Rcpp::NumericVector inv_gt = inv_geotransform(getGeoTransform());
-    if (Rcpp::any(Rcpp::is_na(inv_gt)))
+    if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(inv_gt))))
         Rcpp::stop("failed to get inverse geotransform");
 
     const int krnl_size = krnl_dim * krnl_dim;
@@ -763,7 +767,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
         values = Rcpp::no_init(num_pts, krnl_size);
         for (int i = 0; i < krnl_size; ++i) {
             col_names.push_back(
-                    std::string(band_names[0]) + "_p" + std::to_string(i + 1));
+                std::string(band_names[0]) + "_p" + std::to_string(i + 1));
         }
         Rcpp::colnames(values) = col_names;
     }
@@ -771,14 +775,13 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
     for (R_xlen_t band_idx = 0; band_idx < num_bands; ++band_idx) {
         if (!quiet) {
             Rcpp::Rcout << "extracting from band " << bands_in[band_idx]
-                    << "...\n";
+                << "...\n";
 
             pfnProgress(0, nullptr, nullptr);
         }
 
         for (R_xlen_t row_idx = 0; row_idx < num_pts; ++row_idx) {
             // row_idx refers to rows of the input and output matrices
-
             const double geo_x = xy_in(row_idx, 0);
             const double geo_y = xy_in(row_idx, 1);
             if (Rcpp::NumericVector::is_na(geo_x) ||
@@ -794,10 +797,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
 
             // allow input coordinates exactly on the bottom or right edges
             // match behavior in: https://github.com/OSGeo/gdal/pull/12087
-
             const bool pt_is_on_right_edge =
                 ARE_REAL_EQUAL(grid_x, static_cast<double>(raster_xsize));
-
             const bool pt_is_on_bottom_edge =
                 ARE_REAL_EQUAL(grid_y, static_cast<double>(raster_ysize));
 
@@ -871,19 +872,19 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
                                                        read_xsize, read_ysize,
                                                        read_xsize, read_ysize));
 
-                if (Rcpp::any(Rcpp::is_na(v))) {
+                if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(v)))) {
                     values(row_idx, band_idx) = NA_REAL;
                     continue;
                 }
 
                 if (v.size() == 4) {
-                    // convert to unit square coordinates for the 2x2 kernel
-                    // the center of the lower left pixel in the kernel is 0,0
+                    // Convert to unit square coordinates for the 2x2 kernel.
+                    // The center of the lower left pixel in the kernel is 0,0.
                     const double x = grid_x - (x_off + 0.5);
                     const double y = (y_off + 1.5) - grid_y;
 
-                    // pixels in v are left to right, top to bottom
-                    // pixel values in the square:
+                    // Pixels in v are left to right, top to bottom.
+                    // Pixel values in the square:
                     // 0,0: v[2]
                     // 1,0: v[3]
                     // 0,1: v[0]
@@ -935,10 +936,10 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
                 const int y_off = static_cast<int>(
                     std::floor(grid_y - ((krnl_dim / 2.0) - 0.5)));
 
-                // is any portion of the kernel outside the raster extent?
-                // the wrapper in R/gdalraster_proc.R avoids this as long
+                // Is any portion of the kernel outside the raster extent?
+                // The wrapper in R/gdalraster_proc.R avoids this as long
                 // as the point itself is inside, by reading through a VRT
-                // that extends the bounds
+                // that extends the bounds.
                 if (x_off < 0 || x_off + krnl_dim > raster_xsize ||
                     y_off < 0 || y_off + krnl_dim > raster_ysize) {
 
@@ -1006,9 +1007,9 @@ Rcpp::NumericMatrix GDALRaster::get_block_indexing(int band) const {
     R_xlen_t i = 0;
     for (int y = 0; y < num_blocks_y; ++y) {
         for (int x = 0; x < num_blocks_x; ++x) {
-            double this_xoff = x * nBlockXSize;
-            double this_yoff = y * nBlockYSize;
-            std::vector<int> this_size = getActualBlockSize(band, x, y);
+            const double this_xoff = x * nBlockXSize;
+            const double this_yoff = y * nBlockYSize;
+            const std::vector<int> this_size = getActualBlockSize(band, x, y);
             std::vector<double> this_bbox =
                 bbox_grid_to_geo_(gt, this_xoff, this_xoff + this_size[0],
                                   this_yoff, this_yoff + this_size[1]);
@@ -1548,9 +1549,11 @@ std::string GDALRaster::getMetadataItem(int band, const std::string &mdi_name,
     std::string mdi = "";
 
     if (band == 0) {
-        if (GDALGetMetadataItem(m_hDataset, mdi_name.c_str(), domain_in) != nullptr)
+        if (GDALGetMetadataItem(m_hDataset, mdi_name.c_str(), domain_in)
+                != nullptr) {
             mdi += std::string(GDALGetMetadataItem(m_hDataset, mdi_name.c_str(),
                                                    domain_in));
+        }
     }
     else {
         GDALRasterBandH hBand = getBand_(band);
@@ -2361,22 +2364,22 @@ void GDALRaster::warnInt64_() const {
 }
 
 GDALDatasetH GDALRaster::getGDALDatasetH_() const {
-    checkAccess_(GA_ReadOnly);
-
     return m_hDataset;
 }
 
-void GDALRaster::setGDALDatasetH_(const GDALDatasetH &hDs, bool with_update) {
+void GDALRaster::setGDALDatasetH_(GDALDatasetH hDs) {
     m_hDataset = hDs;
-    if (with_update)
-        m_eAccess = GA_Update;
-    else
-        m_eAccess = GA_ReadOnly;
+    if (m_hDataset) {
+        if (GDALGetAccess(m_hDataset) == GA_ReadOnly)
+            m_eAccess = GA_ReadOnly;
+        else
+            m_eAccess = GA_Update;
 
-    if (GDALDataset::FromHandle(m_hDataset)->GetShared() == TRUE)
-        m_shared = true;
-    else
-        m_shared = false;
+        if (GDALDataset::FromHandle(m_hDataset)->GetShared() == TRUE)
+            m_shared = true;
+        else
+            m_shared = false;
+    }
 }
 
 // ****************************************************************************
@@ -2397,7 +2400,8 @@ RCPP_MODULE(mod_GDALRaster) {
         ("Usage: new(GDALRaster, filename, read_only, open_options, shared)")
     .constructor<Rcpp::CharacterVector, bool,
         Rcpp::Nullable<Rcpp::CharacterVector>, bool, Rcpp::CharacterVector>
-        ("Usage: new(GDALRaster, filename, read_only, open_options, shared, allowed_drivers)")
+        ("Usage: new(GDALRaster, filename, read_only, open_options, shared, "
+         "allowed_drivers)")
 
     // createCopy() object factory with 6 parameters
     .factory<const std::string&, const Rcpp::CharacterVector&,

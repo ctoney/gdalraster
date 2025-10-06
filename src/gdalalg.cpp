@@ -738,14 +738,14 @@ bool GDALAlg::parseCommandLineArgs() {
             if (GDALAlgorithmArgGetType(hArg) == GAAT_DATASET_LIST) {
                 if (m_num_input_datasets > 1) {
                     GDALAlgorithmArgRelease(hArg);
-                    Rcpp::stop(
-                        "set args from GDALVector currently unsupported for multiple input objects");
+                    Rcpp::stop("set args from GDALVector currently unsupported "
+                               "for multiple input objects");
                 }
             }
             else if (GDALAlgorithmArgGetType(hArg) != GAAT_DATASET) {
                 GDALAlgorithmArgRelease(hArg);
-                Rcpp::stop(
-                    "set args from GDALVector incompatible with \"input\" arg type");
+                Rcpp::stop("set args from GDALVector incompatible with "
+                           "\"input\" arg type");
             }
             GDALAlgorithmArgRelease(hArg);
         }
@@ -1606,11 +1606,6 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
                 return R_NilValue;
             }
 
-            GDALArgDatasetType ds_type = GDALAlgorithmArgGetDatasetType(hArg);
-            bool with_update = false;
-            if (ds_type & GDAL_OF_UPDATE)
-                with_update = true;
-
             GDALDatasetH hDS = nullptr;
             hDS = GDALArgDatasetValueGetDatasetIncreaseRefCount(hArgDSValue);
             if (!hDS) {
@@ -1618,15 +1613,15 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
                 Rcpp::stop("GDAL dataset object is NULL");
             }
 
-            // raster
+            GDALArgDatasetType ds_type = GDALAlgorithmArgGetDatasetType(hArg);
+
             if (ds_type & GDAL_OF_RASTER) {
                 std::string ds_name(GDALArgDatasetValueGetName(hArgDSValue));
                 auto ds = std::make_unique<GDALRaster>();
                 ds->setFilename(ds_name);
-                ds->setGDALDatasetH_(hDS, with_update);
+                ds->setGDALDatasetH_(hDS);
                 out = Rcpp::wrap(*ds.release());
             }
-            // vector
             else if (ds_type & GDAL_OF_VECTOR) {
                 std::string ds_name(GDALArgDatasetValueGetName(hArgDSValue));
                 OGRLayerH hLayer = nullptr;
@@ -1654,12 +1649,12 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
                     lyr->setFieldNames_();
                 out = Rcpp::wrap(*lyr.release());
             }
-            // multidim raster - currently only as dataset name
             else if (ds_type & GDAL_OF_MULTIDIM_RASTER) {
+                // multidim raster currently only as dataset name
                 out = Rcpp::wrap(GDALArgDatasetValueGetName(hArgDSValue));
             }
-            // unrecognized dataset type - should not occur
             else {
+                // should not occur
                 out = Rcpp::wrap("unrecognized dataset type");
             }
 

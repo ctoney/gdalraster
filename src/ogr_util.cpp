@@ -701,7 +701,7 @@ GDALVector *create_ogr(const std::string &format,
         Rcpp::stop("layer creation failed");
     }
     else if (!fld_ok) {
-        // TODO(ctoney): make layer + field creation atomic
+        // TODO: make layer + field creation atomic
         GDALReleaseDataset(hDstDS);
         Rcpp::stop("the layer was created but field creation failed");
     }
@@ -973,7 +973,7 @@ bool ogr_ds_add_field_domain(const std::string &dsn,
                 Rcpp::stop("'coded_values' is empty");
             }
 
-            if (Rcpp::any(Rcpp::is_na(coded_values))) {
+            if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(coded_values)))) {
                 GDALReleaseDataset(hDS);
                 Rcpp::stop("'coded_values' cannot contain NA codes");
             }
@@ -1033,7 +1033,7 @@ bool ogr_ds_add_field_domain(const std::string &dsn,
             Rcpp::CharacterVector codes = coded_values[0];
             Rcpp::CharacterVector values = coded_values[1];
 
-            if (Rcpp::any(Rcpp::is_na(codes))) {
+            if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(codes)))) {
                 GDALReleaseDataset(hDS);
                 Rcpp::stop("'coded_values' cannot contain NA codes");
             }

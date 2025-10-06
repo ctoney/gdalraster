@@ -575,7 +575,7 @@ SEXP transform_bounds(const Rcpp::RObject &bbox,
         const Rcpp::NumericVector this_bbox = bbox_matrix_in.row(i);
         out_xmin = out_ymin = out_xmax = out_ymax = NA_REAL;
 
-        if (Rcpp::any(Rcpp::is_na(this_bbox))) {
+        if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(this_bbox)))) {
             Rcpp::warning("an input bbox has one or more 'NA' values");
             out.row(i) =
                 Rcpp::NumericVector::create(NA_REAL, NA_REAL, NA_REAL, NA_REAL);

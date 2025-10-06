@@ -146,7 +146,7 @@ GDALRaster *mdim_as_classic(
         Rcpp::stop("failed to get MDArray as classic dataset");
 
     auto ds = std::make_unique<GDALRaster>();
-    ds->setGDALDatasetH_(hClassicDS, !read_only);
+    ds->setGDALDatasetH_(hClassicDS);
     return ds.release();
 #endif
 }
@@ -619,7 +619,7 @@ bool mdim_translate(
     if (scaleaxes_specs.isNotNull()) {
         scaleaxes_specs_in = Rcpp::as<Rcpp::String>(scaleaxes_specs);
         argv.push_back(const_cast<char *>("-scaleaxes"));
-        argv.push_back((char *) scaleaxes_specs_in.get_cstring());
+        argv.push_back(const_cast<char *>(scaleaxes_specs_in.get_cstring()));
     }
 
     if (strict)

@@ -167,9 +167,9 @@ class GDALVector {
 
     void setDsn_(const std::string &dsn);
     GDALDatasetH getGDALDatasetH_() const;
-    void setGDALDatasetH_(const GDALDatasetH &hDs, bool with_update);
+    void setGDALDatasetH_(GDALDatasetH hDs, bool with_update);
     OGRLayerH getOGRLayerH_() const;
-    void setOGRLayerH_(const OGRLayerH &hLyr, const std::string &lyr_name);
+    void setOGRLayerH_(OGRLayerH hLyr, const std::string &lyr_name);
     void setFieldNames_();
 
     SEXP createDF_(R_xlen_t nrow) const;

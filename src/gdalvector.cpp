@@ -947,7 +947,7 @@ void GDALVector::setSpatialFilterRect(const Rcpp::RObject &bbox) {
 
     Rcpp::NumericVector bbox_in(bbox);
 
-    if (Rcpp::any(Rcpp::is_na(bbox_in)))
+    if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(bbox_in))))
         Rcpp::stop("'bbox' has one or more 'NA' values");
 
     OGR_L_SetSpatialFilterRect(m_hLayer, bbox_in[0], bbox_in[1], bbox_in[2],
@@ -2513,17 +2513,18 @@ GDALDatasetH GDALVector::getGDALDatasetH_() const {
     return m_hDataset;
 }
 
-void GDALVector::setGDALDatasetH_(const GDALDatasetH &hDs, bool with_update) {
+void GDALVector::setGDALDatasetH_(GDALDatasetH hDs, bool with_update) {
     m_hDataset = hDs;
+
+    if (m_hDataset && GDALDataset::FromHandle(m_hDataset)->GetShared() == TRUE)
+        m_shared = true;
+    else
+        m_shared = false;
+
     if (with_update)
         m_eAccess = GA_Update;
     else
         m_eAccess = GA_ReadOnly;
-
-    if (GDALDataset::FromHandle(m_hDataset)->GetShared() == TRUE)
-        m_shared = true;
-    else
-        m_shared = false;
 }
 
 OGRLayerH GDALVector::getOGRLayerH_() const {
@@ -2532,8 +2533,7 @@ OGRLayerH GDALVector::getOGRLayerH_() const {
     return m_hLayer;
 }
 
-void GDALVector::setOGRLayerH_(const OGRLayerH &hLyr,
-                               const std::string &lyr_name) {
+void GDALVector::setOGRLayerH_(OGRLayerH hLyr, const std::string &lyr_name) {
     m_hLayer = hLyr;
     m_layer_name = lyr_name;
 #if __has_include(<ogr_recordbatch.h>)

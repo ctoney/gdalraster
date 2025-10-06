@@ -168,7 +168,7 @@ class GDALRaster {
     bool hasInt64_() const;
     void warnInt64_() const;
     GDALDatasetH getGDALDatasetH_() const;
-    void setGDALDatasetH_(const GDALDatasetH &hDs, bool with_update);
+    void setGDALDatasetH_(GDALDatasetH hDs);
 
  private:
     std::string m_fname {};
