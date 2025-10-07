@@ -8,6 +8,7 @@
 #include <Rcpp.h>
 
 #include <algorithm>
+#include <cctype>
 #include <string>
 
 // convert data frame to numeric matrix in Rcpp
@@ -138,9 +139,19 @@ bool contains_str_(const Rcpp::CharacterVector &v, const Rcpp::String &s) {
         return true;
 }
 
+// does std::string contain a space character
+bool has_space_char_(const std::string &s) {
+    for (char c : s) {
+        if (std::isspace(static_cast<unsigned char>(c)))
+            return true;
+    }
+    return false;
+}
+
 // wrapper for base R isNamespaceLoaded()
 bool is_namespace_loaded_(const Rcpp::String &pkg) {
     Rcpp::Function f("isNamespaceLoaded");
     Rcpp::LogicalVector res = f(pkg);
     return Rcpp::is_true(Rcpp::all(res));
 }
+

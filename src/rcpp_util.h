@@ -10,6 +10,7 @@
 #include <RcppInt64>
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -52,6 +53,7 @@ std::string str_toupper_(const std::string &s);
 std::string str_tolower_(const std::string &s);
 
 bool contains_str_(const Rcpp::CharacterVector &v, const Rcpp::String &s);
+bool has_space_char_(const std::string &s);
 
 bool is_namespace_loaded_(const Rcpp::String &pkg);
 
