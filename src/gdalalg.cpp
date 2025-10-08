@@ -916,8 +916,7 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                 Rcpp::CharacterVector v(arg_value);
                 if (v.size() != 1 || Rcpp::CharacterVector::is_na(v[0])) {
                     Rcpp::Rcout << "string input must be a length-1 character "
-                                   "vector for DATASET type algorithm "
-                                   "argument\n";
+                                   "vector for DATASET algorithm argument\n";
                     break;
                 }
                 Rcpp::String val(enc_to_utf8_(v));
@@ -931,7 +930,7 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
 
                     Rcpp::Rcout << "this argument does not accept a dataset "
                                    "object as input (DSN required, may be "
-                                   "created by algorithm, )\n";
+                                   "created by algorithm)\n";
                     break;
                 }
                 if (cls == "Rcpp_GDALRaster") {
@@ -1067,7 +1066,7 @@ bool GDALAlg::parseCommandLineArgs() {
     if (m_haveParsedCmdLineArgs) {
         if (!quiet)
             Rcpp::Rcout << "parseCommandLineArgs() can only be called once "
-                           " per instance\n";
+                           "per instance\n";
         return false;
     }
 
@@ -1589,7 +1588,7 @@ Rcpp::CharacterVector GDALAlg::parseListArgs_(
 
     Rcpp::CharacterVector arg_names = list_args.names();
     if (arg_names.size() == 0 || arg_names.size() != num_args)
-        Rcpp::stop("arg list must have named elements");
+        Rcpp::stop("argument list must have named elements");
 
     for (R_xlen_t i = 0; i < num_args; ++i) {
         Rcpp::String nm(arg_names[i]);
@@ -2035,7 +2034,7 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
         {
             // seems to apply to input only, at least currently
             Rcpp::warning(
-                "unhandled output of type DATASET_LIST (returned NULL)");
+                "unhandled output of type DATASET_LIST (NULL returned)");
             out = R_NilValue;
         }
         break;
