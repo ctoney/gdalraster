@@ -122,6 +122,7 @@ reporting along with various messages and warnings.
 Returns a named list of algorithm properties with the following elements:
 \itemize{
 \item \code{name}: character string, the algorithm name
+\item \code{full_path}: character string, the algorithm name as full path
 \item \code{description}: character string, the algorithm (short) description
 \item \code{long_description}: character string, the algorithm longer description
 \item \code{URL}: character string, the algorithm help URL

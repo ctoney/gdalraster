@@ -315,6 +315,7 @@ Rcpp::List GDALAlg::info() const {
     const GDALAlgorithmH &alg = m_hActualAlg ? m_hActualAlg : m_hAlg;
 
     alg_info.push_back(GDALAlgorithmGetName(alg), "name");
+    alg_info.push_back(m_cmd_str, "full_path");
     alg_info.push_back(GDALAlgorithmGetDescription(alg), "description");
     alg_info.push_back(GDALAlgorithmGetLongDescription(alg),
                        "long_description");
@@ -690,6 +691,12 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
         return false;
     }
 
+    if (arg_value.isNULL()) {
+        if (!quiet)
+            Rcpp::Rcout << "'arg_value' is NULL\n";
+        return false;
+    }
+
     Rcpp::String arg_name_in(arg_name);
     arg_name_in.replace_all("--", "");
     arg_name_in.replace_all("_", "-");
@@ -999,7 +1006,7 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                 std::vector<GDALDatasetH> pahDS;
                 for (R_xlen_t i = 0; i < ds_list.size(); ++i) {
                     Rcpp::RObject x(ds_list[i]);
-                    if (x.isObject()) {
+                    if (!x.isNULL() && x.isObject()) {
                         const Rcpp::String cls = x.attr("class");
                         if (cls == "Rcpp_GDALRaster") {
                             const GDALRaster &ds = Rcpp::as<GDALRaster &>(x);
@@ -1592,7 +1599,7 @@ Rcpp::CharacterVector GDALAlg::parseListArgs_(
 
     for (R_xlen_t i = 0; i < num_args; ++i) {
         Rcpp::String nm(arg_names[i]);
-        if (nm == NA_STRING || nm == "")
+        if (!nm.get_cstring() || nm == NA_STRING || nm == "")
             continue;
 
         if (list_args[i] == R_NilValue) {

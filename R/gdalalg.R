@@ -112,6 +112,7 @@
 #' \code{$info()}\cr
 #' Returns a named list of algorithm properties with the following elements:
 #' * `name`: character string, the algorithm name
+#' * `full_path`: character string, the algorithm name as full path
 #' * `description`: character string, the algorithm (short) description
 #' * `long_description`: character string, the algorithm longer description
 #' * `URL`: character string, the algorithm help URL
