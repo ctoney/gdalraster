@@ -659,14 +659,14 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
         Rcpp::is<Rcpp::IntegerVector>(xy)) {
 
         if (!Rf_isMatrix(xy)) {
-            Rcpp::NumericVector v = Rcpp::as<Rcpp::NumericVector>(xy);
+            Rcpp::NumericVector v(xy);
             if (v.size() != 2)
                 Rcpp::stop("'xy' must be a two-column data frame or matrix");
 
             xy_in = Rcpp::NumericMatrix(1, 2, v.begin());
         }
         else {
-            xy_in = Rcpp::as<Rcpp::NumericMatrix>(xy);
+            xy_in = Rcpp::NumericMatrix(xy);
         }
     }
     else if (Rcpp::is<Rcpp::DataFrame>(xy)) {
@@ -823,12 +823,10 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
                 const int x_off = static_cast<int>(std::floor(grid_x));
                 const int y_off = static_cast<int>(std::floor(grid_y));
 
-                Rcpp::NumericVector v =
-                    Rcpp::as<Rcpp::NumericVector>(read(bands_in[band_idx],
-                                                       x_off, y_off, 1, 1,
-                                                       1, 1));
+                double v = Rcpp::as<double>(read(bands_in[band_idx],
+                                                 x_off, y_off, 1, 1, 1, 1));
 
-                values(row_idx, band_idx) = v[0];
+                values(row_idx, band_idx) = v;
             }
             else if (eResampleAlg == GRIORA_Bilinear) {
                 int x_off = static_cast<int>(std::floor(grid_x - 0.5));
@@ -866,11 +864,9 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
                     read_ysize = 1;
                 }
 
-                Rcpp::NumericVector v =
-                    Rcpp::as<Rcpp::NumericVector>(read(bands_in[band_idx],
-                                                       x_off, y_off,
-                                                       read_xsize, read_ysize,
-                                                       read_xsize, read_ysize));
+                Rcpp::NumericVector v(read(bands_in[band_idx], x_off, y_off,
+                                           read_xsize, read_ysize,
+                                           read_xsize, read_ysize));
 
                 if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(v)))) {
                     values(row_idx, band_idx) = NA_REAL;
@@ -952,16 +948,15 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
                 }
 
                 values.row(row_idx) =
-                    Rcpp::as<Rcpp::NumericVector>(read(bands_in[band_idx],
-                                                       x_off, y_off,
-                                                       krnl_dim, krnl_dim,
-                                                       krnl_dim, krnl_dim));
+                    Rcpp::NumericVector(read(bands_in[band_idx], x_off, y_off,
+                                             krnl_dim, krnl_dim,
+                                             krnl_dim, krnl_dim));
             }
 
             if (!quiet) {
                 pfnProgress((row_idx + 1.0) / num_pts, nullptr, nullptr);
             }
-            if (row_idx % 1000 == 0) {
+            if (row_idx % 10000 == 0) {
                 Rcpp::checkUserInterrupt();
             }
         }

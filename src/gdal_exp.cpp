@@ -1359,7 +1359,7 @@ Rcpp::DataFrame combine(const Rcpp::CharacterVector &src_files,
     for (int y = 0; y < nrows; ++y) {
         Rcpp::IntegerMatrix rowdata = Rcpp::no_init(nrasters, ncols);
         for (R_xlen_t i = 0; i < nrasters; ++i) {
-            rowdata.row(i) = Rcpp::as<Rcpp::IntegerVector>(
+            rowdata.row(i) = Rcpp::IntegerVector(
                 src_ds[i]->read(bands[i], 0, y, ncols, 1, ncols, 1));
         }
 
@@ -1412,9 +1412,8 @@ Rcpp::DataFrame value_count(const GDALRaster* const &src_ds, int band = 1,
         // read pixel values as int
         std::unordered_map<int, double> tbl;
         for (int y = 0; y < nrows; ++y) {
-            Rcpp::IntegerVector rowdata =
-                Rcpp::as<Rcpp::IntegerVector>(src_ds->read(band, 0, y, ncols, 1,
-                                                           ncols, 1));
+            Rcpp::IntegerVector rowdata(
+                src_ds->read(band, 0, y, ncols, 1, ncols, 1));
 
             for (auto const &i : rowdata) {
                 tbl[i] += 1.0;
@@ -1442,9 +1441,8 @@ Rcpp::DataFrame value_count(const GDALRaster* const &src_ds, int band = 1,
         // i.e., double, which will work fine as a map key in that case.
         std::unordered_map<double, double> tbl;
         for (int y = 0; y < nrows; ++y) {
-            Rcpp::NumericVector rowdata =
-                Rcpp::as<Rcpp::NumericVector>(src_ds->read(band, 0, y, ncols, 1,
-                                                           ncols, 1));
+            Rcpp::NumericVector rowdata(
+                src_ds->read(band, 0, y, ncols, 1, ncols, 1));
 
             for (auto const &i : rowdata) {
                 tbl[i] += 1.0;
