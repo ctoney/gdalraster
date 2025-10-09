@@ -1672,11 +1672,10 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
                     Rcpp::stop("read raster failed");
 
                 if (hasNoDataValue(band)) {
-                    const int32_t nodata_value =
-                        static_cast<int32_t>(getNoDataValue(band));
+                    const int nodata_value =
+                        static_cast<int>(getNoDataValue(band));
 
-                    std::replace(v.begin(), v.end(), nodata_value,
-                                 NA_INTEGER);
+                    std::replace(v.begin(), v.end(), nodata_value, NA_INTEGER);
                 }
 
                 return v;
@@ -1692,8 +1691,8 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
                 static_cast<R_xlen_t>(out_xsize) * out_ysize);
 
             err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
-                               v.begin(), out_xsize, out_ysize,
-                               GDT_Float64, 0, 0);
+                               v.begin(), out_xsize, out_ysize, GDT_Float64,
+                               0, 0);
 
             if (err == CE_Failure)
                 Rcpp::stop("read raster failed");
@@ -1742,48 +1741,59 @@ void GDALRaster::write(int band, int xoff, int yoff, int xsize, int ysize,
 
     checkAccess_(GA_Update);
 
+    if (xsize < 1 || ysize < 1)
+        Rcpp::stop("'xsize' and 'ysize' must be > 0");
+
+    if (rasterData.isNULL())
+        Rcpp::stop("'rasterData' is NULL");
+
     CPLErr err = CE_None;
 
     GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
     if (hBand == nullptr)
         Rcpp::stop("failed to access the requested band");
 
-    if (Rcpp::is<Rcpp::IntegerVector>(rasterData) ||
-        Rcpp::is<Rcpp::NumericVector>(rasterData)) {
-
-        // real data types
+    if (Rcpp::is<Rcpp::NumericVector>(rasterData)) {
         GDALDataType eBufType = GDT_Float64;
-        std::vector<double> buf = Rcpp::as<std::vector<double>>(rasterData);
-        if (buf.size() != static_cast<size_t>(xsize) * ysize)
+        Rcpp::NumericVector buf(rasterData);
+        if (buf.size() != static_cast<R_xlen_t>(xsize) * ysize)
             Rcpp::stop("size of input data is not the same as region size");
 
         err = GDALRasterIO(hBand, GF_Write, xoff, yoff, xsize, ysize,
-                           buf.data(), xsize, ysize, eBufType, 0, 0);
+                           buf.begin(), xsize, ysize, eBufType, 0, 0);
     }
-    else if (Rcpp::is<Rcpp::ComplexVector>(rasterData)) {
-        // complex data types
-        GDALDataType eBufType = GDT_CFloat64;
-        std::vector<std::complex<double>> buf =
-            Rcpp::as<std::vector<std::complex<double>>>(rasterData);
+    else if (Rcpp::is<Rcpp::IntegerVector>(rasterData) ||
+             Rcpp::is<Rcpp::LogicalVector>(rasterData)) {
 
-        if (buf.size() != static_cast<size_t>(xsize) * ysize)
+        GDALDataType eBufType = GDT_Int32;
+        Rcpp::IntegerVector buf(rasterData);
+        if (buf.size() != static_cast<R_xlen_t>(xsize) * ysize)
             Rcpp::stop("size of input data is not the same as region size");
 
         err = GDALRasterIO(hBand, GF_Write, xoff, yoff, xsize, ysize,
-                           buf.data(), xsize, ysize, eBufType, 0, 0);
+                           buf.begin(), xsize, ysize, eBufType, 0, 0);
     }
     else if (Rcpp::is<Rcpp::RawVector>(rasterData)) {
-        // Byte data type
         GDALDataType eBufType = GDT_Byte;
-        std::vector<uint8_t> buf = Rcpp::as<std::vector<uint8_t>>(rasterData);
-        if (buf.size() != static_cast<size_t>(xsize) * ysize)
+        Rcpp::RawVector buf(rasterData);
+        if (buf.size() != static_cast<R_xlen_t>(xsize) * ysize)
             Rcpp::stop("size of input data is not the same as region size");
 
         err = GDALRasterIO(hBand, GF_Write, xoff, yoff, xsize, ysize,
-                           buf.data(), xsize, ysize, eBufType, 0, 0);
+                           buf.begin(), xsize, ysize, eBufType, 0, 0);
+    }
+    else if (Rcpp::is<Rcpp::ComplexVector>(rasterData)) {
+        GDALDataType eBufType = GDT_CFloat64;
+        Rcpp::ComplexVector buf(rasterData);
+        if (buf.size() != static_cast<R_xlen_t>(xsize) * ysize)
+            Rcpp::stop("size of input data is not the same as region size");
+
+        err = GDALRasterIO(hBand, GF_Write, xoff, yoff, xsize, ysize,
+                           buf.begin(), xsize, ysize, eBufType, 0, 0);
     }
     else {
-        Rcpp::stop("data must be a vector of 'numeric' or 'complex' or 'raw'");
+        Rcpp::stop("'rasterData' must be a vector of type numeric, integer, "
+                   "raw or complex");
     }
 
     if (err == CE_Failure) {
