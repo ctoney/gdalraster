@@ -1628,6 +1628,9 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
     if (!isOpen())
         Rcpp::stop("dataset is not open");
 
+    if (out_xsize < 1 || out_ysize < 1)
+        Rcpp::stop("'out_xsize' and 'out_ysize' must be > 0");
+
     GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
     if (hBand == nullptr)
         Rcpp::stop("failed to access the requested band");
@@ -1645,41 +1648,24 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
             // if signed integer <= 32 bits or any integer <= 16 bits:
             // use int32 buffer, unless we are reading Byte as R raw type
             if (this->readByteAsRaw && eDT == GDT_Byte) {
-                std::vector<uint8_t> buf = {};
-                try {
-                    buf.resize(static_cast<size_t>(out_xsize) * out_ysize);
-                }
-                catch (const std::exception &) {
-                    Rcpp::stop("failed to allocate memory for read");
-                }
-
-                if (buf.empty())
-                    return Rcpp::wrap(Rcpp::RawVector::create());
+                Rcpp::RawVector v = Rcpp::no_init(
+                    static_cast<R_xlen_t>(out_xsize) * out_ysize);
 
                 err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
-                                   buf.data(), out_xsize, out_ysize, GDT_Byte,
+                                   v.begin(), out_xsize, out_ysize, GDT_Byte,
                                    0, 0);
 
                 if (err == CE_Failure)
                     Rcpp::stop("read raster failed");
 
-                Rcpp::RawVector v = Rcpp::wrap(buf);
                 return v;
             }
             else {
-                std::vector<int32_t> buf = {};
-                try {
-                    buf.resize(static_cast<size_t>(out_xsize) * out_ysize);
-                }
-                catch (const std::exception &) {
-                    Rcpp::stop("failed to allocate memory for read");
-                }
-
-                if (buf.empty())
-                    return Rcpp::wrap(Rcpp::IntegerVector::create());
+                Rcpp::IntegerVector v = Rcpp::no_init(
+                    static_cast<R_xlen_t>(out_xsize) * out_ysize);
 
                 err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
-                                   buf.data(), out_xsize, out_ysize, GDT_Int32,
+                                   v.begin(), out_xsize, out_ysize, GDT_Int32,
                                    0, 0);
 
                 if (err == CE_Failure)
@@ -1689,11 +1675,10 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
                     const int32_t nodata_value =
                         static_cast<int32_t>(getNoDataValue(band));
 
-                    std::replace(buf.begin(), buf.end(), nodata_value,
+                    std::replace(v.begin(), v.end(), nodata_value,
                                  NA_INTEGER);
                 }
 
-                Rcpp::IntegerVector v = Rcpp::wrap(buf);
                 return v;
             }
         }
@@ -1703,19 +1688,11 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
             // (Int64, UInt64 would currently be handled here but would lose
             //  precision when > 9,007,199,254,740,992 (2^53). Support for
             //  Int64/UInt64 raster could potentially be added using {bit64}.)
-            std::vector<double> buf = {};
-            try {
-                buf.resize(static_cast<size_t>(out_xsize) * out_ysize);
-            }
-            catch (const std::exception &) {
-                Rcpp::stop("failed to allocate memory for read");
-            }
-
-            if (buf.empty())
-                return Rcpp::wrap(Rcpp::NumericVector::create());
+            Rcpp::NumericVector v = Rcpp::no_init(
+                static_cast<R_xlen_t>(out_xsize) * out_ysize);
 
             err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
-                               buf.data(), out_xsize, out_ysize,
+                               v.begin(), out_xsize, out_ysize,
                                GDT_Float64, 0, 0);
 
             if (err == CE_Failure)
@@ -1724,7 +1701,7 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
             if (hasNoDataValue(band)) {
                 const double nodata_value = getNoDataValue(band);
                 if (GDALDataTypeIsFloating(eDT)) {
-                    for (double &val : buf) {
+                    for (double &val : v) {
                         if (std::isnan(val))
                             val = NA_REAL;
                         else if (ARE_REAL_EQUAL(val, nodata_value))
@@ -1732,40 +1709,30 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
                     }
                 }
                 else {
-                    std::replace(buf.begin(), buf.end(), nodata_value, NA_REAL);
+                    std::replace(v.begin(), v.end(), nodata_value, NA_REAL);
                 }
             }
             else if (GDALDataTypeIsFloating(eDT)) {
-                for (double &val : buf) {
+                for (double &val : v) {
                     if (std::isnan(val))
                         val = NA_REAL;
                 }
             }
 
-            Rcpp::NumericVector v = Rcpp::wrap(buf);
             return v;
         }
     }
     else {
         // complex data types read as GDT_CFloat64
-        std::vector<std::complex<double>> buf = {};
-        try {
-            buf.resize(static_cast<size_t>(out_xsize) * out_ysize);
-        }
-        catch (const std::exception &) {
-            Rcpp::stop("failed to allocate memory for read");
-        }
+        Rcpp::ComplexVector v = Rcpp::no_init(
+            static_cast<R_xlen_t>(out_xsize) * out_ysize);
 
-        if (buf.empty())
-            return Rcpp::wrap(Rcpp::ComplexVector::create());
-
-        err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize, buf.data(),
+        err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize, v.begin(),
                            out_xsize, out_ysize, GDT_CFloat64, 0, 0);
 
         if (err == CE_Failure)
             Rcpp::stop("read raster failed");
 
-        Rcpp::ComplexVector v = Rcpp::wrap(buf);
         return v;
     }
 }
