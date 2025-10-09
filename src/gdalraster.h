@@ -66,8 +66,8 @@ class GDALRaster {
 
     double getRasterXSize() const;
     double getRasterYSize() const;
-    std::vector<double> getGeoTransform() const;
-    bool setGeoTransform(const std::vector<double> &transform);
+    Rcpp::NumericVector getGeoTransform() const;
+    bool setGeoTransform(const Rcpp::NumericVector &transform);
     int getRasterCount() const;
     bool addBand(const std::string &dataType,
                  const Rcpp::Nullable<Rcpp::CharacterVector> &options);
@@ -76,9 +76,9 @@ class GDALRaster {
     std::string getProjectionRef() const;
     bool setProjection(const std::string &projection);
 
-    std::vector<double> bbox() const;
-    std::vector<double> res() const;
-    std::vector<double> dim() const;
+    Rcpp::NumericVector bbox() const;
+    Rcpp::NumericVector res() const;
+    Rcpp::NumericVector dim() const;
     Rcpp::NumericMatrix apply_geotransform(const Rcpp::RObject &col_row) const;
     Rcpp::IntegerMatrix get_pixel_line(const Rcpp::RObject &xy) const;
     Rcpp::NumericMatrix pixel_extract(const Rcpp::RObject &xy,
@@ -88,8 +88,8 @@ class GDALRaster {
                                       const std::string &xy_srs) const;
 
     Rcpp::NumericMatrix get_block_indexing(int band) const;
-    std::vector<int> getBlockSize(int band) const;
-    std::vector<int> getActualBlockSize(
+    Rcpp::NumericVector getBlockSize(int band) const;
+    Rcpp::NumericVector getActualBlockSize(
         int band, int xblockoff, int yblockoff) const;
 
     int getOverviewCount(int band) const;
@@ -120,7 +120,7 @@ class GDALRaster {
     Rcpp::NumericVector getStatistics(int band, bool approx_ok,
                                       bool force) const;
     void clearStatistics();
-    std::vector<double> getHistogram(int band, double min, double max,
+    Rcpp::NumericVector getHistogram(int band, double min, double max,
                                      int num_buckets, bool incl_out_of_range,
                                      bool approx_ok) const;
     Rcpp::List getDefaultHistogram(int band, bool force) const;
@@ -253,24 +253,24 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
                   const Rcpp::Nullable<Rcpp::CharacterVector> &options,
                   bool quiet);
 
-Rcpp::NumericVector apply_geotransform_(const std::vector<double> &gt,
+Rcpp::NumericVector apply_geotransform_(const Rcpp::NumericVector &gt,
                                         double pixel, double line);
 
 Rcpp::NumericMatrix apply_geotransform_gt(const Rcpp::RObject &col_row,
-                                          const std::vector<double> &gt);
+                                          const Rcpp::NumericVector &gt);
 
 Rcpp::NumericMatrix apply_geotransform_ds(const Rcpp::RObject &col_row,
                                           const GDALRaster* const &ds);
 
-Rcpp::NumericVector inv_geotransform(const std::vector<double> &gt);
+Rcpp::NumericVector inv_geotransform(const Rcpp::NumericVector &gt);
 
 Rcpp::IntegerMatrix get_pixel_line_gt(const Rcpp::RObject &xy,
-                                      const std::vector<double> &gt);
+                                      const Rcpp::NumericVector &gt);
 
 Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject &xy,
                                       const GDALRaster* const &ds);
 
-std::vector<double> bbox_grid_to_geo_(const std::vector<double> &gt,
+Rcpp::NumericVector bbox_grid_to_geo_(const Rcpp::NumericVector &gt,
                                       double grid_xmin, double grid_xmax,
                                       double grid_ymin, double grid_ymax);
 

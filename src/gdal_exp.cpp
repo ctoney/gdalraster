@@ -789,13 +789,13 @@ GDALRaster *createCopy(const std::string &format,
 //' [inv_geotransform()]
 //' @noRd
 // [[Rcpp::export(name = ".apply_geotransform")]]
-Rcpp::NumericVector apply_geotransform_(const std::vector<double> &gt,
+Rcpp::NumericVector apply_geotransform_(const Rcpp::NumericVector &gt,
                                         double pixel, double line) {
 
     double geo_x = 0;
     double geo_y = 0;
-    GDALApplyGeoTransform(const_cast<double *>(gt.data()), pixel, line, &geo_x,
-                          &geo_y);
+    GDALApplyGeoTransform(const_cast<double *>(gt.begin()), pixel, line,
+                          &geo_x, &geo_y);
 
     Rcpp::NumericVector geo_xy = {geo_x, geo_y};
     return geo_xy;
@@ -807,7 +807,7 @@ Rcpp::NumericVector apply_geotransform_(const std::vector<double> &gt,
 //' @noRd
 // [[Rcpp::export(name = ".apply_geotransform_gt")]]
 Rcpp::NumericMatrix apply_geotransform_gt(const Rcpp::RObject &col_row,
-                                          const std::vector<double> &gt) {
+                                          Rcpp::NumericVector &gt) {
 
     const Rcpp::NumericMatrix col_row_in = xy_robject_to_matrix_(col_row);
 
@@ -824,7 +824,7 @@ Rcpp::NumericMatrix apply_geotransform_gt(const Rcpp::RObject &col_row,
             xy(i, 1) = NA_REAL;
         }
         else {
-            GDALApplyGeoTransform(const_cast<double *>(gt.data()),
+            GDALApplyGeoTransform(const_cast<double *>(gt.begin()),
                                   col_row_in(i, 0), col_row_in(i, 1),
                                   &xy(i, 0), &xy(i, 1));
         }
@@ -849,7 +849,7 @@ Rcpp::NumericMatrix apply_geotransform_ds(const Rcpp::RObject &col_row,
     Rcpp::LogicalVector na_in = Rcpp::is_na(col_row_in.column(0)) |
                                 Rcpp::is_na(col_row_in.column(1));
 
-    const std::vector<double> gt = ds->getGeoTransform();
+    Rcpp::NumericVector gt(ds->getGeoTransform());
     Rcpp::NumericMatrix xy = Rcpp::no_init(col_row_in.nrow(), 2);
     uint64_t num_outside = 0;
     for (R_xlen_t i = 0; i < col_row_in.nrow(); ++i) {
@@ -866,7 +866,7 @@ Rcpp::NumericMatrix apply_geotransform_ds(const Rcpp::RObject &col_row,
             xy(i, 1) = NA_REAL;
         }
         else {
-            GDALApplyGeoTransform(const_cast<double *>(gt.data()),
+            GDALApplyGeoTransform(const_cast<double *>(gt.begin()),
                                   col_row_in(i, 0), col_row_in(i, 1),
                                   &xy(i, 0), &xy(i, 1));
         }
@@ -917,10 +917,10 @@ Rcpp::NumericMatrix apply_geotransform_ds(const Rcpp::RObject &col_row,
 //'
 //' ## get_pixel_line() applies this conversion
 // [[Rcpp::export]]
-Rcpp::NumericVector inv_geotransform(const std::vector<double> &gt) {
-    std::vector<double> gt_inv(6);
-    if (GDALInvGeoTransform(const_cast<double *>(gt.data()), gt_inv.data()))
-        return Rcpp::wrap(gt_inv);
+Rcpp::NumericVector inv_geotransform(const Rcpp::NumericVector &gt) {
+    Rcpp::NumericVector gt_inv = Rcpp::no_init(6);
+    if (GDALInvGeoTransform(const_cast<double *>(gt.begin()), gt_inv.begin()))
+        return gt_inv;
     else
         return Rcpp::NumericVector(6, NA_REAL);
 }
@@ -931,7 +931,7 @@ Rcpp::NumericVector inv_geotransform(const std::vector<double> &gt) {
 //' @noRd
 // [[Rcpp::export(name = ".get_pixel_line_gt")]]
 Rcpp::IntegerMatrix get_pixel_line_gt(const Rcpp::RObject &xy,
-    const std::vector<double> &gt) {
+    const Rcpp::NumericVector &gt) {
 
     const Rcpp::NumericMatrix xy_in = xy_robject_to_matrix_(xy);
 
@@ -983,8 +983,7 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
     const Rcpp::LogicalVector na_in =
         Rcpp::is_na(xy_in.column(0)) | Rcpp::is_na(xy_in.column(1));
 
-    const std::vector<double> gt = ds->getGeoTransform();
-    const Rcpp::NumericVector inv_gt = inv_geotransform(gt);
+    const Rcpp::NumericVector inv_gt = inv_geotransform(ds->getGeoTransform());
     if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(inv_gt))))
         Rcpp::stop("could not get inverse geotransform");
 
@@ -1031,7 +1030,7 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
 //' inputs of geotransform vector and the grid pixel/line extent
 //' @noRd
 // [[Rcpp::export(name = ".bbox_grid_to_geo")]]
-std::vector<double> bbox_grid_to_geo_(const std::vector<double> &gt,
+Rcpp::NumericVector bbox_grid_to_geo_(const Rcpp::NumericVector &gt,
                                       double grid_xmin, double grid_xmax,
                                       double grid_ymin, double grid_ymax) {
 
@@ -1055,7 +1054,7 @@ std::vector<double> bbox_grid_to_geo_(const std::vector<double> &gt,
     corners_x[3] = gt[0] + gt[1] * grid_xmax + gt[2] * grid_ymin;
     corners_y[3] = gt[3] + gt[4] * grid_xmax + gt[5] * grid_ymin;
 
-    std::vector<double> ret = {Rcpp::min(corners_x), Rcpp::min(corners_y),
+    Rcpp::NumericVector ret = {Rcpp::min(corners_x), Rcpp::min(corners_y),
                                Rcpp::max(corners_x), Rcpp::max(corners_y)};
 
     return ret;
@@ -1307,7 +1306,7 @@ Rcpp::DataFrame combine(const Rcpp::CharacterVector &src_files,
     std::vector<std::unique_ptr<GDALRaster>> src_ds(nrasters);
     int nrows = 0;
     int ncols = 0;
-    std::vector<double> gt = {0, 1, 0, 0, 0, 1};
+    Rcpp::NumericVector gt = {0, 1, 0, 0, 0, 1};
     std::string srs = "";
     std::unique_ptr<GDALRaster> dst_ds;
     bool out_raster = false;

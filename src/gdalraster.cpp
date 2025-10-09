@@ -466,27 +466,27 @@ double GDALRaster::getRasterYSize() const {
     return static_cast<double>(GDALGetRasterYSize(m_hDataset));
 }
 
-std::vector<double> GDALRaster::getGeoTransform() const {
+Rcpp::NumericVector GDALRaster::getGeoTransform() const {
     checkAccess_(GA_ReadOnly);
 
     // returned by GDALGetGeoTransform() even when CE_Failure:
-    std::vector<double> gt = {0, 1, 0, 0, 0, 1};
+    Rcpp::NumericVector gt = {0, 1, 0, 0, 0, 1};
 
     CPLErr err = CE_None;
-    err = GDALGetGeoTransform(m_hDataset, gt.data());
+    err = GDALGetGeoTransform(m_hDataset, gt.begin());
     if (!quiet && err == CE_Failure)
         Rcpp::warning("failed to get geotransform, default returned");
 
     return gt;
 }
 
-bool GDALRaster::setGeoTransform(const std::vector<double> &transform) {
+bool GDALRaster::setGeoTransform(const Rcpp::NumericVector &transform) {
     checkAccess_(GA_Update);
 
     if (transform.size() != 6)
         Rcpp::stop("setGeoTransform() requires a numeric vector of length 6");
 
-    if (GDALSetGeoTransform(m_hDataset, const_cast<double *>(transform.data()))
+    if (GDALSetGeoTransform(m_hDataset, const_cast<double *>(transform.begin()))
         == CE_Failure) {
 
         if (!quiet)
@@ -571,20 +571,19 @@ bool GDALRaster::setProjection(const std::string &projection) {
     }
 }
 
-std::vector<double> GDALRaster::bbox() const {
+Rcpp::NumericVector GDALRaster::bbox() const {
     checkAccess_(GA_ReadOnly);
 
-    std::vector<double> gt = getGeoTransform();
-
-    return bbox_grid_to_geo_(gt, 0.0, GDALGetRasterXSize(m_hDataset),
+    return bbox_grid_to_geo_(getGeoTransform(),
+                             0.0, GDALGetRasterXSize(m_hDataset),
                              0.0, GDALGetRasterYSize(m_hDataset));
 }
 
-std::vector<double> GDALRaster::res() const {
+Rcpp::NumericVector GDALRaster::res() const {
     checkAccess_(GA_ReadOnly);
 
-    std::vector<double> gt = getGeoTransform();
-    std::vector<double> ret = {NA_REAL, NA_REAL};
+    Rcpp::NumericVector gt = getGeoTransform();
+    Rcpp::NumericVector ret = {NA_REAL, NA_REAL};
 
     if (gt[2] == 0.0 && gt[4] == 0.0) {
         ret[0] = gt[1];
@@ -598,11 +597,11 @@ std::vector<double> GDALRaster::res() const {
     return ret;
 }
 
-std::vector<double> GDALRaster::dim() const {
+Rcpp::NumericVector GDALRaster::dim() const {
     checkAccess_(GA_ReadOnly);
 
     // return as R numeric (double) to avoid integer overflow when multiplying
-    std::vector<double> ret = {getRasterXSize(), getRasterYSize(),
+    Rcpp::NumericVector ret = {getRasterXSize(), getRasterYSize(),
                                static_cast<double>(getRasterCount())};
     return ret;
 }
@@ -991,8 +990,6 @@ Rcpp::NumericMatrix GDALRaster::get_block_indexing(int band) const {
     const R_xlen_t num_blocks =
         static_cast<R_xlen_t>(num_blocks_x) * num_blocks_y;
 
-    const std::vector<double> gt = getGeoTransform();
-
     Rcpp::NumericMatrix blocks = Rcpp::no_init(num_blocks, 10);
     Rcpp::colnames(blocks) =
         Rcpp::CharacterVector::create("xblockoff", "yblockoff", "xoff", "yoff",
@@ -1004,9 +1001,12 @@ Rcpp::NumericMatrix GDALRaster::get_block_indexing(int band) const {
         for (int x = 0; x < num_blocks_x; ++x) {
             const double this_xoff = x * nBlockXSize;
             const double this_yoff = y * nBlockYSize;
-            const std::vector<int> this_size = getActualBlockSize(band, x, y);
-            std::vector<double> this_bbox =
-                bbox_grid_to_geo_(gt, this_xoff, this_xoff + this_size[0],
+            const Rcpp::NumericVector &this_size =
+                getActualBlockSize(band, x, y);
+
+            Rcpp::NumericVector this_bbox =
+                bbox_grid_to_geo_(getGeoTransform(),
+                                  this_xoff, this_xoff + this_size[0],
                                   this_yoff, this_yoff + this_size[1]);
 
             blocks.row(i) =
@@ -1022,29 +1022,25 @@ Rcpp::NumericMatrix GDALRaster::get_block_indexing(int band) const {
     return blocks;
 }
 
-std::vector<int> GDALRaster::getBlockSize(int band) const {
+Rcpp::NumericVector GDALRaster::getBlockSize(int band) const {
     checkAccess_(GA_ReadOnly);
 
     GDALRasterBandH hBand = getBand_(band);
-    int nBlockXSize = NA_INTEGER;
-    int nBlockYSize = NA_INTEGER;
-    GDALGetBlockSize(hBand, &nBlockXSize, &nBlockYSize);
-    std::vector<int> ret = {nBlockXSize, nBlockYSize};
-    return ret;
+    Rcpp::IntegerVector panBlockSize = {NA_INTEGER, NA_INTEGER};
+    GDALGetBlockSize(hBand, &panBlockSize[0], &panBlockSize[1]);
+    return Rcpp::NumericVector(panBlockSize);
 }
 
-std::vector<int> GDALRaster::getActualBlockSize(int band, int xblockoff,
-                                                int yblockoff) const {
+Rcpp::NumericVector GDALRaster::getActualBlockSize(int band, int xblockoff,
+                                                   int yblockoff) const {
     checkAccess_(GA_ReadOnly);
 
     GDALRasterBandH hBand = getBand_(band);
-    int nXValid = NA_INTEGER;
-    int nYValid = NA_INTEGER;
+    Rcpp::IntegerVector panBlockSize = {NA_INTEGER, NA_INTEGER};
     GDALGetActualBlockSize(hBand, xblockoff, yblockoff,
-                           &nXValid, &nYValid);
+                           &panBlockSize[0], &panBlockSize[1]);
 
-    std::vector<int> ret = {nXValid, nYValid};
-    return ret;
+    return Rcpp::NumericVector(panBlockSize);
 }
 
 int GDALRaster::getOverviewCount(int band) const {
@@ -1060,20 +1056,17 @@ void GDALRaster::buildOverviews(const std::string &resampling,
 
     checkAccess_(GA_ReadOnly);
 
-    int nOvr;
+    int nOvr = 0;
     int *panOvrList = nullptr;
-    if (levels.size() == 1 && levels[0] == 0) {
-        nOvr = 0;
-    }
-    else {
-        nOvr = levels.size();
+    if (!(levels.size() == 1 && levels[0] == 0)) {
+        nOvr = static_cast<int>(levels.size());
         panOvrList = levels.data();
     }
 
     int nBands = 0;
     int *panBandList = nullptr;
     if (!(bands.size() == 1 && bands[0] == 0)) {
-        nBands = bands.size();
+        nBands = static_cast<int>(bands.size());
         panBandList = bands.data();
     }
 
@@ -1409,7 +1402,7 @@ void GDALRaster::clearStatistics() {
 #endif
 }
 
-std::vector<double> GDALRaster::getHistogram(int band, double min, double max,
+Rcpp::NumericVector GDALRaster::getHistogram(int band, double min, double max,
                                              int num_buckets,
                                              bool incl_out_of_range,
                                              bool approx_ok) const {
@@ -1427,8 +1420,7 @@ std::vector<double> GDALRaster::getHistogram(int band, double min, double max,
     if (err != CE_None)
         Rcpp::stop("failed to get histogram");
 
-    std::vector<double> ret(hist.begin(), hist.end());
-    return ret;
+    return Rcpp::NumericVector(hist.begin(), hist.end());
 }
 
 Rcpp::List GDALRaster::getDefaultHistogram(int band, bool force) const {
@@ -1692,8 +1684,8 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
             if (err == CE_Failure)
                 Rcpp::stop("read raster failed");
 
-            if (hasNoDataValue(band)) {
-                const double nodata_value = getNoDataValue(band);
+            const double nodata_value = getNoDataValue(band);
+            if (hasNoDataValue(band) && !std::isnan(nodata_value)) {
                 if (GDALDataTypeIsFloating(eDT)) {
                     for (double &val : v) {
                         if (std::isnan(val))
