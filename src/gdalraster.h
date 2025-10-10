@@ -139,8 +139,13 @@ class GDALRaster {
     SEXP read(int band, int xoff, int yoff, int xsize, int ysize,
               int out_xsize, int out_ysize) const;
 
+    SEXP readBlock(int band, int xblockoff, int yblockoff) const;
+
     void write(int band, int xoff, int yoff, int xsize, int ysize,
                const Rcpp::RObject &rasterData);
+
+    void writeBlock(int band, int xblockoff, int yblockoff,
+                    const Rcpp::RObject &rasterData);
 
     void fillRaster(int band, double value, double ivalue);
 

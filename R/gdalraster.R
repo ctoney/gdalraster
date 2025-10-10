@@ -125,7 +125,10 @@
 #' ds$getMetadataDomainList(band)
 #'
 #' ds$read(band, xoff, yoff, xsize, ysize, out_xsize, out_ysize)
+#' ds$readBlock(band, xblockoff, yblockoff)
+#'
 #' ds$write(band, xoff, yoff, xsize, ysize, rasterData)
+#' ds$writeBlock(band, xblockoff, yblockoff, rasterData)
 #' ds$fillRaster(band, value, ivalue)
 #'
 #' ds$getColorTable(band)
@@ -701,6 +704,14 @@
 #' An error is raised if the read operation fails. See also the setting
 #' \code{$readByteAsRaw} above.
 #'
+#' \code{$readBlock(band, xblockoff, yblockoff)}\cr
+#' Reads a block of raster data. See the class methods \code{$getBlockSize()}
+#' and \code{$getActualBlockSize()} above for a description of raster blocks.
+#' The matrix of block offsets returned by \code{$get_block_indexing()} can be
+#' used to iterate over the blocks of a raster band. The return value is a
+#' vector of pixel values with length equal to the actual block `xsize * ysize`,
+#' otherwise as described above for \code{$read()}.
+#'
 #' \code{$write(band, xoff, yoff, xsize, ysize, rasterData)}\cr
 #' Writes a region of raster data to \code{band}.
 #' \code{xoff} is the pixel (column) offset to the top left corner of the
@@ -715,6 +726,14 @@
 #' \code{rasterData} should be replaced with a suitable nodata value prior to
 #' writing (see \code{$getNoDataValue()} and \code{$setNoDataValue()} above).
 #' An error is raised if the operation fails (no return value).
+#'
+#' \code{$writeBlock(band, xblockoff, yblockoff, rasterData)}\cr
+#' Writes a block of raster data. See the class methods \code{$getBlockSize()}
+#' and \code{$getActualBlockSize()} above for a description of raster blocks.
+#' The matrix of block offsets returned by \code{$get_block_indexing()} can be
+#' used to iterate over the blocks of a raster band. Otherwise, this method
+#' operates like \code{$write()}. The size of `rasterData` must be the same as
+#' the actual block size the destination block.
 #'
 #' \code{$fillRaster(band, value, ivalue)}\cr
 #' Fills `band` with a constant value. GDAL makes no guarantees about what

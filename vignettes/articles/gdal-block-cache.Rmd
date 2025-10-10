@@ -9,7 +9,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-[DRAFT 2023-10-01]
+[DRAFT 2025-10-09]
 
 ## Overview
 
@@ -20,38 +20,38 @@ GDAL implements read/write memory caching for raster I/O. Caching operates on ra
 A dataset containing 16-bit integer elevation at 30-m pixel resolution for the conterminous US was obtained from [LANDFIRE](https://www.landfire.gov/). The version is "LF 2020 [LF 2.2.0]" which is available as an 8.4 GB download. The download includes raster overviews (as .ovr), but the elevation raster itself is a 6.8 GB GeoTIFF file using LZW compression on 128 x 128 tiles. The direct download link for LF 2020 elevation is:  
 https://landfire.gov/bulk/downloadfile.php?FNAME=US_Topo_2020-LF2020_Elev_220_CONUS.zip&TYPE=landfire
 
-Tests were run on a laptop with Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz, 8 GB RAM and SSD, Ubuntu 22.04.2, R 4.3.0, gdalraster 1.2.1 (dev), GDAL 3.6.2.
+Tests were run on a laptop with Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz, 8 GB RAM, Ubuntu 24.04.3, R 4.3.0, gdalraster 2.2.1.9040 (dev), GDAL 3.11.3.
 
 Open the elevation dataset and get parameters:
 
 ```
 library(gdalraster)
 
-f = "LC20_Elev_220.tif" 
+f <- "LC20_Elev_220.tif" 
 
-ds = new(GDALRaster, f, read_only = TRUE)
-ncols = ds$getRasterXSize()
-nrows = ds$getRasterYSize()
-print(paste("Size is", ncols, "x",  nrows))  # 1.587394e+10 pixels
+ds <- new(GDALRaster, f)
+ncols <- ds$getRasterXSize()
+nrows <- ds$getRasterYSize()
+paste("Size is", ncols, "x",  nrows)  # 1.587394e+10 pixels
 #> [1] "Size is 156335 x 101538"
 
-ds$getMetadata(band=0, domain="IMAGE_STRUCTURE")
+ds$getMetadata(band = 0, domain = "IMAGE_STRUCTURE")
 #> [1] "COMPRESSION=LZW" "INTERLEAVE=BAND"
 
-ds$getBlockSize(band=1)
+ds$getBlockSize(band = 1)
 #> [1] 128 128
 
-ds$getDataTypeName(band=1)
+ds$getDataTypeName(band = 1)
 #> [1] "Int16"
 ```
 
-The first test reads all pixels in the raster by row. For a tile size of 128 x 128 pixels, each row intersects 1222 raster blocks (156335 / 128 = 1221.4, the last block is incomplete). This test reflects performance implications of GDAL read-ahead caching:
+The first test reads all pixels in the raster by row (using `GDALRasterIO()` internally). For a tile size of 128 x 128 pixels, each row intersects 1222 raster blocks (156335 / 128 = 1221.4, the last block is incomplete). This test reflects performance implications of GDAL read-ahead caching:
 
 ```
-process_row = function(row) {
-  r = ds$read(band=1, xoff=0, yoff=row, 
-              xsize=ncols, ysize=1, 
-              out_xsize=ncols, out_ysize=1)
+process_row <- function(row) {
+  r <- ds$read(band = 1, xoff = 0, yoff = row, xsize = ncols, ysize = 1, 
+               out_xsize = ncols, out_ysize = 1)
+
   ## process pixels, possibly write output...
   return()
 }
@@ -59,9 +59,9 @@ process_row = function(row) {
 ## Test 1
 ## original tiled raster, reading by row (across block boundaries)
 
-system.time( lapply(0:(nrows-1), process_row) )
+system.time(lapply(0:(nrows - 1), process_row))
 #>    user  system elapsed 
-#> 228.269  11.319 242.195
+#> 123.093   8.083 135.080
 
 ds$close()
 ```
@@ -69,14 +69,14 @@ ds$close()
 For comparison, we will read the same data from a raster arranged with blocks as whole rows (efficient for row-level access). `gdalraster::createCopy()` copies a raster dataset with optional changes to the format. The extent, number of bands, data type, projection, and geotransform are all copied from the source raster:
 
 ```
-f2 = "LC20_Elev_220_striped.tif"
-opt = c("COMPRESS=LZW", "TILED=NO", "BLOCKYSIZE=1", "BIGTIFF=YES")
-gdalraster::createCopy(format="GTiff", dst_filename=f2, src_filename=f,
-                       options=opt)
+f2 <- "LC20_Elev_220_striped.tif"
+opt <- c("COMPRESS=LZW", "TILED=NO", "BLOCKYSIZE=1", "BIGTIFF=YES")
+gdalraster::createCopy(format = "GTiff", dst_filename = f2, src_filename = f,
+                       options = opt)
 #> 0...10...20...30...40...50...60...70...80...90...100 - done.
 
-ds2 = new(GDALRaster, f2, read_only = TRUE)
-ds2$getBlockSize(band=1)
+ds2 = new(GDALRaster, f2)
+ds2$getBlockSize(band = 1)
 #> [1] 156335      1
 
 ds2$close()
@@ -89,46 +89,70 @@ This creates a "striped" tif with raster blocks arranged for row-level access (`
 ## striped tif, reading on block boundaries (rows)
 ## cache retrieval not involved
 
-system.time( lapply(0:(nrows-1), process_row) )
+system.time(lapply(0:(nrows - 1), process_row))
 #>    user  system elapsed
-#> 230.650   5.112 236.370
+#> 119.548   4.623 124.804
 ```
 
-A final test reads by block on the original tiled raster as distributed by LANDFIRE. To read by square blocks we need to calculate the row/column offsets and x/y sizes for each tile, including the incomplete tiles along the right and bottom edges. Package `{stars}` provides a helper function that we will use for this. `{stars}` represents raster data using R's 1-based indexing and column-major array order (raster rows as array columns in R). Accounting for those differences from native GDAL indexing, we get a matrix of block boundaries using:
+A final test reads by block (using `GDALReadBlock()` internally) on the original tiled raster as distributed by LANDFIRE. To read by square blocks we need to calculate the row/column offsets and x/y sizes for each tile, including the incomplete tiles along the right and bottom edges.
 
 ```
-library(stars)
-
-r = read_stars(f, proxy = TRUE)
-nrows = nrow(r)
-ncols = ncol(r)
-blocks = st_tile(nrows, ncols, 128, 128)
-blocks[, 1:2] = blocks[, 1:2] - 1L
-
+blocks <- ds$get_block_indexing(band = 1)
 nrow(blocks)
 #> [1] 970268
+
+head(blocks)
+#>      xblockoff yblockoff xoff yoff xsize ysize     xmin     xmax    ymin
+#> [1,]         0         0    0    0   128   128 -2362395 -2358555 3263565
+#> [2,]         1         0  128    0   128   128 -2358555 -2354715 3263565
+#> [3,]         2         0  256    0   128   128 -2354715 -2350875 3263565
+#> [4,]         3         0  384    0   128   128 -2350875 -2347035 3263565
+#> [5,]         4         0  512    0   128   128 -2347035 -2343195 3263565
+#> [6,]         5         0  640    0   128   128 -2343195 -2339355 3263565
+#>         ymax
+#> [1,] 3267405
+#> [2,] 3267405
+#> [3,] 3267405
+#> [4,] 3267405
+#> [5,] 3267405
+#> [6,] 3267405
+
+tail(blocks)
+#>           xblockoff yblockoff   xoff   yoff xsize ysize    xmin    xmax   ymin
+#> [970263,]      1216       793 155648 101504   128    34 2307045 2310885 221265
+#> [970264,]      1217       793 155776 101504   128    34 2310885 2314725 221265
+#> [970265,]      1218       793 155904 101504   128    34 2314725 2318565 221265
+#> [970266,]      1219       793 156032 101504   128    34 2318565 2322405 221265
+#> [970267,]      1220       793 156160 101504   128    34 2322405 2326245 221265
+#> [970268,]      1221       793 156288 101504    47    34 2326245 2327655 221265
+#>             ymax
+#> [970263,] 222285
+#> [970264,] 222285
+#> [970265,] 222285
+#> [970266,] 222285
+#> [970267,] 222285
+#> [970268,] 222285
 ```
 
 In terms of expected efficiency, reading the tiled raster by block is similar to reading the striped raster by row (reading on block boundaries, no retrieval from cache). The difference is that the striped tif contains fewer but larger blocks (101538 blocks, 156335 pixels per block), while the tiled tif contains order of magnitude more blocks that are each smaller (970268 blocks, 16384 pixels per block). This test reads all pixels by tile from the original LANDFIRE elevation file (`f`):
 
 ```
 ## Test 3
-## original tiled raster, reading on block boundaries (tiles)
+## original tiled raster, reading on block boundaries (i.e., internal tiles)
 ## cache retrieval not involved
 
 system.time({
   for (i in seq_len(nrow(blocks))) {
-    ds$read(1, blocks[i, 1], blocks[i, 2], blocks[i, 3], blocks[i, 4],
-        blocks[i, 3], blocks[i, 4])
+    ds$readBlock(band = 1, blocks[i, 1], blocks[i, 2])
     }
   })
 #>    user  system elapsed 
-#> 237.920   7.165 251.200
+#> 121.020   8.720 133.492
 ```
 
 ## Description of cache operation
 
-GDAL block caching enables reading a large tiled raster efficiently by row (1.6e+10 total pixels in the test dataset). The default size limit of the memory cache is 5% of usable physical RAM. Each row of the LANDFIRE tiled raster intersects 1222 blocks of size 128 x 128. Each intersected block is read from file, decoded from LZW compression, and placed in cache memory. The data for each successive `read()` that intersects the same block are retrieved from cache. Caching all of the intersected blocks requires 128 x 128 x 2 bytes = 32768 bytes per block, 32768 x 1222 = 40042496 bytes, approximately 40 MB. All of the decoded block data for a row can be held in cache in this case, meaning that only 1 out of every 128 row-level `read()` involves retrieval from file and decoding of compressed blocks. The other 127/128 are provided from cache. Memory is recovered when a request for a new cache block would put cache memory use over the established limit (least recently used blocks are flushed from cache to accommodate adding new blocks).
+GDAL block caching enables reading a large tiled raster by row efficiently (1.6e+10 total pixels in the test dataset). The default size limit of the memory cache is 5% of usable physical RAM. Each row of the LANDFIRE tiled raster intersects 1222 blocks of size 128 x 128. Each intersected block is read from file, decoded from LZW compression, and placed in cache memory. The data for each successive `read()` that intersects the same block are retrieved from cache. Caching all of the intersected blocks requires 128 x 128 x 2 bytes = 32768 bytes per block, 32768 x 1222 = 40042496 bytes, approximately 40 MB. All of the decoded block data for a row can be held in cache in this case, meaning that only 1 out of every 128 row-level `read()` involves retrieval from file and decoding of compressed blocks. The other 127/128 are provided from cache. Memory is recovered when a request for a new cache block would put cache memory use over the established limit (least recently used blocks are flushed from cache to accommodate adding new blocks).
 
 The code below uses the function `gdalraster::get_cache_used()` to demonstrate the behavior:
 
@@ -136,19 +160,19 @@ The code below uses the function `gdalraster::get_cache_used()` to demonstrate t
 ## run in a new R session
 library(gdalraster)
 
-f = "LC20_Elev_220.tif"
-ds = new(GDALRaster, f, read_only = TRUE)
-ncols = ds$getRasterXSize()
-nrows = ds$getRasterYSize()
+f <- "LC20_Elev_220.tif"
+ds <- new(GDALRaster, f)
+ncols <- ds$getRasterXSize()
+nrows <- ds$getRasterYSize()
 
 ## Default cache size is approximately 400 MB in this case (5% of 8 GB RAM)
 ## Read enough data to reach cache max
-rows_read = 0
-cache_use = get_cache_used()
+rows_read <- 0
+cache_use <- get_cache_used()
 for (row in 0:1536) {
-  rowdata = ds$read(1, 0, row, ncols, 1, ncols, 1)
-  rows_read = c(rows_read, row+1)
-  cache_use = c(cache_use, get_cache_used())
+  rowdata <- ds$read(1, 0, row, ncols, 1, ncols, 1)
+  rows_read <- c(rows_read, row + 1)
+  cache_use <- c(cache_use, get_cache_used())
 }
 
 get_cache_used()
@@ -157,10 +181,10 @@ ds$close()
 get_cache_used()
 #> [1] 0
 
-plot(rows_read, cache_use, type="S", 
-     xlab="rows read", ylab="cache in use (MB)", 
-     col="blue", lwd=2, xaxt="n")
-axis(1, at = seq(0, 1536, by = 128), las=2)
+plot(rows_read, cache_use, type = "S", 
+     xlab = "rows read", ylab = "cache in use (MB)", 
+     col = "blue", lwd = 2, xaxt = "n")
+axis(1, at = seq(0, 1536, by = 128), las = 2)
 ```
 ```{r out.width = '75%', echo = FALSE}
 #| fig.alt: >
@@ -208,20 +232,19 @@ library(gdalraster)
 ## for testing only
 set_config_option("GDAL_CACHEMAX", "0")
 
-f = "LC20_Elev_220.tif" 
+f <- "LC20_Elev_220.tif" 
 
-ds = new(GDALRaster, f, read_only = TRUE)
-ncols = ds$getRasterXSize()
-nrows = ds$getRasterYSize()
+ds <- new(GDALRaster, f)
+ncols <- ds$getRasterXSize()
+nrows <- ds$getRasterYSize()
 
-process_row = function(row) {
-  r = ds$read(band=1, xoff=0, yoff=row, 
-              xsize=ncols, ysize=1, 
-              out_xsize=ncols, out_ysize=1)
+process_row <- function(row) {
+  r <- ds$read(band = 1, xoff = 0, yoff = row, xsize = ncols, ysize = 1,
+               out_xsize = ncols, out_ysize = 1)
   return()
 }
 
-system.time( lapply(0:(nrows-1), process_row) )
+system.time(lapply(0:(nrows-1), process_row))
 #> ^C
 #> Timing stopped at: 3650 42.97 3694  # killed with ctrl-c
 

@@ -977,9 +977,15 @@ Rcpp::NumericMatrix GDALRaster::get_block_indexing(int band) const {
     const double dfRasterXSize = getRasterXSize();
     const double dfRasterYSize = getRasterYSize();
     GDALRasterBandH hBand = getBand_(band);
-    int nBlockXSize = -1;
-    int nBlockYSize = -1;
+
+    int nBlockXSize = 0;
+    int nBlockYSize = 0;
     GDALGetBlockSize(hBand, &nBlockXSize, &nBlockYSize);
+    if (nBlockXSize < 1 || nBlockYSize < 0) {
+        // assume scanlines
+        nBlockXSize = GDALGetRasterXSize(m_hDataset);
+        nBlockYSize = 1;
+    }
 
     const int num_blocks_x = static_cast<int>(
         std::ceil(dfRasterXSize / nBlockXSize));
@@ -1015,7 +1021,7 @@ Rcpp::NumericMatrix GDALRaster::get_block_indexing(int band) const {
                                             this_bbox[0], this_bbox[2],
                                             this_bbox[1], this_bbox[3]);
 
-            i += 1;
+            ++i;
         }
     }
 
@@ -1723,6 +1729,42 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
     }
 }
 
+SEXP GDALRaster::readBlock(int band, int xblockoff, int yblockoff) const {
+
+    if (!isOpen())
+        Rcpp::stop("dataset is not open");
+
+    if (xblockoff < 0 || yblockoff < 0)
+        Rcpp::stop("'xblockoff' and 'yblockoff' must be >= 0");
+
+    GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
+    if (hBand == nullptr)
+        Rcpp::stop("failed to access the requested band");
+
+    int nBlockXSize = 0;
+    int nBlockYSize = 0;
+    GDALGetBlockSize(hBand, &nBlockXSize, &nBlockYSize);
+    if (nBlockXSize < 1 || nBlockYSize < 0) {
+        Rcpp::stop("invalid block size reported for this band");
+    }
+
+    int nXOff = xblockoff * nBlockXSize;
+    int nYOff = yblockoff * nBlockYSize;
+
+    int nOutXSize = 0;
+    int nOutYSize = 0;
+    if (GDALGetActualBlockSize(
+        hBand, xblockoff, yblockoff, &nOutXSize, &nOutYSize) != CE_None) {
+
+        Rcpp::stop("GDALGetActualBlockSize() failed");
+    }
+
+    // use GDALRasterIO() instead of GDALReadBlock() since the latter would
+    // still require a data type conversion to a type that can be returned to R,
+    // (i.e., INTSXP or REALSXP, generally incurring a copy)
+    return read(band, nXOff, nYOff, nOutXSize, nOutYSize, nOutXSize, nOutYSize);
+}
+
 void GDALRaster::write(int band, int xoff, int yoff, int xsize, int ysize,
                        const Rcpp::RObject &rasterData) {
 
@@ -1786,6 +1828,40 @@ void GDALRaster::write(int band, int xoff, int yoff, int xsize, int ysize,
     if (err == CE_Failure) {
         Rcpp::stop("write to raster failed");
     }
+}
+
+void GDALRaster::writeBlock(int band, int xblockoff, int yblockoff,
+                            const Rcpp::RObject &rasterData) {
+
+    if (!isOpen())
+        Rcpp::stop("dataset is not open");
+
+    if (xblockoff < 0 || yblockoff < 0)
+        Rcpp::stop("'xblockoff' and 'yblockoff' must be >= 0");
+
+    GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
+    if (hBand == nullptr)
+        Rcpp::stop("failed to access the requested band");
+
+    int nBlockXSize = 0;
+    int nBlockYSize = 0;
+    GDALGetBlockSize(hBand, &nBlockXSize, &nBlockYSize);
+    if (nBlockXSize < 1 || nBlockYSize < 0) {
+        Rcpp::stop("invalid block size reported for this band");
+    }
+
+    int nXOff = xblockoff * nBlockXSize;
+    int nYOff = yblockoff * nBlockYSize;
+
+    int nOutXSize = 0;
+    int nOutYSize = 0;
+    if (GDALGetActualBlockSize(
+        hBand, xblockoff, yblockoff, &nOutXSize, &nOutYSize) != CE_None) {
+
+        Rcpp::stop("GDALGetActualBlockSize() failed");
+    }
+
+    return write(band, nXOff, nYOff, nOutXSize, nOutYSize, rasterData);
 }
 
 void GDALRaster::fillRaster(int band, double value, double ivalue) {
@@ -2506,8 +2582,12 @@ RCPP_MODULE(mod_GDALRaster) {
         "Return list of metadata domains")
     .const_method("read", &GDALRaster::read,
         "Read a region of raster data for a band")
+    .const_method("readBlock", &GDALRaster::readBlock,
+        "Read a block of raster data")
     .method("write", &GDALRaster::write,
         "Write a region of raster data for a band")
+    .method("writeBlock", &GDALRaster::writeBlock,
+        "Write a block of raster data")
     .method("fillRaster", &GDALRaster::fillRaster,
         "Fill this band with a constant value")
     .const_method("getColorTable", &GDALRaster::getColorTable,
