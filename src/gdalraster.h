@@ -144,10 +144,15 @@ class GDALRaster {
 
     SEXP readBlock(int band, int xblockoff, int yblockoff) const;
 
+    SEXP readChunk(int band, const Rcpp::IntegerVector &chunk_def) const;
+
     void write(int band, int xoff, int yoff, int xsize, int ysize,
                const Rcpp::RObject &rasterData);
 
     void writeBlock(int band, int xblockoff, int yblockoff,
+                    const Rcpp::RObject &rasterData);
+
+    void writeChunk(int band, const Rcpp::IntegerVector &chunk_def,
                     const Rcpp::RObject &rasterData);
 
     void fillRaster(int band, double value, double ivalue);

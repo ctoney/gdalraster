@@ -1055,6 +1055,7 @@ Rcpp::NumericVector GDALRaster::getActualBlockSize(int band, int xblockoff,
 
 Rcpp::NumericMatrix GDALRaster::make_chunk_index(int band,
     const Rcpp::NumericVector &max_pixels) const {
+    //' must be kept in sync with readChunk() / writeChunk()
     //' 'max_pixels' is a scalar value, but NumericVector is used so it can
     //' optionally carry the bit64::integer64 class attribute.
 
@@ -1131,7 +1132,7 @@ bool GDALRaster::hasNoDataValue(int band) const {
     GDALRasterBandH hBand = getBand_(band);
     int hasNoData = 0;
     GDALGetRasterNoDataValue(hBand, &hasNoData);
-    return hasNoData;
+    return CPL_TO_BOOL(hasNoData);
 }
 
 double GDALRaster::getNoDataValue(int band) const {
@@ -1253,7 +1254,7 @@ bool GDALRaster::hasScale(int band) const {
     GDALRasterBandH hBand = getBand_(band);
     int hasScale = 0;
     GDALGetRasterScale(hBand, &hasScale);
-    return hasScale;
+    return CPL_TO_BOOL(hasScale);
 }
 
 double GDALRaster::getScale(int band) const {
@@ -1291,7 +1292,7 @@ bool GDALRaster::hasOffset(int band) const {
     GDALRasterBandH hBand = getBand_(band);
     int hasOffset = 0;
     GDALGetRasterOffset(hBand, &hasOffset);
-    return hasOffset;
+    return CPL_TO_BOOL(hasOffset);
 }
 
 double GDALRaster::getOffset(int band) const {
@@ -1656,25 +1657,32 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
     if (out_xsize < 1 || out_ysize < 1)
         Rcpp::stop("'out_xsize' and 'out_ysize' must be > 0");
 
-    GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
+    GDALRasterBandH hBand = nullptr;
+    hBand = GDALGetRasterBand(m_hDataset, band);
     if (hBand == nullptr)
         Rcpp::stop("failed to access the requested band");
 
     const GDALDataType eDT = GDALGetRasterDataType(hBand);
+
+    const R_xlen_t buf_size = static_cast<R_xlen_t>(out_xsize) * out_ysize;
+
+    int nHasNoData = 0;
+    const double dfNoDataValue = GDALGetRasterNoDataValue(hBand, &nHasNoData);
+    const bool has_nodata_value = CPL_TO_BOOL(nHasNoData);
+
     CPLErr err = CE_None;
 
-    if (!GDALDataTypeIsComplex(eDT)) {
+    if (!CPL_TO_BOOL(GDALDataTypeIsComplex(eDT))) {
         // real data types read as either GDT_Byte, GDT_Int32 or GDT_Float64
-        if (GDALDataTypeIsInteger(eDT) &&
+        if (CPL_TO_BOOL(GDALDataTypeIsInteger(eDT)) &&
                 (GDALGetDataTypeSizeBits(eDT) <= 16 ||
                  (GDALGetDataTypeSizeBits(eDT) <= 32 &&
-                  GDALDataTypeIsSigned(eDT)))) {
+                  CPL_TO_BOOL(GDALDataTypeIsSigned(eDT))))) {
 
             // if signed integer <= 32 bits or any integer <= 16 bits:
             // use int32 buffer, unless we are reading Byte as R raw type
             if (this->readByteAsRaw && eDT == GDT_Byte) {
-                Rcpp::RawVector v = Rcpp::no_init(
-                    static_cast<R_xlen_t>(out_xsize) * out_ysize);
+                Rcpp::RawVector v = Rcpp::no_init(buf_size);
 
                 err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
                                    v.begin(), out_xsize, out_ysize, GDT_Byte,
@@ -1686,8 +1694,7 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
                 return v;
             }
             else {
-                Rcpp::IntegerVector v = Rcpp::no_init(
-                    static_cast<R_xlen_t>(out_xsize) * out_ysize);
+                Rcpp::IntegerVector v = Rcpp::no_init(buf_size);
 
                 err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
                                    v.begin(), out_xsize, out_ysize, GDT_Int32,
@@ -1696,11 +1703,9 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
                 if (err == CE_Failure)
                     Rcpp::stop("read raster failed");
 
-                if (hasNoDataValue(band)) {
-                    const int nodata_value =
-                        static_cast<int>(getNoDataValue(band));
-
-                    std::replace(v.begin(), v.end(), nodata_value, NA_INTEGER);
+                if (has_nodata_value) {
+                    const int nNoDataValue = static_cast<int>(dfNoDataValue);
+                    std::replace(v.begin(), v.end(), nNoDataValue, NA_INTEGER);
                 }
 
                 return v;
@@ -1712,8 +1717,7 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
             // (Int64, UInt64 would currently be handled here but would lose
             //  precision when > 9,007,199,254,740,992 (2^53). Support for
             //  Int64/UInt64 raster could potentially be added using {bit64}.)
-            Rcpp::NumericVector v = Rcpp::no_init(
-                static_cast<R_xlen_t>(out_xsize) * out_ysize);
+            Rcpp::NumericVector v = Rcpp::no_init(buf_size);
 
             err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
                                v.begin(), out_xsize, out_ysize, GDT_Float64,
@@ -1722,21 +1726,20 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
             if (err == CE_Failure)
                 Rcpp::stop("read raster failed");
 
-            const double nodata_value = getNoDataValue(band);
-            if (hasNoDataValue(band) && !std::isnan(nodata_value)) {
-                if (GDALDataTypeIsFloating(eDT)) {
+            if (has_nodata_value && !std::isnan(dfNoDataValue)) {
+                if (CPL_TO_BOOL(GDALDataTypeIsFloating(eDT))) {
                     for (double &val : v) {
                         if (std::isnan(val))
                             val = NA_REAL;
-                        else if (ARE_REAL_EQUAL(val, nodata_value))
+                        else if (ARE_REAL_EQUAL(val, dfNoDataValue))
                             val = NA_REAL;
                     }
                 }
                 else {
-                    std::replace(v.begin(), v.end(), nodata_value, NA_REAL);
+                    std::replace(v.begin(), v.end(), dfNoDataValue, NA_REAL);
                 }
             }
-            else if (GDALDataTypeIsFloating(eDT)) {
+            else if (CPL_TO_BOOL(GDALDataTypeIsFloating(eDT))) {
                 for (double &val : v) {
                     if (std::isnan(val))
                         val = NA_REAL;
@@ -1748,8 +1751,7 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
     }
     else {
         // complex data types read as GDT_CFloat64
-        Rcpp::ComplexVector v = Rcpp::no_init(
-            static_cast<R_xlen_t>(out_xsize) * out_ysize);
+        Rcpp::ComplexVector v = Rcpp::no_init(buf_size);
 
         err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize, v.begin(),
                            out_xsize, out_ysize, GDT_CFloat64, 0, 0);
@@ -1769,7 +1771,8 @@ SEXP GDALRaster::readBlock(int band, int xblockoff, int yblockoff) const {
     if (xblockoff < 0 || yblockoff < 0)
         Rcpp::stop("'xblockoff' and 'yblockoff' must be >= 0");
 
-    GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
+    GDALRasterBandH hBand = nullptr;
+    hBand = GDALGetRasterBand(m_hDataset, band);
     if (hBand == nullptr)
         Rcpp::stop("failed to access the requested band");
 
@@ -1797,6 +1800,41 @@ SEXP GDALRaster::readBlock(int band, int xblockoff, int yblockoff) const {
     return read(band, nXOff, nYOff, nOutXSize, nOutYSize, nOutXSize, nOutYSize);
 }
 
+SEXP GDALRaster::readChunk(int band,
+                           const Rcpp::IntegerVector &chunk_def) const {
+    // helper method intended to be used with the output of make_chunk_index()
+    // 'chunk_def' is expected to be a numeric vector containing:
+    //   xchunkoff, ychunkoff, xoff, yoff, xsize, ysize, xmin, xmax, ymin, ymax
+    // This is a row of the matrix returned by make_chunk_index(). The vector
+    // is implicitly cast to integer by Rcpp, and only the first <= 6 columns
+    // are referenced. Only xoff, yoff, xsize and ysize are needed here, but the
+    // input vector is expected to be as above for the first six values.
+    // Also accepts length-4 vector of: xoff, yoff, xsize, ysize.
+    if (!isOpen())
+        Rcpp::stop("dataset is not open");
+
+    if (chunk_def.size() == 0)
+        Rcpp::stop("'chunk_def' is empty");
+
+    R_xlen_t adj_for_chunk_x_y = 0;
+    if (chunk_def.size() == 4) {
+        adj_for_chunk_x_y = 2;
+    }
+    else if (chunk_def.size() < 6) {
+        Rcpp::stop("'chunk_def' must have length >= 6 (or 4 "
+                   "with xoff, yoff, xsize, ysize)");
+    }
+
+    return read(
+        band,
+        chunk_def[2 - adj_for_chunk_x_y],
+        chunk_def[3 - adj_for_chunk_x_y],
+        chunk_def[4 - adj_for_chunk_x_y],
+        chunk_def[5 - adj_for_chunk_x_y],
+        chunk_def[4 - adj_for_chunk_x_y],
+        chunk_def[5 - adj_for_chunk_x_y]);
+}
+
 void GDALRaster::write(int band, int xoff, int yoff, int xsize, int ysize,
                        const Rcpp::RObject &rasterData) {
 
@@ -1810,7 +1848,8 @@ void GDALRaster::write(int band, int xoff, int yoff, int xsize, int ysize,
 
     CPLErr err = CE_None;
 
-    GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
+    GDALRasterBandH hBand = nullptr;
+    hBand = GDALGetRasterBand(m_hDataset, band);
     if (hBand == nullptr)
         Rcpp::stop("failed to access the requested band");
 
@@ -1871,7 +1910,8 @@ void GDALRaster::writeBlock(int band, int xblockoff, int yblockoff,
     if (xblockoff < 0 || yblockoff < 0)
         Rcpp::stop("'xblockoff' and 'yblockoff' must be >= 0");
 
-    GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
+    GDALRasterBandH hBand = nullptr;
+    hBand = GDALGetRasterBand(m_hDataset, band);
     if (hBand == nullptr)
         Rcpp::stop("failed to access the requested band");
 
@@ -1894,6 +1934,34 @@ void GDALRaster::writeBlock(int band, int xblockoff, int yblockoff,
     }
 
     return write(band, nXOff, nYOff, nOutXSize, nOutYSize, rasterData);
+}
+
+void GDALRaster::writeChunk(int band, const Rcpp::IntegerVector &chunk_def,
+                            const Rcpp::RObject &rasterData) {
+    // see comments above for readChunk()
+
+    if (!isOpen())
+        Rcpp::stop("dataset is not open");
+
+    if (chunk_def.size() == 0)
+        Rcpp::stop("'chunk_def' is empty");
+
+    R_xlen_t adj_for_chunk_x_y = 0;
+    if (chunk_def.size() == 4) {
+        adj_for_chunk_x_y = 2;
+    }
+    else if (chunk_def.size() < 6) {
+        Rcpp::stop("'chunk_def' must have length >= 6 (or 4 "
+                   "with xoff, yoff, xsize, ysize)");
+    }
+
+    return write(
+        band,
+        chunk_def[2 - adj_for_chunk_x_y],
+        chunk_def[3 - adj_for_chunk_x_y],
+        chunk_def[4 - adj_for_chunk_x_y],
+        chunk_def[5 - adj_for_chunk_x_y],
+        rasterData);
 }
 
 void GDALRaster::fillRaster(int band, double value, double ivalue) {
@@ -2389,7 +2457,8 @@ void GDALRaster::checkAccess_(GDALAccess access_needed) const {
 GDALRasterBandH GDALRaster::getBand_(int band) const {
     if (band < 1 || band > getRasterCount())
         Rcpp::stop("illegal band number");
-    GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, band);
+    GDALRasterBandH hBand = nullptr;
+    hBand = GDALGetRasterBand(m_hDataset, band);
     if (hBand == nullptr)
         Rcpp::stop("failed to access the requested band");
     return hBand;
@@ -2401,10 +2470,10 @@ bool GDALRaster::readableAsInt_(int band) const {
 
     // readable as int32 / R integer type
     // signed integer <= 32 bits or any integer <= 16 bits
-    if (GDALDataTypeIsInteger(eDT) &&
+    if (CPL_TO_BOOL(GDALDataTypeIsInteger(eDT)) &&
             (GDALGetDataTypeSizeBits(eDT) <= 16 ||
              (GDALGetDataTypeSizeBits(eDT) <= 32 &&
-              GDALDataTypeIsSigned(eDT)))) {
+              CPL_TO_BOOL(GDALDataTypeIsSigned(eDT))))) {
 
         return true;
     }
@@ -2418,7 +2487,7 @@ bool GDALRaster::hasInt64_() const {
     for (int b = 1; b <= getRasterCount(); ++b) {
         GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, b);
         GDALDataType eDT = GDALGetRasterDataType(hBand);
-        if (GDALDataTypeIsInteger(eDT) &&
+        if (CPL_TO_BOOL(GDALDataTypeIsInteger(eDT)) &&
                 (GDALGetDataTypeSizeBits(eDT) == 64)) {
             has_int64 = true;
             break;
@@ -2619,10 +2688,14 @@ RCPP_MODULE(mod_GDALRaster) {
         "Read a region of raster data for a band")
     .const_method("readBlock", &GDALRaster::readBlock,
         "Read a block of raster data")
+    .const_method("readChunk", &GDALRaster::readChunk,
+        "Read a multi-block user-defined chunk of raster data")
     .method("write", &GDALRaster::write,
         "Write a region of raster data for a band")
     .method("writeBlock", &GDALRaster::writeBlock,
         "Write a block of raster data")
+    .method("writeChunk", &GDALRaster::writeChunk,
+        "Write a multi-block user-defined chunk of raster data")
     .method("fillRaster", &GDALRaster::fillRaster,
         "Fill this band with a constant value")
     .const_method("getColorTable", &GDALRaster::getColorTable,
