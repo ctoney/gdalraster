@@ -974,15 +974,19 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
 Rcpp::NumericMatrix GDALRaster::get_block_indexing(int band) const {
     checkAccess_(GA_ReadOnly);
 
+    GDALRasterBandH hBand = getBand_(band);
+
     const double dfRasterXSize = getRasterXSize();
     const double dfRasterYSize = getRasterYSize();
-    GDALRasterBandH hBand = getBand_(band);
 
     int nBlockXSize = 0;
     int nBlockYSize = 0;
     GDALGetBlockSize(hBand, &nBlockXSize, &nBlockYSize);
     if (nBlockXSize < 1 || nBlockYSize < 0) {
         // assume scanlines
+        if (!quiet)
+            Rcpp::Rcout << "invalid block size reported for this band, "
+                           "assuming one whole row\n";
         nBlockXSize = GDALGetRasterXSize(m_hDataset);
         nBlockYSize = 1;
     }
@@ -1002,26 +1006,26 @@ Rcpp::NumericMatrix GDALRaster::get_block_indexing(int band) const {
                                       "xsize", "ysize", "xmin", "xmax", "ymin",
                                       "ymax");
 
-    R_xlen_t i = 0;
+    R_xlen_t out_row_i = 0;
     for (int y = 0; y < num_blocks_y; ++y) {
         for (int x = 0; x < num_blocks_x; ++x) {
-            const double this_xoff = x * nBlockXSize;
-            const double this_yoff = y * nBlockYSize;
+            const int this_xoff = x * nBlockXSize;
+            const int this_yoff = y * nBlockYSize;
             const Rcpp::NumericVector &this_size =
                 getActualBlockSize(band, x, y);
 
-            Rcpp::NumericVector this_bbox =
+            const Rcpp::NumericVector &this_bbox =
                 bbox_grid_to_geo_(getGeoTransform(),
                                   this_xoff, this_xoff + this_size[0],
                                   this_yoff, this_yoff + this_size[1]);
 
-            blocks.row(i) =
+            blocks.row(out_row_i) =
                 Rcpp::NumericVector::create(x, y, this_xoff, this_yoff,
                                             this_size[0], this_size[1],
                                             this_bbox[0], this_bbox[2],
                                             this_bbox[1], this_bbox[3]);
 
-            ++i;
+            ++out_row_i;
         }
     }
 
@@ -1033,7 +1037,7 @@ Rcpp::NumericVector GDALRaster::getBlockSize(int band) const {
 
     GDALRasterBandH hBand = getBand_(band);
     Rcpp::IntegerVector panBlockSize = {NA_INTEGER, NA_INTEGER};
-    GDALGetBlockSize(hBand, &panBlockSize[0], &panBlockSize[1]);
+    GDALGetBlockSize(hBand, panBlockSize.begin(), panBlockSize.begin() + 1);
     return Rcpp::NumericVector(panBlockSize);
 }
 
@@ -1044,9 +1048,37 @@ Rcpp::NumericVector GDALRaster::getActualBlockSize(int band, int xblockoff,
     GDALRasterBandH hBand = getBand_(band);
     Rcpp::IntegerVector panBlockSize = {NA_INTEGER, NA_INTEGER};
     GDALGetActualBlockSize(hBand, xblockoff, yblockoff,
-                           &panBlockSize[0], &panBlockSize[1]);
+                           panBlockSize.begin(), panBlockSize.begin() + 1);
 
     return Rcpp::NumericVector(panBlockSize);
+}
+
+Rcpp::NumericMatrix GDALRaster::make_chunk_index(int band,
+    const Rcpp::NumericVector &max_pixels) const {
+    //' 'max_pixels' is a scalar value, but NumericVector is used so it can
+    //' optionally carry the bit64::integer64 class attribute.
+
+    checkAccess_(GA_ReadOnly);
+
+    GDALRasterBandH hBand = getBand_(band);
+
+    const int nRasterXSize = GDALGetRasterXSize(m_hDataset);
+    const int nRasterYSize = GDALGetRasterYSize(m_hDataset);
+
+    int nBlockXSize = 0;
+    int nBlockYSize = 0;
+    GDALGetBlockSize(hBand, &nBlockXSize, &nBlockYSize);
+    if (nBlockXSize < 1 || nBlockYSize < 0) {
+        // assume scanlines
+        if (!quiet)
+            Rcpp::Rcout << "invalid block size reported for this band, "
+                           "assuming one whole row\n";
+        nBlockXSize = nRasterXSize;
+        nBlockYSize = 1;
+    }
+
+    return make_chunk_index_(nRasterXSize, nRasterYSize, nBlockXSize,
+                             nBlockYSize, getGeoTransform(), max_pixels);
 }
 
 int GDALRaster::getOverviewCount(int band) const {
@@ -1760,7 +1792,7 @@ SEXP GDALRaster::readBlock(int band, int xblockoff, int yblockoff) const {
     }
 
     // use GDALRasterIO() instead of GDALReadBlock() since the latter would
-    // still require a data type conversion to a type that can be returned to R,
+    // still require a data type conversion to a type that can be returned to R
     // (i.e., INTSXP or REALSXP, generally incurring a copy)
     return read(band, nXOff, nYOff, nOutXSize, nOutYSize, nOutXSize, nOutYSize);
 }
@@ -2524,6 +2556,9 @@ RCPP_MODULE(mod_GDALRaster) {
         "Retrieve the actual block size for a given block offset")
     .const_method("getActualBlockSize", &GDALRaster::getActualBlockSize,
         "Get the natural block size of this band")
+    .const_method("make_chunk_index", &GDALRaster::make_chunk_index,
+        "Return a matrix of x/y offsets and sizes for potentially multi-block "
+        "chunks")
     .const_method("getOverviewCount", &GDALRaster::getOverviewCount,
         "Return the number of overview layers available")
     .method("buildOverviews", &GDALRaster::buildOverviews,

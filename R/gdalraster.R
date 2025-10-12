@@ -90,6 +90,7 @@
 #' ds$apply_geotransform(col_row)
 #' ds$get_pixel_line(xy)
 #' ds$get_block_indexing(band)
+#' ds$make_chunk_index(band, max_pixels)
 #'
 #' ds$getDescription(band)
 #' ds$setDescription(band, desc)
@@ -348,17 +349,37 @@
 #' \code{$get_block_indexing(band)}\cr
 #' Helper method returning a numeric matrix with named columns: `xblockoff`,
 #' `yblockoff`, `xoff`, `yoff`, `xsize`, `ysize`, `xmin`, `xmax`, `ymin`,
-#' `ymax`. For the meanings of these names, refer to the following class
-#' methods below: \code{$getBlockSize()}, \code{$getActualBlockSize()} and
-#' \code{$read()}.
-#' All offsets are zero-based. The columns `xmin`, `xmax`, `ymin` and
-#' `ymax` give the extent of each block in geospatial coordinates.
-#' This method provides indexing values for the block layout of the given
-#' `band` number. The returned matrix has number of rows equal to the number
-#' of blocks comprising the band, with blocks ordered left to right, top
-#' to bottom. The `xoff`/`yoff` values are pixel offsets to the start of a
-#' block. The `xsize`/`ysize` values give the actual block sizes accounting
-#' for potentially incomplete blocks along the right and bottom edges.
+#' `ymax`. This method provides indexing values for the block layout of the
+#' given `band` number. See also the class methods:
+#' \code{$getBlockSize()}, \code{$getActualBlockSize()} and \code{$read()}.
+#' The returned matrix has number of rows equal to the number of blocks for the
+#' given `band` number, with blocks ordered left to right, top to bottom. All
+#' offsets are zero-based. The `xoff`/`yoff` values are pixel offsets to the
+#' start of a block. The `xsize`/`ysize` values give the actual block sizes
+#' accounting for potentially incomplete blocks along the right and bottom
+#' edges. The columns `xmin`, `xmax`, `ymin` and `ymax` give the extent of each
+#' block in geospatial coordinates.
+#'
+#' \code{$make_chunk_index(band, max_pixels)}\cr
+#' Helper method returning a numeric matrix with named columns: `xchunkoff`,
+#' `ychunkoff`, `xoff`, `yoff`, `xsize`, `ysize`, `xmin`, `xmax`, `ymin`,
+#' `ymax`. This method generates indexing information (offsets, sizes and
+#' geospatial bounding boxes) for multi-block chunks, defined on the raster
+#' block boundaries for efficient I/O. The output of this method can be used
+#' with the \code{$readChunk()}/\code{$writeChunk()} methods to iterate I/O
+#' operations conveniently on user-defined chunk sizes. The chunks will contain
+#' at most `max_pixels` given as a numeric value optionally carrying the
+#' `bit64::integer64` class attribute (numeric values will be coerced to 64-bit
+#' integer internally by truncation). A value of `max_pixels = 0` (or any value
+#' less than raster block xsize * block ysize, see \code{$getBlockSize()}
+#' below), will return output equivalent to \code{$get_block_indexing()}.
+#' The returned matrix has number of rows equal to the number of chunks for the
+#' given `band` number, with chunks ordered left to right, top to bottom. All
+#' offsets are zero-based. The `xoff`/`yoff` values are pixel offsets to the
+#' start of a chunk. The `xsize`/`ysize` values give the actual chunk sizes
+#' accounting for potentially incomplete chunks along the right and bottom
+#' edges. The columns `xmin`, `xmax`, `ymin` and `ymax` give the extent of each
+#' chunk in geospatial coordinates.
 #'
 #' \code{$getDescription(band)}\cr
 #' Returns a string containing the description for \code{band}. An empty
