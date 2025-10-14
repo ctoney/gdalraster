@@ -1783,8 +1783,8 @@ SEXP GDALRaster::readBlock(int band, int xblockoff, int yblockoff) const {
         Rcpp::stop("invalid block size reported for this band");
     }
 
-    int nXOff = xblockoff * nBlockXSize;
-    int nYOff = yblockoff * nBlockYSize;
+    const int nXOff = xblockoff * nBlockXSize;
+    const int nYOff = yblockoff * nBlockYSize;
 
     int nOutXSize = 0;
     int nOutYSize = 0;
@@ -1922,8 +1922,8 @@ void GDALRaster::writeBlock(int band, int xblockoff, int yblockoff,
         Rcpp::stop("invalid block size reported for this band");
     }
 
-    int nXOff = xblockoff * nBlockXSize;
-    int nYOff = yblockoff * nBlockYSize;
+    const int nXOff = xblockoff * nBlockXSize;
+    const int nYOff = yblockoff * nBlockYSize;
 
     int nOutXSize = 0;
     int nOutYSize = 0;

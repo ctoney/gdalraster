@@ -711,7 +711,7 @@
 #' region of the band to be accessed (zero to start from the left side).
 #' \code{yoff} is the line (row) offset to the top left corner of the region of
 #' the band to be accessed (zero to start from the top).
-#' \emph{Note that raster row/column offsets use 0-based indexing.}
+#' \emph{Note that raster column/row offsets use 0-based indexing.}
 #' \code{xsize} is the width in pixels of the region to be accessed.
 #' \code{ysize} is the height in pixels of the region to be accessed.
 #' \code{out_xsize} is the width of the output array into which the desired
@@ -755,7 +755,7 @@
 #' region of the band to be accessed (zero to start from the left side).
 #' \code{yoff} is the line (row) offset to the top left corner of the region of
 #' the band to be accessed (zero to start from the top).
-#' \emph{Note that raster row/column offsets use 0-based indexing.}
+#' \emph{Note that raster column/row offsets use 0-based indexing.}
 #' \code{xsize} is the width in pixels of the region to write.
 #' \code{ysize} is the height in pixels of the region to write.
 #' \code{rasterData} is a numeric or complex vector containing values to write.
@@ -871,7 +871,7 @@
 #' components of complex bands influence the result.
 #' \code{xoff} is the pixel (column) offset of the window to read.
 #' \code{yoff} is the line (row) offset of the window to read.
-#' \emph{Raster row/column offsets use 0-based indexing.}
+#' \emph{Raster column/row offsets use 0-based indexing.}
 #' \code{xsize} is the width in pixels of the window to read.
 #' \code{ysize} is the height in pixels of the window to read.
 #'
@@ -959,7 +959,7 @@
 #' ds$getMetadataItem(band = 2, mdi_name = "SLOPE_UNIT_NAME", domain = "")
 #'
 #' ## read one row of pixel values from band 1 (elevation)
-#' ## raster row/column index are 0-based
+#' ## raster column/row index are 0-based
 #' ## the upper left corner is the origin
 #' ## read the tenth row:
 #' ncols <- ds$getRasterXSize()
