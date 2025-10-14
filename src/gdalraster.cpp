@@ -1404,16 +1404,42 @@ Rcpp::NumericVector GDALRaster::getMinMaxLocation(int band) const {
 
     GDALRasterBandH hBand = getBand_(band);
     CPLErr err = CE_None;
-    double pdfMin = NA_REAL, pdfMax = NA_REAL;
-    int pnMinX = NA_INTEGER, pnMinY = NA_INTEGER;
-    int pnMaxX = NA_INTEGER, pnMaxY = NA_INTEGER;
+    double dfMin = NA_REAL, dfMax = NA_REAL;
+    int nMinX = NA_INTEGER, nMinY = NA_INTEGER;
+    int nMaxX = NA_INTEGER, nMaxY = NA_INTEGER;
 
-    Rcpp::NumericVector ret(14, NA_REAL);
+    Rcpp::CharacterVector ret_names = Rcpp::CharacterVector::create(
+        "min", "min_col", "min_row", "min_geo_x", "min_geo_y", "min_wgs84_lon",
+        "min_wgs84_lat", "max", "max_col", "max_row", "max_geo_x", "max_geo_y",
+        "max_wgs84_lon", "max_wgs84_lat");
 
     err = GDALComputeRasterMinMaxLocation(
-        hBand, &pdfMin, &pdfMax, &pnMinX, &pnMinY, &pnMaxX, &pnMaxY);
+        hBand, &dfMin, &dfMax, &nMinX, &nMinY, &nMaxX, &nMaxY);
 
+    if (err != CE_None) {
+        Rcpp::Rcout << "error in GDALComputeRasterMinMaxLocation() or no valid "
+                       "values returned\n";
+        Rcpp::NumericVector ret(14, NA_REAL);
+        ret.names() = ret_names;
+        return ret;
+    }
 
+    Rcpp::NumericMatrix min_geo_xy =
+        apply_geotransform(Rcpp::NumericVector{nMinX + 0.5, nMinY + 0.5});
+    Rcpp::NumericMatrix max_geo_xy =
+        apply_geotransform(Rcpp::NumericVector{nMaxX + 0.5, nMaxY + 0.5});
+    Rcpp::NumericMatrix min_wgs84 =
+        transform_xy(Rcpp::NumericVector{min_geo_xy(0, 0), min_geo_xy(0, 1)},
+                     getProjection(), "WGS84");
+    Rcpp::NumericMatrix max_wgs84 =
+        transform_xy(Rcpp::NumericVector{max_geo_xy(0, 0), max_geo_xy(0, 1)},
+                     getProjection(), "WGS84");
+
+    Rcpp::NumericVector ret = Rcpp::NumericVector::create(
+        dfMin, nMinX, nMinY, min_geo_xy(0, 0), min_geo_xy(0, 1),
+        min_wgs84(0, 0), min_wgs84(0, 1), dfMax, nMaxX, nMaxY,
+        max_geo_xy(0, 0), max_geo_xy(0, 1), max_wgs84(0, 0), max_wgs84(0, 1));
+    ret.names() = ret_names;
     return ret;
 #endif
 }
@@ -2689,6 +2715,8 @@ RCPP_MODULE(mod_GDALRaster) {
         "Set color interpretation of a band")
     .const_method("getMinMax", &GDALRaster::getMinMax,
         "Compute the min/max values for this band")
+    .const_method("getMinMaxLocation", &GDALRaster::getMinMaxLocation,
+        "Compute the min/max values for this band, and their location")
     .const_method("getStatistics", &GDALRaster::getStatistics,
         "Get min, max, mean and stdev for this band")
     .method("clearStatistics", &GDALRaster::clearStatistics,
