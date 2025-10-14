@@ -1395,6 +1395,29 @@ std::vector<double> GDALRaster::getMinMax(int band, bool approx_ok) const {
         return min_max;
 }
 
+Rcpp::NumericVector GDALRaster::getMinMaxLocation(int band) const {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("getMinMaxLocation() requires GDAL >= 3.11");
+#else
+
+    checkAccess_(GA_ReadOnly);
+
+    GDALRasterBandH hBand = getBand_(band);
+    CPLErr err = CE_None;
+    double pdfMin = NA_REAL, pdfMax = NA_REAL;
+    int pnMinX = NA_INTEGER, pnMinY = NA_INTEGER;
+    int pnMaxX = NA_INTEGER, pnMaxY = NA_INTEGER;
+
+    Rcpp::NumericVector ret(14, NA_REAL);
+
+    err = GDALComputeRasterMinMaxLocation(
+        hBand, &pdfMin, &pdfMax, &pnMinX, &pnMinY, &pnMaxX, &pnMaxY);
+
+
+    return ret;
+#endif
+}
+
 Rcpp::NumericVector GDALRaster::getStatistics(int band, bool approx_ok,
                                               bool force) const {
 
