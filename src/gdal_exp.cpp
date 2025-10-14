@@ -1087,7 +1087,6 @@ Rcpp::NumericMatrix make_chunk_index_(int raster_xsize, int raster_ysize,
                    "(optionally bit64::integer64)");
 
     int64_t max_pixels_in = 0;
-
     if (Rcpp::isInteger64(max_pixels)) {
         max_pixels_in = Rcpp::fromInteger64(max_pixels[0]);
     }
