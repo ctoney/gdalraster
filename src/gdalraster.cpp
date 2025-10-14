@@ -1397,7 +1397,7 @@ std::vector<double> GDALRaster::getMinMax(int band, bool approx_ok) const {
 
 Rcpp::NumericVector GDALRaster::getMinMaxLocation(int band) const {
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
-    Rcpp::stop("getMinMaxLocation() requires GDAL >= 3.11");
+    Rcpp::stop("GDALComputeRasterMinMaxLocation() requires GDAL >= 3.11");
 #else
 
     checkAccess_(GA_ReadOnly);
@@ -1408,37 +1408,41 @@ Rcpp::NumericVector GDALRaster::getMinMaxLocation(int band) const {
     int nMinX = NA_INTEGER, nMinY = NA_INTEGER;
     int nMaxX = NA_INTEGER, nMaxY = NA_INTEGER;
 
-    Rcpp::CharacterVector ret_names = Rcpp::CharacterVector::create(
-        "min", "min_col", "min_row", "min_geo_x", "min_geo_y", "min_wgs84_lon",
-        "min_wgs84_lat", "max", "max_col", "max_row", "max_geo_x", "max_geo_y",
-        "max_wgs84_lon", "max_wgs84_lat");
+    Rcpp::CharacterVector ret_names =
+        Rcpp::CharacterVector::create("min", "min_col", "min_row", "min_geo_x",
+                                      "min_geo_y", "min_wgs84_lon",
+                                      "min_wgs84_lat", "max", "max_col",
+                                      "max_row", "max_geo_x", "max_geo_y",
+                                      "max_wgs84_lon", "max_wgs84_lat");
 
-    err = GDALComputeRasterMinMaxLocation(
-        hBand, &dfMin, &dfMax, &nMinX, &nMinY, &nMaxX, &nMaxY);
+    err = GDALComputeRasterMinMaxLocation(hBand, &dfMin, &dfMax, &nMinX, &nMinY,
+                                          &nMaxX, &nMaxY);
 
     if (err != CE_None) {
         Rcpp::Rcout << "error in GDALComputeRasterMinMaxLocation() or no valid "
                        "values returned\n";
-        Rcpp::NumericVector ret(14, NA_REAL);
+        Rcpp::NumericVector ret(ret_names.size(), NA_REAL);
         ret.names() = ret_names;
         return ret;
     }
 
-    Rcpp::NumericMatrix min_geo_xy =
+    Rcpp::NumericVector min_geo_xy =
         apply_geotransform(Rcpp::NumericVector{nMinX + 0.5, nMinY + 0.5});
-    Rcpp::NumericMatrix max_geo_xy =
+    Rcpp::NumericVector max_geo_xy =
         apply_geotransform(Rcpp::NumericVector{nMaxX + 0.5, nMaxY + 0.5});
-    Rcpp::NumericMatrix min_wgs84 =
-        transform_xy(Rcpp::NumericVector{min_geo_xy(0, 0), min_geo_xy(0, 1)},
-                     getProjection(), "WGS84");
-    Rcpp::NumericMatrix max_wgs84 =
-        transform_xy(Rcpp::NumericVector{max_geo_xy(0, 0), max_geo_xy(0, 1)},
-                     getProjection(), "WGS84");
 
-    Rcpp::NumericVector ret = Rcpp::NumericVector::create(
-        dfMin, nMinX, nMinY, min_geo_xy(0, 0), min_geo_xy(0, 1),
-        min_wgs84(0, 0), min_wgs84(0, 1), dfMax, nMaxX, nMaxY,
-        max_geo_xy(0, 0), max_geo_xy(0, 1), max_wgs84(0, 0), max_wgs84(0, 1));
+    Rcpp::NumericVector min_wgs84 = {NA_REAL, NA_REAL};
+    Rcpp::NumericVector max_wgs84 = {NA_REAL, NA_REAL};
+    if (getProjection() != "") {
+        min_wgs84 = transform_xy(min_geo_xy, getProjection(), "WGS84").row(0);
+        max_wgs84 = transform_xy(max_geo_xy, getProjection(), "WGS84").row(0);
+    }
+
+    Rcpp::NumericVector ret =
+        Rcpp::NumericVector::create(dfMin, nMinX, nMinY, min_geo_xy(0),
+                                    min_geo_xy(1), min_wgs84(0), min_wgs84(1),
+                                    dfMax, nMaxX, nMaxY, max_geo_xy(0),
+                                    max_geo_xy(1), max_wgs84(0), max_wgs84(1));
     ret.names() = ret_names;
     return ret;
 #endif
