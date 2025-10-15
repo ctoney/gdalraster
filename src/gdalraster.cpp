@@ -1399,7 +1399,6 @@ Rcpp::NumericVector GDALRaster::getMinMaxLocation(int band) const {
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
     Rcpp::stop("GDALComputeRasterMinMaxLocation() requires GDAL >= 3.11");
 #else
-
     checkAccess_(GA_ReadOnly);
 
     GDALRasterBandH hBand = getBand_(band);
