@@ -437,8 +437,8 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
         char **papszChoices = GDALAlgorithmArgGetChoices(hArg);
         int nCount = CSLCount(papszChoices);
         if (papszChoices && nCount > 0) {
-            std::vector<std::string> v(papszChoices, papszChoices + nCount);
-            arg_info.push_back(Rcpp::wrap(v), "choices");
+            Rcpp::CharacterVector v(papszChoices, papszChoices + nCount);
+            arg_info.push_back(v, "choices");
         }
         else {
             arg_info.push_back(Rcpp::CharacterVector::create(), "choices");
@@ -504,11 +504,11 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
             char **papszValue = nullptr;
             papszValue = GDALAlgorithmArgGetDefaultAsStringList(hArg);
             int nCount = CSLCount(papszValue);
-            Rcpp::CharacterVector val = Rcpp::CharacterVector::create();
-            if (papszValue && nCount > 0) {
-                std::vector<std::string> v(papszValue, papszValue + nCount);
-                val = Rcpp::wrap(v);
-            }
+            Rcpp::CharacterVector val;
+            if (papszValue && nCount > 0)
+                val = Rcpp::CharacterVector(papszValue, papszValue + nCount);
+            else
+                val = Rcpp::CharacterVector::create();
             CSLDestroy(papszValue);
             arg_info.push_back(val, "default_value");
     #endif
@@ -524,11 +524,11 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
             size_t nCount = 0;
             const int *panValue =
                 GDALAlgorithmArgGetDefaultAsIntegerList(hArg, &nCount);
-            Rcpp::IntegerVector val = Rcpp::IntegerVector::create();
-            if (panValue && nCount > 0) {
-                std::vector<int> v(panValue, panValue + nCount);
-                val = Rcpp::wrap(v);
-            }
+            Rcpp::IntegerVector val;
+            if (panValue && nCount > 0)
+                val = Rcpp::IntegerVector(panValue, panValue + nCount);
+            else
+                val = Rcpp::IntegerVector::create();
             arg_info.push_back(val, "default_value");
     #endif
         }
@@ -543,11 +543,11 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
             size_t nCount = 0;
             const double *padfValue =
                 GDALAlgorithmArgGetDefaultAsDoubleList(hArg, &nCount);
-            Rcpp::NumericVector val = Rcpp::NumericVector::create();
-            if (padfValue && nCount > 0) {
-                std::vector<double> v(padfValue, padfValue + nCount);
-                val = Rcpp::wrap(v);
-            }
+            Rcpp::NumericVector val;
+            if (padfValue && nCount > 0)
+                val = Rcpp::NumericVector(padfValue, padfValue + nCount);
+            else
+                val = Rcpp::NumericVector::create();
             arg_info.push_back(val, "default_value");
     #endif
         }
@@ -779,20 +779,18 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                 break;
             }
 
-            Rcpp::NumericVector v(arg_value);
+            Rcpp::IntegerVector v(arg_value);
             if (v.size() != 1) {
                 Rcpp::Rcout << "'arg_value' must be a single numeric value for "
                                "INTEGER type algorithm argument\n";
                 break;
             }
-            if (Rcpp::NumericVector::is_na(v[0]) ||
-                Rcpp::IntegerVector::is_na(v[0])) {
-
+            if (Rcpp::IntegerVector::is_na(v[0])) {
                 Rcpp::Rcout << "'arg_value' cannot be NA\n";
                 break;
             }
 
-            ret = GDALAlgorithmArgSetAsInteger(hArg, static_cast<int>(v[0]));
+            ret = GDALAlgorithmArgSetAsInteger(hArg, v[0]);
         }
         break;
 
@@ -813,14 +811,12 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                                "REAL type algorithm argument\n";
                 break;
             }
-            if (Rcpp::NumericVector::is_na(v[0]) ||
-                Rcpp::IntegerVector::is_na(v[0])) {
-
+            if (Rcpp::NumericVector::is_na(v[0])) {
                 Rcpp::Rcout << "'arg_value' cannot be NA\n";
                 break;
             }
 
-            ret = GDALAlgorithmArgSetAsDouble(hArg, static_cast<double>(v[0]));
+            ret = GDALAlgorithmArgSetAsDouble(hArg, v[0]);
         }
         break;
 
@@ -865,7 +861,7 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                 break;
             }
 
-            Rcpp::NumericVector v(arg_value);
+            Rcpp::IntegerVector v(arg_value);
             if (v.size() < 1) {
                 Rcpp::Rcout << "'arg_value' is empty\n";
                 break;
@@ -876,9 +872,7 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                 break;
             }
 
-            std::vector<int> values = Rcpp::as<std::vector<int>>(v);
-            ret = GDALAlgorithmArgSetAsIntegerList(
-                hArg, values.size(), values.data());
+            ret = GDALAlgorithmArgSetAsIntegerList(hArg, v.size(), v.begin());
         }
         break;
 
@@ -904,9 +898,7 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                 break;
             }
 
-            std::vector<double> values = Rcpp::as<std::vector<double>>(v);
-            ret = GDALAlgorithmArgSetAsDoubleList(
-                hArg, values.size(), values.data());
+            ret = GDALAlgorithmArgSetAsDoubleList(hArg, v.size(), v.begin());
         }
         break;
 
@@ -1889,9 +1881,8 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
     switch (GDALAlgorithmArgGetType(hArg)) {
         case GAAT_BOOLEAN:
         {
-            Rcpp::LogicalVector v =
+            out =
                 Rcpp::LogicalVector::create(GDALAlgorithmArgGetAsBoolean(hArg));
-            out = v;
         }
         break;
 
@@ -1903,17 +1894,15 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
 
         case GAAT_INTEGER:
         {
-            Rcpp::IntegerVector v =
+            out =
                 Rcpp::IntegerVector::create(GDALAlgorithmArgGetAsInteger(hArg));
-            out = v;
         }
         break;
 
         case GAAT_REAL:
         {
-            Rcpp::NumericVector v =
+            out =
                 Rcpp::NumericVector::create(GDALAlgorithmArgGetAsDouble(hArg));
-            out = v;
         }
         break;
 
@@ -1923,13 +1912,10 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
             papszValue = GDALAlgorithmArgGetAsStringList(hArg);
             int nCount = CSLCount(papszValue);
             if (papszValue && nCount > 0) {
-                std::vector<std::string> v(papszValue, papszValue + nCount);
-                out = Rcpp::wrap(v);
+                out = Rcpp::CharacterVector(papszValue, papszValue + nCount);
             }
             else {
-                Rcpp::CharacterVector v =
-                    Rcpp::CharacterVector::create(NA_STRING);
-                out = v;
+                out = Rcpp::CharacterVector::create(NA_STRING);
             }
             CSLDestroy(papszValue);
         }
@@ -1942,13 +1928,10 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
                 GDALAlgorithmArgGetAsIntegerList(hArg, &nCount);
 
             if (panValue && nCount > 0) {
-                std::vector<int> v(panValue, panValue + nCount);
-                out = Rcpp::wrap(v);
+                out = Rcpp::IntegerVector(panValue, panValue + nCount);
             }
             else {
-                Rcpp::IntegerVector v =
-                    Rcpp::IntegerVector::create(NA_INTEGER);
-                out = v;
+                out = Rcpp::IntegerVector::create(NA_INTEGER);
             }
         }
         break;
@@ -1960,13 +1943,10 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
                 GDALAlgorithmArgGetAsDoubleList(hArg, &nCount);
 
             if (padfValue && nCount > 0) {
-                std::vector<double> v(padfValue, padfValue + nCount);
-                out = Rcpp::wrap(v);
+                out = Rcpp::NumericVector(padfValue, padfValue + nCount);
             }
             else {
-                Rcpp::NumericVector v =
-                    Rcpp::NumericVector::create(NA_REAL);
-                out = v;
+                out = Rcpp::NumericVector::create(NA_REAL);
             }
         }
         break;
