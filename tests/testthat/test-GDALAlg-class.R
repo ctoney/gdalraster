@@ -484,3 +484,90 @@ test_that("`setVectorArgsFromObject` and `outputLayerNameForOpen` work", {
     ds_out$close()
     lyr$close()
 })
+
+test_that("setArg works", {
+    ## set args individually by API
+    f_dem <- system.file("extdata/storml_elev.tif", package="gdalraster")
+    ds <- new(GDALRaster, f_dem)
+
+    f_aspect <- file.path(tempdir(), "aspect_test.tif")
+    on.exit(deleteDataset(f_aspect), add = TRUE)
+
+    alg <- new(GDALAlg, "raster aspect")
+    expect_true(alg$setArg("input", ds))
+    expect_true(alg$setArg("output", f_aspect))
+    expect_true(alg$setArg("creation-option", "COMPRESS=DEFLATE"))
+    expect_true(alg$setArg("overwrite", TRUE))
+    expect_true(alg$setArg("zero-for-flat", TRUE))
+    expect_true(alg$run())
+
+    ds_aspect <- alg$output()
+    expect_true(is(ds_aspect, "Rcpp_GDALRaster"))
+    minmax <- ds_aspect$getMinMax(band = 1, approx_ok = FALSE)
+    expect_equal(minmax[1], 0)
+    expect_true(minmax[2] >= 359 && minmax[2] <= 360)
+    compression <- ds_aspect$getMetadataItem(band = 0, "COMPRESSION",
+                                             "IMAGE_STRUCTURE")
+    expect_equal(compression, "DEFLATE")
+    ds_aspect$close()
+    expect_true(alg$close())
+    alg$release()
+
+    ## instantiate with args, then set additional args individually
+    f_slpp <- file.path(tempdir(), "slpp_test.tif")
+    on.exit(deleteDataset(f_slpp), add = TRUE)
+
+    args <- list()
+    args$input <- ds
+    args$output <- f_slpp
+    args$creation_option <- "COMPRESS=DEFLATE"
+    args$overwrite <- TRUE
+    alg <- new(GDALAlg, "raster slope", args)
+    expect_true(alg$setArg("unit", "percent"))
+    expect_true(alg$run())
+
+    ds_slpp <- alg$output()
+    expect_true(is(ds_slpp, "Rcpp_GDALRaster"))
+    minmax <- ds_slpp$getMinMax(band = 1, approx_ok = FALSE)
+    expect_equal(minmax[1], 0)
+    expect_true(minmax[2] > 100 && minmax[2] < 200)
+    compression <- ds_slpp$getMetadataItem(band = 0, "COMPRESSION",
+                                           "IMAGE_STRUCTURE")
+    expect_equal(compression, "DEFLATE")
+    ds_slpp$close()
+    expect_true(alg$close())
+    alg$release()
+
+    ## instantiate with args, then set additional args individually after
+    ## parsing command-line arguments (which also instantiates the actual
+    ## algorithm internally)
+    f_clip <- file.path(tempdir(), "clip_test.tif")
+    on.exit(deleteDataset(f_clip), add = TRUE)
+
+    args <- list()
+    args$input <- ds
+    args$output <- f_clip
+    args$overwrite <- TRUE
+    alg <- new(GDALAlg, "raster clip", args)
+    expect_true(alg$parseCommandLineArgs())
+    expect_true(
+        alg$setArg("bbox", c(323776.1, 5102172.0,  327466.1, 5104782.0)))
+    expect_true(alg$setArg("creation-option", "COMPRESS=DEFLATE"))
+    set_args <- alg$getExplicitlySetArgs()
+    expect_equal(set_args$bbox, c(323776.1, 5102172.0,  327466.1, 5104782.0),
+                 tolerance = 1e-5)
+    expect_equal(set_args$creation_option, "COMPRESS=DEFLATE")
+    expect_true(alg$run())
+
+    ds_clip <- alg$output()
+    expect_true(is(ds_clip, "Rcpp_GDALRaster"))
+    expect_equal(ds_clip$dim(), c(123, 87, 1))
+    compression <- ds_clip$getMetadataItem(band = 0, "COMPRESSION",
+                                           "IMAGE_STRUCTURE")
+    expect_equal(compression, "DEFLATE")
+    ds_clip$close()
+    expect_true(alg$close())
+    alg$release()
+
+    ds$close()
+})
