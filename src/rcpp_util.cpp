@@ -155,3 +155,18 @@ bool is_namespace_loaded_(const Rcpp::String &pkg) {
     return Rcpp::is_true(Rcpp::all(res));
 }
 
+// is this a gdalraster spatial object?
+bool is_gdalraster_obj_(const Rcpp::RObject &x) {
+    if (x.isNULL())
+        return false;
+
+    if (x.isObject()) {
+        const Rcpp::String cls = x.attr("class");
+        if (cls == "Rcpp_GDALRaster" || cls == "Rcpp_GDALVector")
+            return true;
+        else
+            return false;
+    }
+
+    return false;
+}

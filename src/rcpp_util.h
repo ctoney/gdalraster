@@ -57,6 +57,8 @@ bool has_space_char_(const std::string &s);
 
 bool is_namespace_loaded_(const Rcpp::String &pkg);
 
+bool is_gdalraster_obj_(const Rcpp::RObject &x);
+
 // case-insensitive comparator for std::map
 // https://stackoverflow.com/questions/1801892/how-can-i-make-the-mapfind-operation-case-insensitive
 struct _ci_less {
