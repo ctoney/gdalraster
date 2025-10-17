@@ -922,16 +922,14 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                 ret = GDALAlgorithmArgSetAsString(hArg, val.get_cstring());
                 break;
             }
-            else if (arg_value.isObject()) {
-                const Rcpp::String cls = arg_value.attr("class");
-                if ((cls == "Rcpp_GDALRaster" || cls == "Rcpp_GDALVector") &&
-                    !(ds_input_flags & GADV_OBJECT)) {
-
+            else if (is_gdalraster_obj_(arg_value)) {
+                if (!(ds_input_flags & GADV_OBJECT)) {
                     Rcpp::Rcout << "this argument does not accept a dataset "
                                    "object as input (DSN required, may be "
                                    "created by algorithm)\n";
                     break;
                 }
+                const Rcpp::String cls = arg_value.attr("class");
                 if (cls == "Rcpp_GDALRaster") {
                     const GDALRaster &ds = Rcpp::as<GDALRaster &>(arg_value);
                     ret = GDALAlgorithmArgSetDataset(hArg,
@@ -945,9 +943,8 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                     break;
                 }
                 else {
-                    Rcpp::Rcout << "object must be of class GDALRaster or "
-                                   "GDALVector for a DATASET type algorithm "
-                                   "argument\n";
+                    Rcpp::Rcout << "unhandled object of class " <<
+                                cls.get_cstring() << "\n";
                     break;
                 }
             }
@@ -988,17 +985,25 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                 ret = GDALAlgorithmArgSetDatasetNames(hArg, str_list.data());
                 break;
             }
-            else if (Rcpp::is<Rcpp::List>(arg_value)) {
+            else if (Rcpp::is<Rcpp::List>(arg_value) ||
+                     is_gdalraster_obj_(arg_value)) {
+
                 if (!(ds_input_flags & GADV_OBJECT)) {
                     Rcpp::Rcout << "this argument does not accept dataset "
                                    "objects as input\n";
                     break;
                 }
-                Rcpp::List ds_list(arg_value);
+
+                Rcpp::List ds_list = Rcpp::List::create();
+                if (is_gdalraster_obj_(arg_value))
+                    ds_list.push_back(arg_value);
+                else
+                    ds_list = Rcpp::List(arg_value);
+
                 std::vector<GDALDatasetH> pahDS;
                 for (R_xlen_t i = 0; i < ds_list.size(); ++i) {
-                    Rcpp::RObject x(ds_list[i]);
-                    if (!x.isNULL() && x.isObject()) {
+                    if (is_gdalraster_obj_(ds_list[i])) {
+                        const Rcpp::RObject &x(ds_list[i]);
                         const Rcpp::String cls = x.attr("class");
                         if (cls == "Rcpp_GDALRaster") {
                             const GDALRaster &ds = Rcpp::as<GDALRaster &>(x);
@@ -1009,9 +1014,8 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                             pahDS.push_back(ds.getGDALDatasetH_());
                         }
                         else {
-                            Rcpp::Rcout << "input objects must be of class "
-                                           "GDALRaster or GDALVector for a "
-                                           "DATASET_LIST algorithm argument\n";
+                            Rcpp::Rcout << "unhandled object of class " <<
+                                           cls.get_cstring() << "\n";
                             break;
                         }
                     }
@@ -1647,8 +1651,8 @@ Rcpp::CharacterVector GDALAlg::parseListArgs_(
             std::vector<GDALDatasetH> ds_list = {};
 
             for (R_xlen_t j = 0; j < list_tmp.size(); ++j) {
-                const Rcpp::RObject &val = list_tmp[j];
-                if (!val.isNULL() && val.isObject()) {
+                if (is_gdalraster_obj_(list_tmp[j])) {
+                    const Rcpp::RObject &val = list_tmp[j];
                     const Rcpp::String cls = val.attr("class");
                     if (cls == "Rcpp_GDALRaster") {
                         const GDALRaster &ds =
@@ -1673,6 +1677,9 @@ Rcpp::CharacterVector GDALAlg::parseListArgs_(
                         }
                     }
                 }
+                else {
+                    Rcpp::Rcout << "a list element is not a dataset object\n";
+                }
             }
 
             if (!ds_list.empty()) {
@@ -1680,14 +1687,14 @@ Rcpp::CharacterVector GDALAlg::parseListArgs_(
             }
             else {
                 Rcpp::Rcout << "unhandled list input: " <<
-                    nm_no_lead_dashes.c_str() << "\n";
+                               nm_no_lead_dashes.c_str() << "\n";
             }
             continue;
         }
 
         // potentially a single dataset
-        const Rcpp::RObject &val = list_args[i];
-        if (val.isObject()) {
+        if (is_gdalraster_obj_(list_args[i])) {
+            const Rcpp::RObject &val = list_args[i];
             const Rcpp::String cls = val.attr("class");
             if (cls == "Rcpp_GDALRaster") {
                 const GDALRaster &ds = Rcpp::as<GDALRaster &>(list_args[i]);
