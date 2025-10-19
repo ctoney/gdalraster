@@ -1378,21 +1378,21 @@ void GDALRaster::setRasterColorInterp(int band, const std::string &col_interp) {
     GDALSetRasterColorInterpretation(hBand, gci);
 }
 
-std::vector<double> GDALRaster::getMinMax(int band, bool approx_ok) const {
+Rcpp::NumericVector GDALRaster::getMinMax(int band, bool approx_ok) const {
     checkAccess_(GA_ReadOnly);
 
     GDALRasterBandH hBand = getBand_(band);
-    std::vector<double> min_max(2, NA_REAL);
+    Rcpp::NumericVector min_max = Rcpp::NumericVector::create(NA_REAL, NA_REAL);
     CPLErr err = CE_None;
 #if GDAL_VERSION_NUM >= 3060000
-    err = GDALComputeRasterMinMax(hBand, approx_ok, min_max.data());
+    err = GDALComputeRasterMinMax(hBand, approx_ok, min_max.begin());
 #else
-    GDALComputeRasterMinMax(hBand, approx_ok, min_max.data());
+    GDALComputeRasterMinMax(hBand, approx_ok, min_max.begin());
 #endif
     if (err != CE_None)
-        Rcpp::stop("failed to get min/max");
-    else
-        return min_max;
+        Rcpp::Rcout << "error from GDALComputeRasterMinMax()\n";
+
+    return min_max;
 }
 
 Rcpp::NumericVector GDALRaster::getMinMaxLocation(int band) const {
