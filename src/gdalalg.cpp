@@ -994,9 +994,9 @@ bool GDALAlg::setArg(const Rcpp::String &arg_name,
                     break;
                 }
 
-                Rcpp::List ds_list = Rcpp::List::create();
+                Rcpp::List ds_list;
                 if (is_gdalraster_obj_(arg_value))
-                    ds_list.push_back(arg_value);
+                    ds_list = Rcpp::List::create(arg_value);
                 else
                     ds_list = Rcpp::List(arg_value);
 
