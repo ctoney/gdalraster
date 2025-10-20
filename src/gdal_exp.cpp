@@ -1122,10 +1122,16 @@ Rcpp::NumericMatrix make_chunk_index_(int raster_xsize, int raster_ysize,
         }
         else {
             chunk_xsize = raster_xsize;
+
             chunk_ysize = block_ysize *
                 static_cast<int>(blocks_per_chunk / blocks_per_row);
         }
     }
+
+    chunk_xsize = std::max<int>(chunk_xsize, 1);
+    chunk_xsize = std::min<int>(chunk_xsize, raster_xsize);
+    chunk_ysize = std::max<int>(chunk_ysize, 1);
+    chunk_ysize = std::min<int>(chunk_ysize, raster_ysize);
 
     const int num_chunks_x = static_cast<int>(
         std::ceil(static_cast<double>(raster_xsize) / chunk_xsize));
