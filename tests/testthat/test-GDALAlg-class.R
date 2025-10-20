@@ -210,15 +210,17 @@ test_that("GDALAlg S4 show() works", {
 test_that("algorithm run/output/outputs work", {
     f <- system.file("extdata/storml_elev.tif", package="gdalraster")
 
+    ## basic test with a few different arg types
+    f_clip <- file.path(tempdir(), "elev_clip.tif")
+
     args <- list()
     args$input <- f
-    f_clip <- file.path(tempdir(), "elev_clip.tif")
+    on.exit(deleteDataset(f_clip), add = TRUE)
     args$output <- f_clip
     args$overwrite <- TRUE
     args$bbox <- c(323776.1, 5102172.0,  327466.1, 5104782.0)
 
     expect_no_error(alg <- new(GDALAlg, "raster clip", args))
-
     expect_true(alg$run())
 
     # get the single output
@@ -237,7 +239,57 @@ test_that("algorithm run/output/outputs work", {
     expect_true(alg$close())
     alg$release()
 
-    deleteDataset(f_clip)
+    ## DATASET_LIST arg as vector of filenames and REAL_LIST arg
+    b4_file <- system.file("extdata/sr_b4_20200829.tif", package="gdalraster")
+    b5_file <- system.file("extdata/sr_b5_20200829.tif", package="gdalraster")
+    b6_file <- system.file("extdata/sr_b6_20200829.tif", package="gdalraster")
+    band_files <- c(b6_file, b5_file, b4_file)
+
+    f_vrt <- file.path(tempdir(), "stack_test.vrt")
+    on.exit(deleteDataset(f_vrt), add = TRUE)
+
+    args <- c("--dst-nodata=1,2,3", "--overwrite", band_files, f_vrt)
+    alg <- new(GDALAlg, "raster stack", args)
+    expect_true(alg$run())
+
+    ds_stack <- alg$output()
+    expect_true(is(ds_stack, "Rcpp_GDALRaster"))
+    expect_equal(ds_stack$dim(),  c(149, 112, 3))
+    expect_equal(ds_stack$getNoDataValue(band = 1), 1)
+    expect_equal(ds_stack$getNoDataValue(band = 2), 2)
+    expect_equal(ds_stack$getNoDataValue(band = 3), 3)
+
+    ds_stack$close()
+    expect_true(alg$close())
+    alg$release()
+
+    ## DATASET_LIST arg as objects and REAL_LIST as numeric vector
+    ds_list <- list(new(GDALRaster, b6_file),
+                    new(GDALRaster, b5_file),
+                    new(GDALRaster, b4_file))
+
+    f_vrt2 <- file.path(tempdir(), "stack_test2.vrt")
+    on.exit(deleteDataset(f_vrt2), add = TRUE)
+
+    args <- list("input" = ds_list,
+                 "output" = f_vrt2,
+                 "overwrite" = TRUE,
+                 "dst_nodata" = c(1, 2, 3))
+
+    alg <- new(GDALAlg, "raster stack", args)
+    expect_true(alg$run())
+
+    ds_stack <- alg$output()
+    expect_true(is(ds_stack, "Rcpp_GDALRaster"))
+    expect_equal(ds_stack$dim(),  c(149, 112, 3))
+    expect_equal(ds_stack$getNoDataValue(band = 1), 1)
+    expect_equal(ds_stack$getNoDataValue(band = 2), 2)
+    expect_equal(ds_stack$getNoDataValue(band = 3), 3)
+
+    ds_stack$close()
+    for (i in seq_along(ds_list))
+        ds_list[[i]]$close()
+    alg$release()
 })
 
 test_that("`setVectorArgsFromObject` and `outputLayerNameForOpen` work", {
@@ -579,7 +631,7 @@ test_that("setArg works", {
 
     ds$close()
 
-    ## DATASET_LIST input, and REAL_LIST argument
+    ## DATASET_LIST arg as charcter vector and REAL_LIST as numeric vector
     b4_file <- system.file("extdata/sr_b4_20200829.tif", package="gdalraster")
     b5_file <- system.file("extdata/sr_b5_20200829.tif", package="gdalraster")
     b6_file <- system.file("extdata/sr_b6_20200829.tif", package="gdalraster")
@@ -605,7 +657,7 @@ test_that("setArg works", {
     ds_stack$close()
     alg$release()
 
-    ## DATASET_LIST input as objects
+    ## DATASET_LIST arg as list of objects
     ds_list <- list(new(GDALRaster, b6_file),
                     new(GDALRaster, b5_file),
                     new(GDALRaster, b4_file))
