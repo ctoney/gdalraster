@@ -290,6 +290,35 @@ test_that("algorithm run/output/outputs work", {
     for (i in seq_along(ds_list))
         ds_list[[i]]$close()
     alg$release()
+
+    ## STRING_LIST arg (--src-nodata and --dst-nodata are STRING_LIST in
+    ## 'raster reproject')
+    args <- c("--output", "", "--format", "MEM", "--size=2,1", "--band-count=2",
+              "--datatype=Float32")
+    alg <- gdal_run("raster create", args)
+    ds <- alg$output()
+    alg$release()
+    expect_true(ds$setGeoTransform(c(0, 1, 0, 0, 0, -1)))
+    ds$write(1, 0, 0, 2, 1, c(-999, 1))
+    ds$write(2, 0, 0, 2, 1, c(NaN, 2))
+
+    args <- list("input" = ds,
+                 "output" = "",
+                 "format" = "MEM",
+                 "src-nodata" = c("-999", "nan"),
+                 "dst-nodata" = c("0", "0"))
+    alg <- gdal_run("raster reproject", args)
+    out_ds <- alg$output()
+    alg$release()
+    expect_equal(out_ds$read(1, 0, 0, 2, 1, 2, 1), c(NA_real_, 1))
+    expect_equal(out_ds$read(2, 0, 0, 2, 1, 2, 1), c(NA_real_, 2))
+    out_ds$deleteNoDataValue(band = 1)
+    out_ds$deleteNoDataValue(band = 2)
+    expect_equal(out_ds$read(1, 0, 0, 2, 1, 2, 1), c(0, 1))
+    expect_equal(out_ds$read(2, 0, 0, 2, 1, 2, 1), c(0, 2))
+
+    out_ds$close()
+    ds$close()
 })
 
 test_that("`setVectorArgsFromObject` and `outputLayerNameForOpen` work", {
@@ -392,7 +421,8 @@ test_that("`setVectorArgsFromObject` and `outputLayerNameForOpen` work", {
 
     ## auto set "sql" with "dialect"
     shp_dsn <- system.file("extdata/poly_multipoly.shp", package = "gdalraster")
-    sql <- "SELECT rowid AS fid, ST_Centroid(geometry) As geom FROM poly_multipoly"
+    sql <- "SELECT rowid AS fid, ST_Centroid(geometry) As geom
+            FROM poly_multipoly"
     if (has_spatialite()) {
         lyr_in <- new(GDALVector, shp_dsn, sql, TRUE, NULL, "", "SQLite")
 
