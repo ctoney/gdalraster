@@ -292,7 +292,7 @@ test_that("algorithm run/output/outputs work", {
     alg$release()
 
     ## STRING_LIST arg (--src-nodata and --dst-nodata are STRING_LIST in
-    ## 'raster reproject')
+    ## "raster reproject")
     args <- c("--output", "", "--format", "MEM", "--size=2,1", "--band-count=2",
               "--datatype=Float32")
     alg <- gdal_run("raster create", args)
@@ -712,4 +712,39 @@ test_that("setArg works", {
     for (i in seq_along(ds_list))
         ds_list[[i]]$close()
     alg$release()
+
+    ## INTEGER_LIST (--size in "raster create")
+    ## STRING_LIST (--src-nodata and --dst-nodata in "raster reproject")
+    args <- c("--output", "", "--format", "MEM")
+    alg <- gdal_alg("raster create", args)
+    expect_true(alg$setArg("size", c(2, 1)))
+    expect_true(alg$setArg("band-count", 2))
+    expect_true(alg$setArg("datatype", "Float32"))
+    expect_true(alg$run())
+
+    ds <- alg$output()
+    alg$release()
+    expect_true(ds$setGeoTransform(c(0, 1, 0, 0, 0, -1)))
+    ds$write(1, 0, 0, 2, 1, c(-999, 1))
+    ds$write(2, 0, 0, 2, 1, c(NaN, 2))
+
+    args <- list("input" = ds,
+                 "output" = "",
+                 "format" = "MEM")
+    alg <- gdal_alg("raster reproject", args)
+    expect_true(alg$setArg("src-nodata", c("-999", "nan")))
+    expect_true(alg$setArg("dst-nodata", c("0", "0")))
+    expect_true(alg$run())
+
+    out_ds <- alg$output()
+    alg$release()
+    expect_equal(out_ds$read(1, 0, 0, 2, 1, 2, 1), c(NA_real_, 1))
+    expect_equal(out_ds$read(2, 0, 0, 2, 1, 2, 1), c(NA_real_, 2))
+    out_ds$deleteNoDataValue(band = 1)
+    out_ds$deleteNoDataValue(band = 2)
+    expect_equal(out_ds$read(1, 0, 0, 2, 1, 2, 1), c(0, 1))
+    expect_equal(out_ds$read(2, 0, 0, 2, 1, 2, 1), c(0, 2))
+
+    out_ds$close()
+    ds$close()
 })
