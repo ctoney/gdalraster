@@ -10,6 +10,9 @@
 #include <cpl_port.h>
 #include <cpl_conv.h>
 #include <cpl_string.h>
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 12, 0)
+    #include <cpl_time.h>
+#endif  // GDAL >= 3.12
 #include <cpl_vsi.h>
 #include <gdal_alg.h>
 #include <gdal_utils.h>
@@ -2216,23 +2219,23 @@ SEXP GDALRaster::getDefaultRAT(int band) const {
         GDALRATFieldType gft = GDALRATGetTypeOfCol(hRAT, i);
         GDALRATFieldUsage gfu = GDALRATGetUsageOfCol(hRAT, i);
         if (gft == GFT_Integer) {
-            std::vector<int> int_values(nRow);
+            Rcpp::IntegerVector v = Rcpp::no_init(nRow);
             err = GDALRATValuesIOAsInteger(hRAT, GF_Read, i, 0, nRow,
-                                           int_values.data());
+                                           v.begin());
             if (err == CE_Failure)
                 Rcpp::stop("read column failed");
-            Rcpp::IntegerVector v = Rcpp::wrap(int_values);
+
             v.attr("GFU") = getGFU_string_(gfu);
             df[i] = v;
             col_names[i] = colName;
         }
         else if (gft == GFT_Real) {
-            std::vector<double> dbl_values(nRow);
+            Rcpp::NumericVector v = Rcpp::no_init(nRow);
             err = GDALRATValuesIOAsDouble(hRAT, GF_Read, i, 0, nRow,
-                                          dbl_values.data());
+                                          v.begin());
             if (err == CE_Failure)
                 Rcpp::stop("read column failed");
-            Rcpp::NumericVector v = Rcpp::wrap(dbl_values);
+
             v.attr("GFU") = getGFU_string_(gfu);
             df[i] = v;
             col_names[i] = colName;
@@ -2248,11 +2251,7 @@ SEXP GDALRaster::getDefaultRAT(int band) const {
                 CPLFree(papszStringList);
                 Rcpp::stop("read column failed");
             }
-            std::vector<std::string> str_values(nRow);
-            for (int n = 0; n < nRow; ++n) {
-                str_values[n] = papszStringList[n];
-            }
-            Rcpp::CharacterVector v = Rcpp::wrap(str_values);
+            Rcpp::CharacterVector v(papszStringList, papszStringList + nRow);
             v.attr("GFU") = getGFU_string_(gfu);
             df[i] = v;
             col_names[i] = colName;
@@ -2262,6 +2261,73 @@ SEXP GDALRaster::getDefaultRAT(int band) const {
             }
             CPLFree(papszStringList);
         }
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 12, 0)
+        else if (gft == GFT_Boolean) {
+            bool *pb = static_cast<bool *>(CPLMalloc(nRow * sizeof(bool *)));
+            err = GDALRATValuesIOAsBoolean(hRAT, GF_Read, i, 0, nRow, pb);
+            if (err == CE_Failure)
+                Rcpp::stop("read column failed");
+
+            Rcpp::LogicalVector v(pb, pb + nRow);
+            v.attr("GFU") = getGFU_string_(gfu);
+            df[i] = v;
+            col_names[i] = colName;
+        }
+        else if (gft == GFT_DateTime) {
+            std::vector<GDALRATDateTime> dt(nRow);
+            err = GDALRATValuesIOAsDateTime(hRAT, GF_Read, i, 0, nRow,
+                                            dt.data());
+            if (err == CE_Failure)
+                Rcpp::stop("read column failed");
+
+            Rcpp::NumericVector v = Rcpp::no_init(nRow);
+            Rcpp::CharacterVector classes = {"POSIXct", "POSIXt"};
+            v.attr("class") = classes;
+            v.attr("tzone") = "UTC";
+            v.attr("GFU") = getGFU_string_(gfu);
+            for (int row = 0; row < nRow; ++row) {
+                if (!dt[row].bIsValid) {
+                    v[row] = NA_REAL;
+                    continue;
+                }
+                struct tm brokendowntime;
+                brokendowntime.tm_year = dt[row].nYear - 1900;
+                brokendowntime.tm_mon = dt[row].nMonth - 1;
+                brokendowntime.tm_mday = dt[row].nDay;
+                brokendowntime.tm_hour = dt[row].nHour;
+                brokendowntime.tm_min = dt[row].nMinute;
+                brokendowntime.tm_sec = static_cast<int>(dt[row].fSecond);
+                const int64_t nUnixTime = CPLYMDHMSToUnixTime(&brokendowntime);
+                const double timestamp = static_cast<double>(nUnixTime) +
+                                         std::fmod(dt[row].fSecond, 1);
+                int tzoffset = dt[row].nTimeZoneHour * 3600 +
+                               dt[row].nTimeZoneMinute * 60;
+                if (!dt[row].bPositiveTimeZone)
+                    tzoffset = -tzoffset;
+
+                v[row] = timestamp - tzoffset;
+            }
+            df[i] = v;
+            col_names[i] = colName;
+        }
+        else if (gft == GFT_WKBGeometry) {
+            std::vector<unsigned char *> wkb(nRow);
+            std::vector<size_t> wkb_size(nRow);
+            err = GDALRATValuesIOAsWKBGeometry(hRAT, GF_Read, i, 0, nRow,
+                                               wkb.data(), wkb_size.data());
+            if (err == CE_Failure)
+                Rcpp::stop("read column failed");
+
+            Rcpp::List v(nRow);
+            v.attr("GFU") = getGFU_string_(gfu);
+            for (int row = 0; row < nRow; ++row) {
+                Rcpp::RawVector this_wkb(wkb[row], wkb[row] + wkb_size[row]);
+                v[row] = this_wkb;
+            }
+            df[i] = v;
+            col_names[i] = colName;
+        }
+#endif  // GDAL >= 3.12
         else {
             Rcpp::warning("unhandled GDAL field type");
         }
