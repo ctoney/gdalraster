@@ -2402,16 +2402,18 @@ bool GDALRaster::setDefaultRAT(int band, const Rcpp::DataFrame &df) {
 
     for (int col = 0; col < nCol; ++col) {
         if (Rf_isMatrix(df[col])) {
+            Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                "unsupported column type";
             Rcpp::warning("matrix column is not supported (skipping)");
             continue;
         }
         if (Rf_isFactor(df[col])) {
+            Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                "unsupported column type";
             Rcpp::warning("factor column is not supported (skipping)");
             continue;
         }
-        if (Rcpp::is<Rcpp::IntegerVector>(df[col]) ||
-            Rcpp::is<Rcpp::LogicalVector>(df[col])) {
-
+        if (Rcpp::is<Rcpp::IntegerVector>(df[col])) {
             // add GFT_Integer column
             Rcpp::IntegerVector v = df[col];
             GDALRATFieldUsage gfu = GFU_Generic;
@@ -2421,17 +2423,121 @@ bool GDALRaster::setDefaultRAT(int band, const Rcpp::DataFrame &df) {
             err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
                                       GFT_Integer, gfu);
             if (err == CE_Failure) {
+                Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                    "create RAT column failed";
                 Rcpp::warning("create 'integer' column failed (skipping)");
                 continue;
             }
-            for (int row = 0; row < nRow; ++row) {
-                GDALRATSetValueAsInt(hRAT, row, col, v(row));
+            err = GDALRATValuesIOAsInteger(hRAT, GF_Write, col, 0, nRow,
+                                           v.begin());
+            if (err == CE_Failure) {
+                Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                    "write to RAT column failed";
+                Rcpp::warning("write 'integer' column failed (skipping)");
+                continue;
             }
             nCol_added += 1;
         }
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 12, 0)
+        else if (Rcpp::is<Rcpp::LogicalVector>(df[col])) {
+            Rcpp::LogicalVector v = df[col];
+            if (Rcpp::is_true(Rcpp::any(Rcpp::is_na(v)))) {
+                // add GFT_Integer column
+                GDALRATFieldUsage gfu = GFU_Generic;
+                if (v.hasAttribute("GFU"))
+                    gfu = getGFU_(v.attr("GFU"));
+                Rcpp::String colName(colNames[col]);
+                err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
+                                          GFT_Integer, gfu);
+                if (err == CE_Failure) {
+                    Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                        "create RAT column failed";
+                    Rcpp::warning("create 'integer' column failed (skipping)");
+                    continue;
+                }
+                err = GDALRATValuesIOAsInteger(hRAT, GF_Write, col, 0, nRow,
+                                               v.begin());
+                if (err == CE_Failure) {
+                    Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                        "write to RAT column failed";
+                    Rcpp::warning("write 'integer' column failed (skipping)");
+                    continue;
+                }
+                nCol_added += 1;
+            }
+            else {
+                // add GFT_Boolean column
+                GDALRATFieldUsage gfu = GFU_Generic;
+                if (v.hasAttribute("GFU"))
+                    gfu = getGFU_(v.attr("GFU"));
+                Rcpp::String colName(colNames[col]);
+                err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
+                                          GFT_Boolean, gfu);
+                if (err == CE_Failure) {
+                    Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                        "create RAT column failed";
+                    Rcpp::warning("create 'boolean' column failed (skipping)");
+                    continue;
+                }
+                for (int row = 0; row < nRow; ++row) {
+                    err = GDALRATSetValueAsBoolean(hRAT, row, col, v[row]);
+                    if (err == CE_Failure) {
+                        Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                            "write to RAT column failed";
+                        Rcpp::warning("write 'boolean' column failed "
+                                      "(skipping)");
+                        continue;
+                    }
+                }
+                nCol_added += 1;
+            }
+        }
+#else
+        else if (Rcpp::is<Rcpp::LogicalVector>(df[col])) {
+            // add GFT_Integer column
+            Rcpp::LogicalVector v = df[col];
+            GDALRATFieldUsage gfu = GFU_Generic;
+            if (v.hasAttribute("GFU"))
+                gfu = getGFU_(v.attr("GFU"));
+            Rcpp::String colName(colNames[col]);
+            err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
+                                      GFT_Integer, gfu);
+            if (err == CE_Failure) {
+                Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                    "create RAT column failed";
+                Rcpp::warning("create 'integer' column failed (skipping)");
+                continue;
+            }
+            err = GDALRATValuesIOAsInteger(hRAT, GF_Write, col, 0, nRow,
+                                           v.begin());
+            if (err == CE_Failure) {
+                Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                    "write to RAT column failed";
+                Rcpp::warning("write 'integer' column failed (skipping)");
+                continue;
+            }
+            nCol_added += 1;
+        }
+#endif  // GDAL 3.12
         else if (Rcpp::is<Rcpp::NumericVector>(df[col])) {
-            // add GFT_Real column
             Rcpp::NumericVector v = df[col];
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 12, 0)
+            Rcpp::CharacterVector attr{};
+            if (v.hasAttribute("class"))
+                attr = Rcpp::wrap(v.attr("class"));
+            if (contains_str_(attr, "POSIXct")) {
+                // add GFT_DateTime column
+
+
+
+                // ...
+
+
+            }
+
+
+#endif  // GDAL >= 3.12
+            // add GFT_Real column
             GDALRATFieldUsage gfu = GFU_Generic;
             if (v.hasAttribute("GFU"))
                 gfu = getGFU_(v.attr("GFU"));
@@ -2439,11 +2545,18 @@ bool GDALRaster::setDefaultRAT(int band, const Rcpp::DataFrame &df) {
             err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
                                       GFT_Real, gfu);
             if (err == CE_Failure) {
+                Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                    "create RAT column failed";
                 Rcpp::warning("create 'real' column failed (skipping)");
                 continue;
             }
-            for (int row = 0; row < nRow; ++row) {
-                GDALRATSetValueAsDouble(hRAT, row, col, v(row));
+            err = GDALRATValuesIOAsDouble(hRAT, GF_Write, col, 0, nRow,
+                                          v.begin());
+            if (err == CE_Failure) {
+                Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                    "write to RAT column failed";
+                Rcpp::warning("write 'real' column failed (skipping)");
+                continue;
             }
             nCol_added += 1;
         }
@@ -2457,6 +2570,8 @@ bool GDALRaster::setDefaultRAT(int band, const Rcpp::DataFrame &df) {
             err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
                                       GFT_String, gfu);
             if (err == CE_Failure) {
+                Rcpp::Rcout << "input column " << (col + 1) << ": " <<
+                    "create RAT column failed";
                 Rcpp::warning("create 'string' column failed (skipping)");
                 continue;
             }
