@@ -1,6 +1,6 @@
 # Changelog
 
-## gdalraster 2.3.0.9006 (dev)
+## gdalraster 2.3.0.9007 (dev)
 
 - [`vsi_read_dir()`](https://usdaforestservice.github.io/gdalraster/reference/vsi_read_dir.md):
   fix slow string processing of the file list for return
