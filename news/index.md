@@ -1,6 +1,11 @@
 # Changelog
 
-## gdalraster 2.3.0.9005 (dev)
+## gdalraster 2.3.0.9006 (dev)
+
+- [`vsi_read_dir()`](https://usdaforestservice.github.io/gdalraster/reference/vsi_read_dir.md):
+  fix slow string processing of the file list for return
+  ([\#841](https://github.com/USDAForestService/gdalraster/issues/841),
+  thanks to [@mdsumner](https://github.com/mdsumner)) (2025-12-06)
 
 - add
   [`srs_epsg_treats_as_lat_long()`](https://usdaforestservice.github.io/gdalraster/reference/srs_query.md)

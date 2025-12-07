@@ -40,10 +40,10 @@ vsi_read_dir(path, max_files = 0L, recursive = FALSE, all_files = FALSE)
 ## Value
 
 A character vector containing the names of files and directories in the
-directory given by `path`. The listing is in alphabetical order, and
-does not include the special entries '.' and '..' even if they are
-present in the directory. An empty string (`""`) is returned if `path`
-does not exist.
+directory given by `path` (may be an empty vector `character(0)`). The
+listing is in alphabetical order, and does not include the special
+entries '.' and '..' even if they are present in the directory. An empty
+string (`""`) is returned if `path` does not exist.
 
 ## Note
 
