@@ -11,7 +11,7 @@
 [![CRAN
 status](https://www.r-pkg.org/badges/version/gdalraster)](https://CRAN.R-project.org/package=gdalraster)
 [![r-universe
-status](https://usdaforestservice.r-universe.dev/badges/gdalraster)](https://usdaforestservice.r-universe.dev/gdalraster)
+status](https://firelab.r-universe.dev/badges/gdalraster)](https://firelab.r-universe.dev/gdalraster)
 [![Conda
 Version](https://img.shields.io/conda/vn/conda-forge/r-gdalraster)](https://anaconda.org/conda-forge/r-gdalraster)
 [![OpenSSF Best
@@ -136,14 +136,14 @@ activated environment:
 
 ### From R-universe
 
-[R-universe](https://usdaforestservice.r-universe.dev/gdalraster)
-provides pre-compiled binary packages for Windows and macOS that track
-the development version of **gdalraster**. New packages are built
-usually within ~1 hour of the most recent commit in branch `main`.
+[R-universe](https://firelab.r-universe.dev/gdalraster) provides
+pre-compiled binary packages for Windows and macOS that track the
+development version of **gdalraster**. New packages are built usually
+within ~1 hour of the most recent commit in branch `main`.
 
 ``` r
 # Install the development version from r-universe
-install.packages("gdalraster", repos = c("https://usdaforestservice.r-universe.dev", "https://cran.r-project.org"))
+install.packages("gdalraster", repos = c("https://firelab.r-universe.dev", "https://cran.r-project.org"))
 ```
 
 ### From source code
@@ -235,8 +235,7 @@ Sumner):
 
 ## Documentation
 
-- [Reference
-  Manual](https://firelab.github.io/gdalraster/reference/)
+- [Reference Manual](https://firelab.github.io/gdalraster/reference/)
 - [Raster API
   Tutorial](https://firelab.github.io/gdalraster/articles/raster-api-tutorial.html)
 - [Vector API

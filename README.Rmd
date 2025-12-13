@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 [![codecov](https://codecov.io/gh/ctoney/gdalraster/branch/main/graph/badge.svg?token=MXIOPZQ2IU)](https://app.codecov.io/gh/ctoney/gdalraster)
 [![R-hub](https://github.com/firelab/gdalraster/actions/workflows/rhub.yaml/badge.svg)](https://github.com/firelab/gdalraster/actions/workflows/rhub.yaml)
 [![CRAN status](https://www.r-pkg.org/badges/version/gdalraster)](https://CRAN.R-project.org/package=gdalraster)
-[![r-universe status](https://usdaforestservice.r-universe.dev/badges/gdalraster)](https://usdaforestservice.r-universe.dev/gdalraster)
+[![r-universe status](https://firelab.r-universe.dev/badges/gdalraster)](https://firelab.r-universe.dev/gdalraster)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/r-gdalraster)](https://anaconda.org/conda-forge/r-gdalraster)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9382/badge)](https://www.bestpractices.dev/projects/9382)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/firelab/gdalraster/badge)](https://scorecard.dev/viewer/?uri=github.com/firelab/gdalraster)
@@ -90,11 +90,11 @@ conda install --channel conda-forge r-gdalraster
 
 ### From R-universe
 
-[R-universe](https://usdaforestservice.r-universe.dev/gdalraster) provides pre-compiled binary packages for Windows and macOS that track the development version of **gdalraster**. New packages are built usually within ~1 hour of the most recent commit in branch `main`.
+[R-universe](https://firelab.r-universe.dev/gdalraster) provides pre-compiled binary packages for Windows and macOS that track the development version of **gdalraster**. New packages are built usually within ~1 hour of the most recent commit in branch `main`.
 
 ```{r, eval=FALSE}
 # Install the development version from r-universe
-install.packages("gdalraster", repos = c("https://usdaforestservice.r-universe.dev", "https://cran.r-project.org"))
+install.packages("gdalraster", repos = c("https://firelab.r-universe.dev", "https://cran.r-project.org"))
 ```
 
 ### From source code
