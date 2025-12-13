@@ -56,10 +56,10 @@ ignored when `recursive = TRUE`.
 
 ## See also
 
-[`vsi_mkdir()`](https://usdaforestservice.github.io/gdalraster/reference/vsi_mkdir.md),
-[`vsi_rmdir()`](https://usdaforestservice.github.io/gdalraster/reference/vsi_rmdir.md),
-[`vsi_stat()`](https://usdaforestservice.github.io/gdalraster/reference/vsi_stat.md),
-[`vsi_sync()`](https://usdaforestservice.github.io/gdalraster/reference/vsi_sync.md)
+[`vsi_mkdir()`](https://firelab.github.io/gdalraster/reference/vsi_mkdir.md),
+[`vsi_rmdir()`](https://firelab.github.io/gdalraster/reference/vsi_rmdir.md),
+[`vsi_stat()`](https://firelab.github.io/gdalraster/reference/vsi_stat.md),
+[`vsi_sync()`](https://firelab.github.io/gdalraster/reference/vsi_sync.md)
 
 ## Examples
 

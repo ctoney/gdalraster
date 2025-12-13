@@ -3,7 +3,7 @@
 `createColorRamp()` is a wrapper for `GDALCreateColorRamp()` in the GDAL
 API. It automatically creates a color ramp from one color entry to
 another. Output is an integer matrix in color table format for use with
-[`GDALRaster$setColorTable()`](https://usdaforestservice.github.io/gdalraster/reference/GDALRaster-class.md).
+[`GDALRaster$setColorTable()`](https://firelab.github.io/gdalraster/reference/GDALRaster-class.md).
 
 ## Usage
 
@@ -61,8 +61,8 @@ ramp).
 
 ## See also
 
-[`GDALRaster$getColorTable()`](https://usdaforestservice.github.io/gdalraster/reference/GDALRaster-class.md),
-[`GDALRaster$getPaletteInterp()`](https://usdaforestservice.github.io/gdalraster/reference/GDALRaster-class.md)
+[`GDALRaster$getColorTable()`](https://firelab.github.io/gdalraster/reference/GDALRaster-class.md),
+[`GDALRaster$getPaletteInterp()`](https://firelab.github.io/gdalraster/reference/GDALRaster-class.md)
 
 ## Examples
 
@@ -94,7 +94,7 @@ tcc_file <- calc(expr = "ifelse(CANCOV == -9999, 255, CANCOV)",
                  setRasterNodataValue = TRUE)
 #> calculating from 1 input layer(s)...
 #> ================================================================================
-#> output written to: /tmp/Rtmp5WFawQ/rastcalc1fdd41b09298.tif
+#> output written to: /tmp/RtmpSMOQ9J/rastcalc200973ef4a8c.tif
 
 ds_tcc <- new(GDALRaster, tcc_file, read_only=FALSE)
 

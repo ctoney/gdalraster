@@ -109,7 +109,7 @@ configuration option.
 The `GDAL_NUM_THREADS` configuration option can be set to `ALL_CPUS` or
 an integer value to specify the number of threads to use for
 SOZip-compressed files (see
-[`set_config_option()`](https://usdaforestservice.github.io/gdalraster/reference/set_config_option.md)).
+[`set_config_option()`](https://firelab.github.io/gdalraster/reference/set_config_option.md)).
 
 SOZip can be validated with:
 
@@ -119,7 +119,7 @@ where `zip_file` uses the /vsizip/ prefix.
 
 ## See also
 
-[`vsi_get_file_metadata()`](https://usdaforestservice.github.io/gdalraster/reference/vsi_get_file_metadata.md)
+[`vsi_get_file_metadata()`](https://firelab.github.io/gdalraster/reference/vsi_get_file_metadata.md)
 
 ## Examples
 
@@ -150,7 +150,7 @@ if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
 #> 0...10...20...30...40...50...60...70...80...90...100 - done.
 #> [1] "Files in zip archive:"
 #>             Name Length                Date
-#> 1 storm_lake.lcp 252132 2025-12-07 08:32:00
+#> 1 storm_lake.lcp 252132 2025-12-13 00:59:00
 #> [1] "SOZip metadata:"
 #> $START_DATA_OFFSET
 #> [1] "44"
@@ -183,7 +183,7 @@ if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
 #> [1] "YES"
 #> 
 #> Driver: LCP/FARSITE v.4 Landscape File (.lcp)
-#> Files: /vsizip//tmp/Rtmp5WFawQ/storml_lcp.zip/storm_lake.lcp
+#> Files: /vsizip//tmp/RtmpSMOQ9J/storml_lcp.zip/storm_lake.lcp
 #> Size is 143, 107
 #> Coordinate System is:
 #> 
