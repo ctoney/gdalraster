@@ -63,7 +63,7 @@ bench_program <- c("bench_gdalraster_fetch.R",
                    "bench_sf_read_sf.R",
                    "bench_sf_read_sf_use_stream.R")
 
-timing <- c(25.90, 5.90, 56.98, 176.56, 25.30)
+timing <- c(11.20, 2.87, 25.01, 77.24, 11.17)
 
 df_class <- c("OGRFeatureSet", "base data.frame", "sf", "sf", "sf")
 
