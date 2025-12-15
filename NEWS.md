@@ -1,5 +1,7 @@
 # gdalraster 2.3.0.9100 (dev)
 
+* update web article [Vector Read Benchmarks](https://firelab.github.io/gdalraster/articles/vector-read-benchmarks.html) (2025-12-14)
+
 * transfer repository to the `firelab` GitHub org, with new website URL <https://firelab.github.io/gdalraster/> (2025-12-12)
 
 * add `GDALRaster::getSpatialRef()` synonym (#845) (2025-12-12)
