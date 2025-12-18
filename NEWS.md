@@ -1,26 +1,28 @@
-# gdalraster 2.3.0.9100 (dev)
+# gdalraster 2.4.0
 
-* update web article [Vector Read Benchmarks](https://firelab.github.io/gdalraster/articles/vector-read-benchmarks.html) (2025-12-14)
+## Repository change
 
-* transfer repository to the `firelab` GitHub org, with new website URL <https://firelab.github.io/gdalraster/> (2025-12-12)
+* the development repository moved into the `firelab` organization at <https://github.com/firelab/gdalraster>
+* the package website with documentation and additional web articles is now at <https://firelab.github.io/gdalraster/>
 
-* add `GDALRaster::getSpatialRef()` synonym (#845) (2025-12-12)
+## Spatial Reference System API
 
-* add checks for ctrl-c user interrupt in `buildRAT()` and `combine()` (#844) (2025-12-12)
+* add `srs_info_from_db()`: obtain information about coordinate reference systems in the PROJ database (#832)
+* add `srs_get_axes()`: return a list of the axis names and orientations for a spatial coordinate reference system (#837)
+* add to the set of SRS query functions: `srs_get_area_of_use()`, `srs_get_axes_count()`, `srs_epsg_treats_as_lat_long()`, `srs_epsg_treats_as_northing_easting()` and `srs_get_celestial_body_name()` (#831, #839)
 
-* `vsi_read_dir()`: fix slow string processing of the file list for return (#841, thanks to @mdsumner) (2025-12-06)
+## Other features and improvements
 
-* add `srs_epsg_treats_as_lat_long()` and `srs_epsg_treats_as_northing_easting()` (#839) (2025-12-03)
+* `gdal_formats()`: add Update (`"u"`) to `rw_flags` when GDAL >= 3.11, and add several new columns to the output data frame containing various driver metadata (#833)
+* `vsi_read_dir()`: fix slow string processing of the file list for return, especially for large listings e.g. recursive (#841, thanks to @mdsumner)
+* `plot_raster()`: accept a color palette for the argument `col_map_fn`, to support an implied ramp function (#830, thanks to @wiesehahn)
+* add checks for ctrl-c user interrupt in `buildRAT()` and `combine()` (#844)
+* add `GDALRaster::getSpatialRef()`: class method on a `GDALRaster` object synonymous with `GDALRaster::getProjection()` and `GDALRaster::getProjectionRef()`, for consistency with class `GDALVector` and with the `osgeo.gdal` bindings (#845)
 
-* add `srs_get_axes()`: return a list of the axis names and orientations for a spatial coordinate reference system (#837) (2025-12-02)
+## Documentation
 
-* `gdal_formats()`: add Update (`u`) to `rw_flags` when GDAL >= 3.11, and add several new columns to the output data frame containing various driver metadata (#833) (2025-11-29)
+* update web article [Vector Read Benchmarks](https://firelab.github.io/gdalraster/articles/vector-read-benchmarks.html): new hardware specs, timings, and add C++ raw performance comparisons
 
-* add `srs_info_from_db()`: obtain information about coordinate reference systems in the PROJ DB (#832) (2025-11-28)
-
-* add to the GDAL Spatial Reference System API bindings: `srs_get_area_of_use()`, `srs_get_axes_count()` and `srs_get_celestial_body_name()` (#831) (2025-11-28)
-
-* `plot_raster()`: accept a color palette for the argument `col_map_fn`, to support an implied ramp function (#830) (2025-11-20)
 
 # gdalraster 2.3.0
 
