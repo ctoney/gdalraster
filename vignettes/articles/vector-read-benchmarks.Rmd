@@ -66,11 +66,11 @@ Uses `sf::read_sf()` with argument `use_stream = TRUE`: "use the experimental co
 ## Timings
 
 ```{r, echo = FALSE}
-bench_program <- c("bench_ogr.cpp",
+bench_program <- c("bench_ogr.cpp (C++ raw perf)",
                    "bench_gdalraster_fetch.R",
                    "bench_gdalraster_fetch_conv_to_sf.R",
                    "bench_sf_read_sf.R",
-                   "bench_ogr_batch.cpp",
+                   "bench_ogr_batch.cpp (C++ raw perf)",
                    "bench_gdalraster_arrow_stream.R",
                    "bench_sf_read_sf_use_stream.R")
 
