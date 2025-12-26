@@ -1750,10 +1750,7 @@ void GDALAlg::instantiateAlg_() {
     Rcpp::stop(GDALALG_MIN_GDAL_MSG_);
 #else
     // instantiate m_hAlg
-    // TODO: GDAL 3.12 adds GDALAlgorithmRegistryInstantiateAlgFromPath().
 
-    // For GDAL < 3.12, step through the path if there are subcommands, and
-    // use GDALAlgorithmRegistryInstantiateAlg().
     if (m_hAlg || m_hActualAlg) {
         Rcpp::stop(
             "instantiateAlg_(): algorithm object already instantiated");
@@ -1764,6 +1761,24 @@ void GDALAlg::instantiateAlg_() {
     if (!reg)
         Rcpp::stop("failed to obtain global algorithm registry");
 
+    // For GDAL < 3.12, step through the path if there are subcommands, and
+    // use GDALAlgorithmRegistryInstantiateAlg().
+    // GDAL 3.12 adds GDALAlgorithmRegistryInstantiateAlgFromPath().
+
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 12, 0)
+    std::vector<const char *> alg_path = {};
+    for (const Rcpp::String s : m_cmd) {
+        alg_path.push_back(s.get_cstring());
+    }
+    alg_path.push_back(nullptr);
+
+    m_hAlg = GDALAlgorithmRegistryInstantiateAlgFromPath(reg, alg_path.data());
+    if (!m_hAlg) {
+        Rcpp::Rcout << "algorithm path: " << m_cmd_str.c_str() << "\n";
+        Rcpp::stop("failed to instantiate CLI algorithm from path");
+    }
+
+#else
     if (m_cmd.size() == 1) {
         Rcpp::String cmd(m_cmd[0]);
 
@@ -1832,11 +1847,15 @@ void GDALAlg::instantiateAlg_() {
                 GDALAlgorithmRelease(alg);
         }
     }
+#endif  // GDAL 3.12
+
+    if (reg)
+        GDALAlgorithmRegistryRelease(reg);
+
 #endif  // GDALALG_MIN_GDAL_
 }
 
 std::vector<std::string> GDALAlg::getOutputArgNames_() const {
-
     std::vector<std::string> names_out = {};
 
 #if GDAL_VERSION_NUM < GDALALG_MIN_GDAL_
