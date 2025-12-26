@@ -1,3 +1,7 @@
+# gdalraster 2.4.0.9000 (dev)
+
+* (internal) class `GDALAlg`: use `GDALAlgorithmRegistryInstantiateAlgFromPath()` if GDAL >= 3.12 (#859) (2025-12-26)
+
 # gdalraster 2.4.0
 
 ## Repository change
@@ -22,7 +26,6 @@
 ## Documentation
 
 * update web article [Vector Read Benchmarks](https://firelab.github.io/gdalraster/articles/vector-read-benchmarks.html): new hardware specs, timings, and add C++ raw performance comparisons
-
 
 # gdalraster 2.3.0
 
