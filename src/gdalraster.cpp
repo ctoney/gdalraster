@@ -10,6 +10,7 @@
 #include <cpl_port.h>
 #include <cpl_conv.h>
 #include <cpl_string.h>
+#include <cpl_time.h>
 #include <cpl_vsi.h>
 #include <gdal_alg.h>
 #include <gdal_utils.h>
@@ -2220,43 +2221,36 @@ SEXP GDALRaster::getDefaultRAT(int band) const {
         GDALRATFieldType gft = GDALRATGetTypeOfCol(hRAT, i);
         GDALRATFieldUsage gfu = GDALRATGetUsageOfCol(hRAT, i);
         if (gft == GFT_Integer) {
-            std::vector<int> int_values(nRow);
+            Rcpp::IntegerVector v = Rcpp::no_init(nRow);
             err = GDALRATValuesIOAsInteger(hRAT, GF_Read, i, 0, nRow,
-                                           int_values.data());
+                                           v.begin());
             if (err == CE_Failure)
                 Rcpp::stop("read column failed");
-            Rcpp::IntegerVector v = Rcpp::wrap(int_values);
             v.attr("GFU") = getGFU_string_(gfu);
             df[i] = v;
             col_names[i] = colName;
         }
         else if (gft == GFT_Real) {
-            std::vector<double> dbl_values(nRow);
+            Rcpp::NumericVector v = Rcpp::no_init(nRow);
             err = GDALRATValuesIOAsDouble(hRAT, GF_Read, i, 0, nRow,
-                                          dbl_values.data());
+                                          v.begin());
             if (err == CE_Failure)
                 Rcpp::stop("read column failed");
-            Rcpp::NumericVector v = Rcpp::wrap(dbl_values);
             v.attr("GFU") = getGFU_string_(gfu);
             df[i] = v;
             col_names[i] = colName;
         }
         else if (gft == GFT_String) {
-            char **papszStringList = reinterpret_cast<char**>(
-                CPLCalloc(sizeof(char*), nRow));
+            char **papszStringList =
+                reinterpret_cast<char**>(CPLCalloc(sizeof(char*), nRow));
 
             err = GDALRATValuesIOAsString(hRAT, GF_Read, i, 0, nRow,
                                           papszStringList);
-
             if (err == CE_Failure) {
                 CPLFree(papszStringList);
                 Rcpp::stop("read column failed");
             }
-            std::vector<std::string> str_values(nRow);
-            for (int n = 0; n < nRow; ++n) {
-                str_values[n] = papszStringList[n];
-            }
-            Rcpp::CharacterVector v = Rcpp::wrap(str_values);
+            Rcpp::CharacterVector v(papszStringList, papszStringList + nRow);
             v.attr("GFU") = getGFU_string_(gfu);
             df[i] = v;
             col_names[i] = colName;
@@ -2266,6 +2260,86 @@ SEXP GDALRaster::getDefaultRAT(int band) const {
             }
             CPLFree(papszStringList);
         }
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 12, 0)
+        else if (gft == GFT_Boolean) {
+            bool *pbData = nullptr;
+            pbData = static_cast<bool*>(CPLMalloc(nRow * sizeof(bool)));
+            if (!pbData) {
+                Rcpp::stop(
+                    "failed to allocate memory for boolean column values");
+            }
+            err = GDALRATValuesIOAsBoolean(hRAT, GF_Read, i, 0, nRow, pbData);
+            if (err == CE_Failure) {
+                CPLFree(pbData);
+                Rcpp::stop("read column failed");
+            }
+
+            Rcpp::LogicalVector v(pbData, pbData + nRow);
+            CPLFree(pbData);
+            v.attr("GFU") = getGFU_string_(gfu);
+            df[i] = v;
+            col_names[i] = colName;
+        }
+        else if (gft == GFT_DateTime) {
+            std::vector<GDALRATDateTime> dt_values(nRow);
+            err = GDALRATValuesIOAsDateTime(hRAT, GF_Read, i, 0, nRow,
+                                            dt_values.data());
+            if (err == CE_Failure)
+                Rcpp::stop("read column failed");
+
+            Rcpp::NumericVector v = Rcpp::no_init(nRow);
+            for (int n = 0; n < nRow; ++n) {
+                if (dt_values[n].bIsValid) {
+                    struct tm brokendowntime;
+                    brokendowntime.tm_year = dt_values[n].nYear - 1900;
+                    brokendowntime.tm_mon = dt_values[n].nMonth - 1;
+                    brokendowntime.tm_mday = dt_values[n].nDay;
+                    brokendowntime.tm_hour = dt_values[n].nHour;
+                    brokendowntime.tm_min = dt_values[n].nMinute;
+                    brokendowntime.tm_sec =
+                        static_cast<int>(dt_values[n].fSecond);
+                    GIntBig nUnixTime = CPLYMDHMSToUnixTime(&brokendowntime);
+                    int nTimeZoneOffset = dt_values[n].nTimeZoneHour * 3600 +
+                                          dt_values[n].nTimeZoneMinute * 60;
+                    if (!dt_values[n].bPositiveTimeZone)
+                        nTimeZoneOffset = -nTimeZoneOffset;
+                    nUnixTime -= nTimeZoneOffset;
+                    v[n] = static_cast<double>(nUnixTime) +
+                           std::fmod(dt_values[n].fSecond, 1);
+                }
+                else {
+                    v[n] = NA_REAL;
+                }
+            }
+
+            Rcpp::CharacterVector classes = {"POSIXct", "POSIXt"};
+            v.attr("class") = classes;
+            v.attr("GFU") = getGFU_string_(gfu);
+            df[i] = v;
+            col_names[i] = colName;
+        }
+        else if (gft == GFT_WKBGeometry) {
+            std::vector<GByte*> wkb_strings(nRow);
+            std::vector<size_t> wkb_sizes(nRow);
+            err = GDALRATValuesIOAsWKBGeometry(hRAT, GF_Read, i, 0, nRow,
+                                               wkb_strings.data(),
+                                               wkb_sizes.data());
+            if (err == CE_Failure)
+                Rcpp::stop("read column failed");
+
+            Rcpp::List v = Rcpp::no_init(nRow);
+            for (int n = 0; n < nRow; ++n) {
+                Rcpp::RawVector wkb(wkb_strings[n],
+                                    wkb_strings[n] + wkb_sizes[n]);
+                v[n] = wkb;
+                CPLFree(wkb_strings[n]);
+            }
+
+            v.attr("GFU") = getGFU_string_(gfu);
+            df[i] = v;
+            col_names[i] = colName;
+        }
+#endif  // GDAL 3.12
         else {
             Rcpp::warning("unhandled GDAL field type");
         }
@@ -2350,6 +2424,32 @@ bool GDALRaster::setDefaultRAT(int band, const Rcpp::DataFrame &df) {
         if (Rcpp::is<Rcpp::IntegerVector>(df[col]) ||
             Rcpp::is<Rcpp::LogicalVector>(df[col])) {
 
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 12, 0)
+            // if this is a logical vector without NA, add GFT_Boolean column
+            if (Rcpp::is<Rcpp::LogicalVector>(df[col])) {
+                Rcpp::LogicalVector v = df[col];
+                if (Rcpp::is_false(Rcpp::any(Rcpp::is_na(v)))) {
+                    GDALRATFieldUsage gfu = GFU_Generic;
+                    if (v.hasAttribute("GFU"))
+                        gfu = getGFU_(v.attr("GFU"));
+                    Rcpp::String colName(colNames[col]);
+                    err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
+                                              GFT_Boolean, gfu);
+                    if (err == CE_Failure) {
+                        Rcpp::warning(
+                            "create 'boolean' column failed (skipping)");
+                        continue;
+                    }
+                    for (int row = 0; row < nRow; ++row) {
+                        GDALRATSetValueAsBoolean(
+                            hRAT, row, col, v[row] == TRUE ? true : false);
+                    }
+                    nCol_added += 1;
+                    continue;
+                }
+            }
+#endif  // GDAL 3.12
+
             // add GFT_Integer column
             Rcpp::IntegerVector v = df[col];
             GDALRATFieldUsage gfu = GFU_Generic;
@@ -2363,17 +2463,54 @@ bool GDALRaster::setDefaultRAT(int band, const Rcpp::DataFrame &df) {
                 continue;
             }
             for (int row = 0; row < nRow; ++row) {
-                GDALRATSetValueAsInt(hRAT, row, col, v(row));
+                GDALRATSetValueAsInt(hRAT, row, col, v[row]);
             }
             nCol_added += 1;
         }
         else if (Rcpp::is<Rcpp::NumericVector>(df[col])) {
-            // add GFT_Real column
             Rcpp::NumericVector v = df[col];
             GDALRATFieldUsage gfu = GFU_Generic;
             if (v.hasAttribute("GFU"))
                 gfu = getGFU_(v.attr("GFU"));
             Rcpp::String colName(colNames[col]);
+
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 12, 0)
+            // if this is POSIXct, add GFT_DateTime column
+            Rcpp::CharacterVector attr = {};
+            if (v.hasAttribute("class"))
+                attr = Rcpp::wrap(v.attr("class"));
+            if (!(std::find(attr.begin(), attr.end(), "POSIXct") ==
+                  attr.end())) {
+
+                err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
+                                          GFT_DateTime, gfu);
+                if (err == CE_Failure) {
+                    Rcpp::warning("create 'DateTime' column failed (skipping)");
+                    continue;
+                }
+                for (int row = 0; row < nRow; ++row) {
+                    const int64_t nUnixTime = static_cast<int64_t>(v[row]);
+                    struct tm brokendowntime;
+                    CPLUnixTimeToYMDHMS(nUnixTime, &brokendowntime);
+                    GDALRATDateTime dt;
+                    dt.nYear = brokendowntime.tm_year + 1900;
+                    dt.nMonth = brokendowntime.tm_mon + 1;
+                    dt.nDay = brokendowntime.tm_mday;
+                    dt.nHour = brokendowntime.tm_hour;
+                    dt.nMinute = brokendowntime.tm_min;
+                    dt.fSecond = brokendowntime.tm_sec +
+                                 std::fmod(static_cast<float>(v[row]), 1.0f);
+                    dt.nTimeZoneHour = 0;
+                    dt.nTimeZoneMinute = 0;
+                    dt.bIsValid = true;
+                    GDALRATSetValueAsDateTime(hRAT, row, col, &dt);
+                }
+                nCol_added += 1;
+                continue;
+            }
+#endif  // GDAL 3.12
+
+            // add GFT_Real column
             err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
                                       GFT_Real, gfu);
             if (err == CE_Failure) {
@@ -2381,7 +2518,7 @@ bool GDALRaster::setDefaultRAT(int band, const Rcpp::DataFrame &df) {
                 continue;
             }
             for (int row = 0; row < nRow; ++row) {
-                GDALRATSetValueAsDouble(hRAT, row, col, v(row));
+                GDALRATSetValueAsDouble(hRAT, row, col, v[row]);
             }
             nCol_added += 1;
         }
@@ -2399,11 +2536,40 @@ bool GDALRaster::setDefaultRAT(int band, const Rcpp::DataFrame &df) {
                 continue;
             }
             for (int row = 0; row < nRow; ++row) {
-                Rcpp::String s(v(row));
+                Rcpp::String s(v[row]);
                 GDALRATSetValueAsString(hRAT, row, col, s.get_cstring());
             }
             nCol_added += 1;
         }
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 12, 0)
+        else if (Rcpp::is<Rcpp::List>(df[col])) {
+            // add GFT_WKBGeometry column if this is a list of raw vectors
+            Rcpp::List v = df[col];
+            for (int row = 0; row < nRow; ++row) {
+                if (!Rcpp::is<Rcpp::RawVector>(v[row])) {
+                    Rcpp::warning(
+                        "list column is supported only for WKB raw vectors");
+                    continue;
+                }
+            }
+            GDALRATFieldUsage gfu = GFU_Generic;
+            if (v.hasAttribute("GFU"))
+                gfu = getGFU_(v.attr("GFU"));
+            Rcpp::String colName(colNames[col]);
+            err = GDALRATCreateColumn(hRAT, colName.get_cstring(),
+                                      GFT_WKBGeometry, gfu);
+            if (err == CE_Failure) {
+                Rcpp::warning("create 'WKBGeometry' column failed (skipping)");
+                continue;
+            }
+            for (int row = 0; row < nRow; ++row) {
+                Rcpp::RawVector wkb = v[row];
+                GDALRATSetValueAsWKBGeometry(hRAT, row, col, wkb.begin(),
+                                             wkb.size());
+            }
+            nCol_added += 1;
+        }
+#endif  // GDAL 3.12
         else {
             Rcpp::warning("unsupported column type (skipping)");
         }
