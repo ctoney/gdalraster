@@ -495,6 +495,61 @@ test_that("get/set default RAT works", {
 
     ds$close()
     deleteDataset(f)
+
+    ## test read/write RAT with new field types GFT_Boolean, GFT_DateTime and
+    ## and GFT_WKBGeometry with GDAL >= 3.12
+    skip_if(gdal_version_num() < gdal_compute_version(3, 12, 0))
+
+    # adapted from GDAL autotest/gcore/tiff_write.py
+    # https://github.com/OSGeo/gdal/blob/2327638e4a399ac1e902623bfda68a03956288b6/autotest/gcore/tiff_write.py#L12490
+    f <- tempfile(fileext = ".tif")
+    on.exit(deleteDataset(f), add = TRUE)
+
+    set_config_option("GTIFF_WRITE_RAT_TO_PAM", "")
+
+    ds <- create(format = "GTiff", dst_filename = f, xsize = 1, ysize = 1,
+                 nbands = 1, dataType = "Byte", return_obj = TRUE)
+
+    tbl <- data.frame(v_int = as.integer(123))
+    tbl$v_dbl <- 45.5
+    tbl$v_str <- "str"
+    tbl$v_bool <- TRUE
+    tbl$v_dt <- as.POSIXct("2025-12-31 23:58:59.500 GMT", tz = "UTC")
+    tbl$v_wkb <- list(g_wk2wk("POINT (1.0 2)"))
+
+    expect_true(ds$setDefaultRAT(band=1, tbl))
+    ds$flushCache()
+
+    pam_file <- paste0(f, ".aux.xml")
+    expect_false(vsi_stat(pam_file))
+
+    tbl2 <- ds$getDefaultRAT(band=1)
+    ignored_attrs <- c("waldo_opts", "GFU", "tzone")
+    expect_equal(nrow(tbl2), nrow(tbl))
+    expect_equal(ncol(tbl2), ncol(tbl))
+    expect_equal(tbl2$v_int, tbl$v_int, ignore_attr = ignored_attrs)
+    expect_equal(tbl2$v_dbl, tbl$v_dbl, ignore_attr = ignored_attrs)
+    expect_equal(tbl2$v_bool, tbl$v_bool, ignore_attr = ignored_attrs)
+    expect_equal(tbl2$v_dt, tbl$v_dt, ignore_attr = ignored_attrs)
+    expect_equal(tbl2$v_wkb, tbl$v_wkb, ignore_attr = ignored_attrs)
+
+    rm(tbl2)
+    ds$close()
+
+    f2 <- tempfile(fileext = ".tif")
+    on.exit(deleteDataset(f2), add = TRUE)
+    ds2 <- createCopy("GTiff", f2, f, return_obj = TRUE)
+    # repeat on the copied dataset
+    tbl2 <- ds2$getDefaultRAT(band=1)
+    expect_equal(nrow(tbl2), nrow(tbl))
+    expect_equal(ncol(tbl2), ncol(tbl))
+    expect_equal(tbl2$v_int, tbl$v_int, ignore_attr = ignored_attrs)
+    expect_equal(tbl2$v_dbl, tbl$v_dbl, ignore_attr = ignored_attrs)
+    expect_equal(tbl2$v_bool, tbl$v_bool, ignore_attr = ignored_attrs)
+    expect_equal(tbl2$v_dt, tbl$v_dt, ignore_attr = ignored_attrs)
+    expect_equal(tbl2$v_wkb, tbl$v_wkb, ignore_attr = ignored_attrs)
+
+    ds2$close()
 })
 
 test_that("add band works", {
