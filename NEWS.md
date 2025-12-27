@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9000 (dev)
+# gdalraster 2.4.0.9010 (dev)
+
+* raster attribute table: support new field types `GFT_Boolean`, `GFT_DateTime` and `GFT_WKBGeometry` with GDAL >= 3.12 (#860) (2025-12-27)
 
 * (internal) class `GDALAlg`: use `GDALAlgorithmRegistryInstantiateAlgFromPath()` if GDAL >= 3.12 (#859) (2025-12-26)
 
