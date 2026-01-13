@@ -5,7 +5,8 @@
 
 #include "rcpp_util.h"
 
-#include <Rcpp.h>
+#include <cpl_port.h>
+#include <cpl_string.h>
 
 #include <algorithm>
 #include <cctype>
@@ -169,4 +170,15 @@ bool is_gdalraster_obj_(const Rcpp::RObject &x) {
     }
 
     return false;
+}
+
+// wrap a GDAL CPLStringList as R character vector
+// (since CPLStringList .begin() and .end() require GDAL >= 3.9)
+Rcpp::CharacterVector wrap_gdal_string_list_(const CPLStringList &string_list) {
+    int nCount = string_list.size();
+    Rcpp::CharacterVector out = Rcpp::no_init(nCount);
+    for (int i = 0; i < nCount; ++i) {
+        out[i] = string_list[i];
+    }
+    return out;
 }

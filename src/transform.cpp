@@ -33,21 +33,11 @@ std::vector<int> getPROJVersion() {
 //' @noRd
 // [[Rcpp::export(name = ".getPROJSearchPaths")]]
 Rcpp::CharacterVector getPROJSearchPaths() {
-    char **papszPaths = OSRGetPROJSearchPaths();
-
-    int nItems = CSLCount(papszPaths);
-    if (nItems > 0) {
-        Rcpp::CharacterVector paths(nItems);
-        for (int i = 0; i < nItems; ++i) {
-            paths(i) = papszPaths[i];
-        }
-        CSLDestroy(papszPaths);
-        return paths;
-    }
-    else {
-        CSLDestroy(papszPaths);
+    const CPLStringList aosPaths(OSRGetPROJSearchPaths());
+    if (!aosPaths.empty())
+        return wrap_gdal_string_list_(aosPaths);
+    else
         return "";
-    }
 }
 
 //' set search path(s) for PROJ resource files

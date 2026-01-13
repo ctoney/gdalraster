@@ -57,8 +57,8 @@ void append_subalg_names_desc_(const GDALAlgorithmH alg,
                                const std::string &contains,
                                bool console_out) {
 
-    char **subnames = GDALAlgorithmGetSubAlgorithmNames(alg);
-    for (int i = 0; i < CSLCount(subnames); ++i) {
+    const CPLStringList subnames(GDALAlgorithmGetSubAlgorithmNames(alg));
+    for (int i = 0; i < subnames.size(); ++i) {
         GDALAlgorithmH subalg = nullptr;
         subalg = GDALAlgorithmInstantiateSubAlgorithm(alg, subnames[i]);
         if (!subalg) {
@@ -95,8 +95,6 @@ void append_subalg_names_desc_(const GDALAlgorithmH alg,
 
         GDALAlgorithmRelease(subalg);
     }
-
-    CSLDestroy(subnames);
 }
 #endif  // GDALALG_MIN_GDAL_
 
@@ -124,8 +122,8 @@ Rcpp::DataFrame gdal_commands(const std::string &contains, bool recurse,
         Rcpp::stop("failed to instantiate \"gdal\" entry point");
     }
 
-    char **names = GDALAlgorithmGetSubAlgorithmNames(gdal_alg);
-    const int num_names = CSLCount(names);
+    const CPLStringList names(GDALAlgorithmGetSubAlgorithmNames(gdal_alg));
+    const int num_names = names.size();
     if (num_names == 0) {
         GDALAlgorithmRegistryRelease(reg);
         Rcpp::stop("failed to obtain top-level algorithm names");
@@ -175,7 +173,6 @@ Rcpp::DataFrame gdal_commands(const std::string &contains, bool recurse,
         GDALAlgorithmRelease(alg);
     }
 
-    CSLDestroy(names);
     GDALAlgorithmRelease(gdal_alg);
     GDALAlgorithmRegistryRelease(reg);
 
@@ -207,12 +204,9 @@ Rcpp::CharacterVector gdal_global_reg_names() {
         return out;
     }
 
-    char **names = GDALAlgorithmRegistryGetAlgNames(reg);
-    for (int i = 0; i < CSLCount(names); ++i) {
-        out.push_back(names[i]);
-    }
+    const CPLStringList names(GDALAlgorithmRegistryGetAlgNames(reg));
+    out = wrap_gdal_string_list_(names);
 
-    CSLDestroy(names);
     GDALAlgorithmRegistryRelease(reg);
     return out;
 #endif  // GDALALG_MIN_GDAL_
@@ -324,27 +318,19 @@ Rcpp::List GDALAlg::info() const {
                        "has_subalgorithms");
 
     if (GDALAlgorithmHasSubAlgorithms(alg)) {
-        char **papszNames = GDALAlgorithmGetSubAlgorithmNames(alg);
-        int nCount = CSLCount(papszNames);
-        if (nCount > 0) {
-            std::vector<std::string> names(papszNames, papszNames + nCount);
-            alg_info.push_back(Rcpp::wrap(names), "subalgorithm_names");
-        }
-        else {
-            alg_info.push_back(Rcpp::CharacterVector::create(),
-                               "subalgorithm_names");
-        }
-        CSLDestroy(papszNames);
+        const CPLStringList aosNames(GDALAlgorithmGetSubAlgorithmNames(alg));
+        alg_info.push_back(wrap_gdal_string_list_(aosNames),
+                           "subalgorithm_names");
     }
     else {
         alg_info.push_back(Rcpp::CharacterVector::create(),
                            "subalgorithm_names");
     }
 
-    char **papszArgNames = GDALAlgorithmGetArgNames(alg);
-    int nCount = CSLCount(papszArgNames);
+    CPLStringList aosArgNames(GDALAlgorithmGetArgNames(alg));
+    int nCount = aosArgNames.size();
     if (nCount > 0) {
-        std::vector<std::string> names(papszArgNames, papszArgNames + nCount);
+        std::vector<std::string> names(aosArgNames);
 
 #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 12, 0)
         // see https://lists.osgeo.org/pipermail/gdal-dev/2025-August/060825.html
@@ -375,7 +361,6 @@ Rcpp::List GDALAlg::info() const {
     else {
         alg_info.push_back(Rcpp::CharacterVector::create(), "arg_names");
     }
-    CSLDestroy(papszArgNames);
 
     return alg_info;
 #endif  // GDALALG_MIN_GDAL_
@@ -410,17 +395,8 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
     arg_info.push_back(GDALAlgorithmArgGetDescription(hArg), "description");
     arg_info.push_back(GDALAlgorithmArgGetShortName(hArg), "short_name");
 
-    char **papszAliases = GDALAlgorithmArgGetAliases(hArg);
-    int nCount = CSLCount(papszAliases);
-    if (papszAliases && nCount > 0) {
-        Rcpp::CharacterVector v(papszAliases, papszAliases + nCount);
-        arg_info.push_back(v, "aliases");
-    }
-    else {
-        Rcpp::CharacterVector v = Rcpp::CharacterVector::create();
-        arg_info.push_back(v, "aliases");
-    }
-    CSLDestroy(papszAliases);
+    CPLStringList aosAliases(GDALAlgorithmArgGetAliases(hArg));
+    arg_info.push_back(wrap_gdal_string_list_(aosAliases), "aliases");
 
     arg_info.push_back(GDALAlgorithmArgGetMetaVar(hArg), "meta_var");
     arg_info.push_back(GDALAlgorithmArgGetCategory(hArg), "category");
@@ -434,16 +410,8 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
                        "repeated_arg_allowed");
 
     if (eType == GAAT_STRING || eType == GAAT_STRING_LIST) {
-        char **papszChoices = GDALAlgorithmArgGetChoices(hArg);
-        int nCount = CSLCount(papszChoices);
-        if (papszChoices && nCount > 0) {
-            Rcpp::CharacterVector v(papszChoices, papszChoices + nCount);
-            arg_info.push_back(v, "choices");
-        }
-        else {
-            arg_info.push_back(Rcpp::CharacterVector::create(), "choices");
-        }
-        CSLDestroy(papszChoices);
+        const CPLStringList aosChoices(GDALAlgorithmArgGetChoices(hArg));
+        arg_info.push_back(wrap_gdal_string_list_(aosChoices), "choices");
     }
     else {
         arg_info.push_back(Rcpp::CharacterVector::create(), "choices");
@@ -501,16 +469,11 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
 
             arg_info.push_back(Rcpp::wrap(val), "default_value");
     #else
-            char **papszValue = nullptr;
-            papszValue = GDALAlgorithmArgGetDefaultAsStringList(hArg);
-            int nCount = CSLCount(papszValue);
-            Rcpp::CharacterVector val;
-            if (papszValue && nCount > 0)
-                val = Rcpp::CharacterVector(papszValue, papszValue + nCount);
-            else
-                val = Rcpp::CharacterVector::create();
-            CSLDestroy(papszValue);
-            arg_info.push_back(val, "default_value");
+            const CPLStringList aosValue(
+                GDALAlgorithmArgGetDefaultAsStringList(hArg));
+
+            arg_info.push_back(wrap_gdal_string_list_(aosValue),
+                               "default_value");
     #endif
         }
 
@@ -1306,25 +1269,24 @@ Rcpp::List GDALAlg::getExplicitlySetArgs() const {
     if (!m_hAlg)
         Rcpp::stop("algorithm not instantiated");
 
-    char **papszArgNames = nullptr;
-    papszArgNames =
-        GDALAlgorithmGetArgNames(m_hActualAlg ? m_hActualAlg : m_hAlg);
+    const CPLStringList aosArgNames(
+        GDALAlgorithmGetArgNames(m_hActualAlg ? m_hActualAlg : m_hAlg));
 
     Rcpp::List out = Rcpp::List::create();
 
-    const int nCount = CSLCount(papszArgNames);
+    const int nCount = aosArgNames.size();
     if (nCount > 0) {
         for (int i = 0; i < nCount; ++i) {
             GDALAlgorithmArgH hArg = nullptr;
             hArg = GDALAlgorithmGetArg(m_hActualAlg ? m_hActualAlg : m_hAlg,
-                                       papszArgNames[i]);
+                                       aosArgNames[i]);
             if (!hArg) {
                 if (!quiet)
-                    Rcpp::Rcout << "got NULL for: " << papszArgNames[i] << "\n";
+                    Rcpp::Rcout << "got NULL for: " << aosArgNames[i] << "\n";
                 continue;
             }
             if (GDALAlgorithmArgIsExplicitlySet(hArg)) {
-                Rcpp::String arg_name_out(papszArgNames[i]);
+                Rcpp::String arg_name_out(aosArgNames[i]);
                 arg_name_out.replace_all("-", "_");
 
                 // dataset object
@@ -1376,7 +1338,6 @@ Rcpp::List GDALAlg::getExplicitlySetArgs() const {
             GDALAlgorithmArgRelease(hArg);
         }
     }
-    CSLDestroy(papszArgNames);
 
     return out;
 #endif
@@ -1861,9 +1822,9 @@ std::vector<std::string> GDALAlg::getOutputArgNames_() const {
 #if GDAL_VERSION_NUM < GDALALG_MIN_GDAL_
     return names_out;
 #else
-    char **papszArgNames = nullptr;
+    CPLStringList aosArgNames;
     if (m_hActualAlg) {
-        papszArgNames = GDALAlgorithmGetArgNames(m_hActualAlg);
+        aosArgNames = GDALAlgorithmGetArgNames(m_hActualAlg);
     }
     else {
         if (!quiet)
@@ -1871,26 +1832,21 @@ std::vector<std::string> GDALAlg::getOutputArgNames_() const {
         return names_out;
     }
 
-    int nCount = CSLCount(papszArgNames);
-    if (nCount > 0) {
-        std::vector<std::string> names(papszArgNames, papszArgNames + nCount);
-        for (std::string arg_name : names) {
-            GDALAlgorithmArgH hArg = nullptr;
-            hArg = GDALAlgorithmGetArg(m_hActualAlg, arg_name.c_str());
-            if (!hArg) {
-                if (!quiet) {
-                    Rcpp::Rcout << "got NULL for arg: " << arg_name.c_str()
-                        << "\n";
-                }
-                continue;
+    for (int i = 0; i < aosArgNames.size(); ++i) {
+        GDALAlgorithmArgH hArg = nullptr;
+        hArg = GDALAlgorithmGetArg(m_hActualAlg, aosArgNames[i]);
+        if (!hArg) {
+            if (!quiet) {
+                Rcpp::Rcout << "got NULL for arg: " << aosArgNames[i]
+                    << "\n";
             }
-            if (GDALAlgorithmArgIsOutput(hArg)) {
-                names_out.push_back(arg_name);
-            }
-            GDALAlgorithmArgRelease(hArg);
+            continue;
         }
+        if (GDALAlgorithmArgIsOutput(hArg)) {
+            names_out.push_back(aosArgNames[i]);
+        }
+        GDALAlgorithmArgRelease(hArg);
     }
-    CSLDestroy(papszArgNames);
 
     return names_out;
 #endif  // GDALALG_MIN_GDAL_
@@ -1933,16 +1889,8 @@ SEXP GDALAlg::getArgValue_(const GDALAlgorithmArgH &hArg) const {
 
         case GAAT_STRING_LIST:
         {
-            char **papszValue = nullptr;
-            papszValue = GDALAlgorithmArgGetAsStringList(hArg);
-            int nCount = CSLCount(papszValue);
-            if (papszValue && nCount > 0) {
-                out = Rcpp::CharacterVector(papszValue, papszValue + nCount);
-            }
-            else {
-                out = Rcpp::CharacterVector::create(NA_STRING);
-            }
-            CSLDestroy(papszValue);
+            const CPLStringList aosValue(GDALAlgorithmArgGetAsStringList(hArg));
+            out = wrap_gdal_string_list_(aosValue);
         }
         break;
 

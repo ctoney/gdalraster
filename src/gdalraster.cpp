@@ -417,20 +417,11 @@ Rcpp::String GDALRaster::infoAsJSON() const {
 Rcpp::CharacterVector GDALRaster::getFileList() const {
     checkAccess_(GA_ReadOnly);
 
-    char **papszFiles = GDALGetFileList(m_hDataset);
-    int nItems = CSLCount(papszFiles);
-    if (nItems > 0) {
-        Rcpp::CharacterVector files(nItems);
-        for (int i = 0; i < nItems; ++i) {
-            files(i) = papszFiles[i];
-        }
-        CSLDestroy(papszFiles);
-        return files;
-    }
-    else {
-        CSLDestroy(papszFiles);
+    const CPLStringList files(GDALGetFileList(m_hDataset));
+    if (!files.empty())
+        return wrap_gdal_string_list_(files);
+    else
         return "";
-    }
 }
 
 std::string GDALRaster::getDriverShortName() const {
