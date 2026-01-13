@@ -9,6 +9,12 @@
 #include <Rcpp.h>
 #include <RcppInt64>
 
+#ifndef GDALRASTER_TYPES_H_
+#include <cpl_port.h>
+#include <cpl_string.h>
+Rcpp::CharacterVector wrap_gdal_string_list_(const CPLStringList &string_list);
+#endif
+
 #include <algorithm>
 #include <cctype>
 #include <cstdint>

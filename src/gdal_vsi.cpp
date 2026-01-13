@@ -823,20 +823,11 @@ int vsi_rename(const Rcpp::CharacterVector &oldpath,
 //' vsi_get_fs_prefixes()
 // [[Rcpp::export()]]
 Rcpp::CharacterVector vsi_get_fs_prefixes() {
-    char **papszPrefixes = VSIGetFileSystemsPrefixes();
-    int nItems = CSLCount(papszPrefixes);
-    if (nItems > 0) {
-        Rcpp::CharacterVector prefixes(nItems);
-        for (int i=0; i < nItems; ++i) {
-            prefixes(i) = papszPrefixes[i];
-        }
-        CSLDestroy(papszPrefixes);
-        return prefixes;
-    }
-    else {
-        CSLDestroy(papszPrefixes);
+    const CPLStringList aosPrefixes(VSIGetFileSystemsPrefixes());
+    if (!aosPrefixes.empty())
+        return wrap_gdal_string_list_(aosPrefixes);
+    else
         return "";
-    }
 }
 
 
@@ -1113,29 +1104,26 @@ SEXP vsi_get_file_metadata(const Rcpp::CharacterVector &filename,
     const std::string filename_in =
         Rcpp::as<std::string>(check_gdal_filename(filename));
 
-    char **papszStringList = nullptr;
-    papszStringList = VSIGetFileMetadata(filename_in.c_str(), domain.c_str(),
-                                         nullptr);
+    const CPLStringList md(
+        VSIGetFileMetadata(filename_in.c_str(), domain.c_str(), nullptr));
 
-    if (papszStringList == nullptr) {
+    if (md.empty()) {
         return R_NilValue;
     }
     else {
-        int nItems = CSLCount(papszStringList);
-        Rcpp::List md = Rcpp::List::create();
+        int nItems = md.size();
+        Rcpp::List out = Rcpp::List::create();
         for (int i = 0; i < nItems; ++i) {
             char *pszName = nullptr;
             Rcpp::CharacterVector value(1);
-            const char *pszValue = CPLParseNameValue(papszStringList[i],
-                                                     &pszName);
+            const char *pszValue = CPLParseNameValue(md[i], &pszName);
             if (pszName && pszValue) {
                 value[0] = pszValue;
-                md.push_back(value, pszName);
+                out.push_back(value, pszName);
             }
             CPLFree(pszName);
         }
-        CSLDestroy(papszStringList);
-        return md;
+        return out;
     }
 }
 

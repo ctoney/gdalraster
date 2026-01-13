@@ -803,16 +803,10 @@ SEXP ogr_ds_field_domain_names(const std::string &dsn) {
         return R_NilValue;
     }
 
-    Rcpp::CharacterVector names = Rcpp::CharacterVector::create();
-    char **papszFldDomNames = nullptr;
-    papszFldDomNames = GDALDatasetGetFieldDomainNames(hDS, nullptr);
-    int items = CSLCount(papszFldDomNames);
-    if (items > 0) {
-        for (int i = 0; i < items; ++i) {
-            names.push_back(papszFldDomNames[i]);
-        }
-    }
-    CSLDestroy(papszFldDomNames);
+    const CPLStringList aosFldDomNames(
+        GDALDatasetGetFieldDomainNames(hDS, nullptr));
+
+    Rcpp::CharacterVector names = wrap_gdal_string_list_(aosFldDomNames);
 
     GDALReleaseDataset(hDS);
     return names;
@@ -982,14 +976,15 @@ bool ogr_ds_add_field_domain(const std::string &dsn,
             }
 
             for (Rcpp::CharacterVector::iterator i = coded_values.begin();
-                    i != coded_values.end(); ++i) {
+                 i != coded_values.end(); ++i) {
 
-                char **papszTokens = CSLTokenizeString2(
-                    *i, "=", CSLT_STRIPLEADSPACES | CSLT_STRIPENDSPACES);
+                const CPLStringList aosTokens(
+                    CSLTokenizeString2(
+                        *i, "=", CSLT_STRIPLEADSPACES | CSLT_STRIPENDSPACES));
 
-                if (CSLCount(papszTokens) < 1 || CSLCount(papszTokens) > 2) {
+                int nTokens = aosTokens.size();
+                if (nTokens < 1 || nTokens > 2) {
                     GDALReleaseDataset(hDS);
-                    CSLDestroy(papszTokens);
                     if (!ogr_coded_values.empty()) {
                         for (auto &cv : ogr_coded_values) {
                             VSIFree(cv.pszCode);
@@ -1002,13 +997,12 @@ bool ogr_ds_add_field_domain(const std::string &dsn,
                 }
 
                 OGRCodedValue cv;
-                cv.pszCode = CPLStrdup(papszTokens[0]);
-                if (CSLCount(papszTokens) == 2)
-                    cv.pszValue = CPLStrdup(papszTokens[1]);
+                cv.pszCode = CPLStrdup(aosTokens[0]);
+                if (nTokens == 2)
+                    cv.pszValue = CPLStrdup(aosTokens[1]);
                 else
                     cv.pszValue = nullptr;
                 ogr_coded_values.emplace_back(cv);
-                CSLDestroy(papszTokens);
             }
         }
         // as two-column data frame of codes, values
