@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9010 (dev)
+# gdalraster 2.4.0.9020 (dev)
+
+* (internal) C++ code linting: use `CPLStringList` for `char **` (#862) (2026-01-12)
 
 * raster attribute table: support new field types `GFT_Boolean`, `GFT_DateTime` and `GFT_WKBGeometry` with GDAL >= 3.12 (#860) (2025-12-27)
 
