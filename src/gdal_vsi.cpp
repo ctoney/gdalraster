@@ -179,7 +179,7 @@ void vsi_curl_clear_cache(bool partial = false,
 //' `recursive = TRUE`.
 //'
 //' @seealso
-//' [vsi_mkdir()], [vsi_rmdir()], [vsi_stat()], [vsi_sync()]
+//' [vsi_glob()], [vsi_mkdir()], [vsi_rmdir()], [vsi_stat()], [vsi_sync()]
 //'
 //' @examples
 //' # regular file system for illustration
@@ -252,6 +252,98 @@ Rcpp::CharacterVector vsi_read_dir(const Rcpp::CharacterVector &path,
         CSLDestroy(papszNames);
         return Rcpp::CharacterVector::create();
     }
+}
+
+
+//' Get file and directory names matching a pattern that may contain wildcards
+//'
+//' `vsi_glob()` returns a character vector of file and directory names matching
+//' a pattern that can contain wildcards. This function has similar behavior to
+//' the POSIX `glob()` function. Wrapper of `VSIGlob()` in the GDAL Common
+//' Portability Library. Requires GDAL >= 3.11.
+//'
+//' @details
+//' The following wildcards are supported
+//'   * `*`: match any string
+//'   * `?`: match any single character
+//'   * `[`: match character class or range, with `!` immediately after `[` to
+//'   indicate negation
+//'
+//' Refer to to the `glob()` man page for more details
+//' (\url{https://man7.org/linux/man-pages/man7/glob.7.html}).
+//' It also supports the `**` recursive wildcard, behaving similarly to Python
+//' `glob.glob()` with `recursive = True`. Be careful of the amount of memory
+//' and time required when using the recursive wildcard on directories with a
+//' large amount of files and subdirectories.
+//'
+//' Examples, given a file hierarchy:
+//'   * `one.tif`
+//'   * `my_subdir/two.tif`
+//'   * `my_subdir/subsubdir/three.tif`
+//' 
+//' ```
+//' vsi_glob("one.tif")
+//'   # returns ("one.tif")
+//' vsi_glob("*.tif")
+//'   # returns ("one.tif")
+//' vsi_glob("on?.tif")
+//'   # returns ("one.tif")
+//' vsi_glob("on[a-z].tif")
+//'   # returns ("one.tif")
+//' vsi_glob("on[ef].tif")
+//'   # returns ("one.tif")
+//' vsi_glob("on[!e].tif")
+//'   # returns empty vector character()
+//' vsi_glob("my_subdir/*.tif")
+//'   # returns ("my_subdir/two.tif")
+//' vsi_glob("**/*.tif") returns
+//'   # returns ("one.tif", "my_subdir/two.tif", "my_subdir/subsubdir/three.tif")
+//' ```
+//'
+//' In the current implementation, matching is done based on the assumption that
+//' a character fits into a single byte, which will not work properly on
+//' non-ASCII UTF-8 filenames.
+//'
+//' @param pattern Character string. The relative or absolute path of a
+//' directory to read, potentially containing wildcards, assumed to be UTF-8
+//' encoded (see Details).
+//' @param show_progress Logical scalar. If `TRUE`, a progress bar will be
+//' displayed. Default is `FALSE`.
+//' @returns A character vector containing the matching names of files and
+//' directories.
+//'
+//' @note
+//' GDAL's `VSIGlob()` works with any virtual file systems supported by GDAL,
+//' including network file systems such as /vsis3/, /vsigs/, /vsiaz/, etc. But
+//' note that for those, the pattern is not passed to the remote server, and
+//' thus a large amount of filenames can be transferred from the remote server
+//' to the host where the filtering is done.
+//'
+//' @seealso
+//' [vsi_read_dir()]
+//'
+//' @examplesIf gdal_version_num() >= gdal_compute_version(3, 11, 0)
+//' data_dir <- system.file("extdata", package="gdalraster")
+//' vsi_glob(file.path(data_dir, "ynp*"))
+// [[Rcpp::export()]]
+Rcpp::CharacterVector vsi_glob(const Rcpp::CharacterVector &pattern,
+                               bool show_progress = false) {
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    Rcpp::stop("vsi_glob() requires GDAL >= 3.11");
+
+#else
+    const std::string pattern_in =
+        Rcpp::as<std::string>(check_gdal_filename(pattern));
+    
+    const CPLStringList aosNames(
+        VSIGlob(pattern_in.c_str(),
+                nullptr,
+                show_progress ? GDALTermProgressR : nullptr,
+                nullptr));
+
+    return wrap_gdal_string_list_(aosNames);
+#endif
 }
 
 

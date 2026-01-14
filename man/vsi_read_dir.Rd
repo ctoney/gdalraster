@@ -50,5 +50,5 @@ data_dir <- system.file("extdata", package="gdalraster")
 vsi_read_dir(data_dir)
 }
 \seealso{
-\code{\link[=vsi_mkdir]{vsi_mkdir()}}, \code{\link[=vsi_rmdir]{vsi_rmdir()}}, \code{\link[=vsi_stat]{vsi_stat()}}, \code{\link[=vsi_sync]{vsi_sync()}}
+\code{\link[=vsi_glob]{vsi_glob()}}, \code{\link[=vsi_mkdir]{vsi_mkdir()}}, \code{\link[=vsi_rmdir]{vsi_rmdir()}}, \code{\link[=vsi_stat]{vsi_stat()}}, \code{\link[=vsi_sync]{vsi_sync()}}
 }

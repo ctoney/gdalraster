@@ -147,6 +147,7 @@
   \code{\link[=vsi_get_file_metadata]{vsi_get_file_metadata()}},
   \code{\link[=vsi_get_fs_options]{vsi_get_fs_options()}},
   \code{\link[=vsi_get_fs_prefixes]{vsi_get_fs_prefixes()}},
+  \code{\link[=vsi_glob]{vsi_glob()}},
   \code{\link[=vsi_is_local]{vsi_is_local()}},
   \code{\link[=vsi_mkdir]{vsi_mkdir()}},
   \code{\link[=vsi_read_dir]{vsi_read_dir()}},

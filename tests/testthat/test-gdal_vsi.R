@@ -56,8 +56,16 @@ test_that("vsi_read_dir works", {
                   ptype = character(), size = 4)
 })
 
+test_that("vsi_glob works", {
+    skip_if(gdal_version_num() < gdal_compute_version(3, 11, 0))
+
+    data_dir <- system.file("extdata", package="gdalraster")
+    ynp_files <- vsi_glob(file.path(data_dir, "ynp*"))
+    expect_true(length(ynp_files) >= 2)
+})
+
 test_that("vsi_copy_file works", {
-    skip_if(as.integer(gdal_version()[2]) < 3070000)
+    skip_if(gdal_version_num() < gdal_compute_version(3, 7, 0))
 
     elev_file <- system.file("extdata/storml_elev_orig.tif", package="gdalraster")
     tmp_file <- tempfile(fileext = ".tif")
