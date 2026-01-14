@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9021 (dev)
+# gdalraster 2.4.0.9022 (dev)
+
+* add `vsi_glob()`: get file and directory names matching a pattern that may contain wildcards, wrapper of `VSIGlob()` in GDAL >= 3.11 (#864) (2026-01-14)
 
 * add `g_build_polygon_from_edges()`: build a polygon from a set of arcs, wrapper of `OGRBuildPolygonFromEdges()` (#863) (2026-01-13)
 
