@@ -1936,6 +1936,7 @@ vsi_read_dir <- function(path, max_files = 0L, recursive = FALSE, all_files = FA
 #' [vsi_read_dir()]
 #'
 #' @examplesIf gdal_version_num() >= gdal_compute_version(3, 11, 0)
+#' # Requires GDAL >= 3.11
 #' data_dir <- system.file("extdata", package="gdalraster")
 #' vsi_glob(file.path(data_dir, "ynp*"))
 vsi_glob <- function(pattern, show_progress = FALSE) {
@@ -2633,6 +2634,23 @@ vsi_get_signed_url <- function(filename, options = NULL) {
 #'   print(vsi_is_local("/vsimem/test-mem-file.tif"))
 vsi_is_local <- function(filename) {
     .Call(`_gdalraster_vsi_is_local`, filename)
+}
+
+#' Return VSI compatible paths from URIs / URLs
+#'
+#' `vsi_uri_to_vsi_path()` substitutes URIs / URLs starting with `s3://`,
+#' `gs://`, etc. by their VSI prefix equivalents. If no known substitution is
+#' found, the input string is returned unmodified.
+#' Wrapper of `VSIURIToVSIPath()` in the GDAL API. Requires GDAL >= 3.12.
+#'
+#' @param uris Character vector of input URI strings.
+#' @returns Character vector of VSI paths.
+#'
+#' @examplesIf gdal_version_num() >= gdal_compute_version(3, 12, 0)
+#' # Requires GDAL >= 3.12
+#' vsi_uri_to_vsi_path("gs://cmip6/")
+vsi_uri_to_vsi_path <- function(uris) {
+    .Call(`_gdalraster_vsi_uri_to_vsi_path`, uris)
 }
 
 #' @noRd

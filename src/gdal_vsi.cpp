@@ -323,6 +323,7 @@ Rcpp::CharacterVector vsi_read_dir(const Rcpp::CharacterVector &path,
 //' [vsi_read_dir()]
 //'
 //' @examplesIf gdal_version_num() >= gdal_compute_version(3, 11, 0)
+//' # Requires GDAL >= 3.11
 //' data_dir <- system.file("extdata", package="gdalraster")
 //' vsi_glob(file.path(data_dir, "ynp*"))
 // [[Rcpp::export()]]
@@ -799,6 +800,7 @@ SEXP vsi_stat(const Rcpp::CharacterVector &filename,
     return R_NilValue;
 }
 
+
 //' @rdname vsi_stat
 // [[Rcpp::export]]
 Rcpp::LogicalVector vsi_stat_exists(const Rcpp::CharacterVector &filenames) {
@@ -838,6 +840,7 @@ Rcpp::CharacterVector vsi_stat_type(const Rcpp::CharacterVector &filenames) {
 
     return ret;
 }
+
 
 //' @rdname vsi_stat
 // [[Rcpp::export]]
@@ -1028,6 +1031,7 @@ bool vsi_supports_rnd_write(const Rcpp::CharacterVector &filename,
 #endif
 }
 
+
 //' Return free disk space available on the filesystem
 //'
 //' `vsi_get_disk_free_space()` returns the free disk space available on the
@@ -1053,6 +1057,7 @@ Rcpp::NumericVector vsi_get_disk_free_space(const Rcpp::CharacterVector &path) {
     ret[0] = VSIGetDiskFreeSpace(path_in.c_str());
     return Rcpp::wrap(ret);
 }
+
 
 //' Set a path specific option for a given path prefix
 //'
@@ -1110,6 +1115,7 @@ void vsi_set_path_option(const Rcpp::CharacterVector &path_prefix,
 #endif
 }
 
+
 //' Clear path specific configuration options
 //'
 //' `vsi_clear_path_options()` clears path specific options previously set
@@ -1144,6 +1150,7 @@ void vsi_clear_path_options(const Rcpp::CharacterVector &path_prefix) {
 
 #endif
 }
+
 
 //' Get metadata on files
 //'
@@ -1219,6 +1226,7 @@ SEXP vsi_get_file_metadata(const Rcpp::CharacterVector &filename,
     }
 }
 
+
 //' Returns the actual URL of a supplied VSI filename
 //'
 //' `vsi_get_actual_url()` returns the actual URL of a supplied filename.
@@ -1257,6 +1265,7 @@ SEXP vsi_get_actual_url(const Rcpp::CharacterVector &filename) {
     else
         return R_NilValue;
 }
+
 
 //' Returns a signed URL for a supplied VSI filename
 //'
@@ -1337,6 +1346,7 @@ SEXP vsi_get_signed_url(const Rcpp::CharacterVector &filename,
     }
 }
 
+
 //' Returns if the file/filesystem is "local".
 //'
 //' `vsi_is_local()` returns whether the file/filesystem is "local".
@@ -1368,5 +1378,36 @@ bool vsi_is_local(const Rcpp::CharacterVector &filename) {
         Rcpp::as<std::string>(check_gdal_filename(filename));
 
     return VSIIsLocal(filename_in.c_str());
+#endif
+}
+
+
+//' Return VSI compatible paths from URIs / URLs
+//'
+//' `vsi_uri_to_vsi_path()` substitutes URIs / URLs starting with `s3://`,
+//' `gs://`, etc. by their VSI prefix equivalents. If no known substitution is
+//' found, the input string is returned unmodified.
+//' Wrapper of `VSIURIToVSIPath()` in the GDAL API. Requires GDAL >= 3.12.
+//'
+//' @param uris Character vector of input URI strings.
+//' @returns Character vector of VSI paths.
+//'
+//' @examplesIf gdal_version_num() >= gdal_compute_version(3, 12, 0)
+//' # Requires GDAL >= 3.12
+//' vsi_uri_to_vsi_path("gs://cmip6/")
+// [[Rcpp::export()]]
+Rcpp::CharacterVector vsi_uri_to_vsi_path(const Rcpp::CharacterVector &uris) {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 12, 0)
+    Rcpp::stop("vsi_uri_to_vsi_path() requires GDAL >= 3.12");
+
+#else
+    const R_xlen_t nCount = uris.size();
+    Rcpp::CharacterVector vsi_paths = Rcpp::no_init(nCount);
+    for (R_xlen_t i = 0; i < nCount; ++i) {
+        const Rcpp::String &uri = uris[i];
+        vsi_paths[i] = VSIURIToVSIPath(uri);
+    }
+
+    return vsi_paths;
 #endif
 }

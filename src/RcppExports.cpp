@@ -1118,6 +1118,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// vsi_uri_to_vsi_path
+Rcpp::CharacterVector vsi_uri_to_vsi_path(const Rcpp::CharacterVector& uris);
+RcppExport SEXP _gdalraster_vsi_uri_to_vsi_path(SEXP urisSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type uris(urisSEXP);
+    rcpp_result_gen = Rcpp::wrap(vsi_uri_to_vsi_path(uris));
+    return rcpp_result_gen;
+END_RCPP
+}
 // gdal_commands
 Rcpp::DataFrame gdal_commands(const std::string& contains, bool recurse, bool console_out);
 RcppExport SEXP _gdalraster_gdal_commands(SEXP containsSEXP, SEXP recurseSEXP, SEXP console_outSEXP) {
@@ -2589,6 +2600,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_vsi_get_actual_url", (DL_FUNC) &_gdalraster_vsi_get_actual_url, 1},
     {"_gdalraster_vsi_get_signed_url", (DL_FUNC) &_gdalraster_vsi_get_signed_url, 2},
     {"_gdalraster_vsi_is_local", (DL_FUNC) &_gdalraster_vsi_is_local, 1},
+    {"_gdalraster_vsi_uri_to_vsi_path", (DL_FUNC) &_gdalraster_vsi_uri_to_vsi_path, 1},
     {"_gdalraster_gdal_commands", (DL_FUNC) &_gdalraster_gdal_commands, 3},
     {"_gdalraster_gdal_global_reg_names", (DL_FUNC) &_gdalraster_gdal_global_reg_names, 0},
     {"_gdalraster_getGEOSVersion", (DL_FUNC) &_gdalraster_getGEOSVersion, 0},

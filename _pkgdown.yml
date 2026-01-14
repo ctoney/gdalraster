@@ -178,6 +178,7 @@ reference:
   - vsi_sync
   - vsi_unlink
   - vsi_unlink_batch
+  - vsi_uri_to_vsi_path
 - subtitle: GDAL configuration
 - contents:
   - gdal_version

@@ -22,6 +22,9 @@ Rcpp::CharacterVector vsi_read_dir(const Rcpp::CharacterVector &path,
                                    int max_files,
                                    bool recursive, bool all_files);
 
+Rcpp::CharacterVector vsi_glob(const Rcpp::CharacterVector &pattern,
+                               bool show_progress);
+
 bool vsi_sync(const Rcpp::CharacterVector &src,
               const Rcpp::CharacterVector &target,
               bool show_progess,
@@ -58,6 +61,6 @@ SEXP vsi_get_signed_url(const Rcpp::CharacterVector &filename,
                         const Rcpp::Nullable<Rcpp::CharacterVector> &options);
 
 bool vsi_is_local(const Rcpp::CharacterVector &filename);
-
+Rcpp::CharacterVector vsi_uri_to_vsi_path(const Rcpp::CharacterVector &uris);
 
 #endif  // GDAL_VSI_H_

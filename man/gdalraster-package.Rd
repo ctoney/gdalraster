@@ -159,7 +159,8 @@
   \code{\link[=vsi_supports_seq_write]{vsi_supports_seq_write()}},
   \code{\link[=vsi_sync]{vsi_sync()}},
   \code{\link[=vsi_unlink]{vsi_unlink()}},
-  \code{\link[=vsi_unlink_batch]{vsi_unlink_batch()}}
+  \code{\link[=vsi_unlink_batch]{vsi_unlink_batch()}},
+  \code{\link[=vsi_uri_to_vsi_path]{vsi_uri_to_vsi_path()}}
 
   \item GDAL configuration:
   \code{\link[=gdal_version]{gdal_version}},

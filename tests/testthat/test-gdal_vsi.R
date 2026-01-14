@@ -202,3 +202,9 @@ test_that("vsi_is_local works", {
 
     expect_true(vsi_is_local("/vsimem/test-mem-file.tif"))
 })
+
+test_that("vsi_uri_to_vsi_path works", {
+    skip_if(gdal_version_num() < gdal_compute_version(3, 12, 0))
+
+    expect_true(startsWith(vsi_uri_to_vsi_path("gs://cmip6/"), "/vsigs"))
+})
