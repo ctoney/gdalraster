@@ -864,6 +864,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// vsi_glob
+Rcpp::CharacterVector vsi_glob(const Rcpp::CharacterVector& pattern, bool show_progress);
+RcppExport SEXP _gdalraster_vsi_glob(SEXP patternSEXP, SEXP show_progressSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type pattern(patternSEXP);
+    Rcpp::traits::input_parameter< bool >::type show_progress(show_progressSEXP);
+    rcpp_result_gen = Rcpp::wrap(vsi_glob(pattern, show_progress));
+    return rcpp_result_gen;
+END_RCPP
+}
 // vsi_sync
 bool vsi_sync(const Rcpp::CharacterVector& src, const Rcpp::CharacterVector& target, bool show_progress, const Rcpp::Nullable<Rcpp::CharacterVector>& options);
 RcppExport SEXP _gdalraster_vsi_sync(SEXP srcSEXP, SEXP targetSEXP, SEXP show_progressSEXP, SEXP optionsSEXP) {
@@ -2555,6 +2567,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_vsi_copy_file", (DL_FUNC) &_gdalraster_vsi_copy_file, 3},
     {"_gdalraster_vsi_curl_clear_cache", (DL_FUNC) &_gdalraster_vsi_curl_clear_cache, 3},
     {"_gdalraster_vsi_read_dir", (DL_FUNC) &_gdalraster_vsi_read_dir, 4},
+    {"_gdalraster_vsi_glob", (DL_FUNC) &_gdalraster_vsi_glob, 2},
     {"_gdalraster_vsi_sync", (DL_FUNC) &_gdalraster_vsi_sync, 4},
     {"_gdalraster_vsi_mkdir", (DL_FUNC) &_gdalraster_vsi_mkdir, 3},
     {"_gdalraster_vsi_rmdir", (DL_FUNC) &_gdalraster_vsi_rmdir, 2},
