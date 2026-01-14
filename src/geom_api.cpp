@@ -577,7 +577,7 @@ int g_geom_count(const Rcpp::RObject &geom, bool quiet = false) {
 
 //' @noRd
 // [[Rcpp::export(name = ".g_get_geom")]]
-SEXP g_get_geom(const Rcpp::RawVector &container, int sub_geom_idx,
+SEXP g_get_geom(const Rcpp::RObject &container, int sub_geom_idx,
                 bool as_iso, const std::string &byte_order) {
 // Fetch geometry from a geometry container. For a polygon,
 // OGR_G_GetGeometryRef(iSubGeom) returns the exterior ring if iSubGeom == 0,
@@ -590,15 +590,15 @@ SEXP g_get_geom(const Rcpp::RawVector &container, int sub_geom_idx,
     if (geom_in.size() == 0)
         return geom_in;
 
+    if (sub_geom_idx < 0)
+        Rcpp::stop("'sub_geom_idx' must be >= 0");
+
     OGRGeometryH hGeom = createGeomFromWkb(geom_in);
     if (hGeom == nullptr) {
         Rcpp::warning(
             "failed to create geometry object from WKB, NULL returned");
         return R_NilValue;
     }
-
-    if (sub_geom_idx < 0)
-        Rcpp::stop("'sub_geom_idx' must be >= 0");
 
     OGRGeometryH hSubGeom = nullptr;
     bool destroy_sub_geom = false;
@@ -644,6 +644,77 @@ SEXP g_get_geom(const Rcpp::RawVector &container, int sub_geom_idx,
 
     return wkb;
 }
+
+//' @noRd
+// [[Rcpp::export(name = ".g_build_polygon_from_edges")]]
+SEXP g_build_polygon_from_edges(const Rcpp::RObject &lines,
+                                bool auto_close, double tolerance,
+                                bool as_iso, const std::string &byte_order) {
+// Build a ring from a bunch of arcs.
+
+    if (lines.isNULL() || !Rcpp::is<Rcpp::RawVector>(lines))
+        return R_NilValue;
+
+    const Rcpp::RawVector lines_in(lines);
+    if (lines_in.size() == 0)
+        return lines_in;
+
+    if (tolerance < 0)
+        Rcpp::stop("'tolerance' must be >= 0");
+
+    OGRGeometryH hLines = createGeomFromWkb(lines_in);
+    if (hLines == nullptr) {
+        Rcpp::warning(
+            "failed to create geometry object from WKB, NULL returned");
+        return R_NilValue;
+    }
+
+    OGRwkbGeometryType input_geom_type = OGR_G_GetGeometryType(hLines);
+    if (wkbFlatten(input_geom_type) != wkbGeometryCollection &&
+        wkbFlatten(input_geom_type) != wkbMultiLineString) {
+
+        OGR_G_DestroyGeometry(hLines);
+        Rcpp::warning(
+            "'lines' must be a GeometryCollection or MultiLineString");
+        return R_NilValue;
+    }
+
+    OGRErr err = OGRERR_NONE;
+    OGRGeometryH hPolygon = nullptr;
+    hPolygon = OGRBuildPolygonFromEdges(hLines, TRUE, auto_close ? TRUE : FALSE,
+                                        tolerance, &err);
+
+    OGR_G_DestroyGeometry(hLines);
+
+    if (err != OGRERR_NONE) {
+        if (!hPolygon)
+            OGR_G_DestroyGeometry(hPolygon);
+        Rcpp::warning("error returned by OGRBuildPolygonFromEdges()");
+        return R_NilValue;
+    }
+
+    int nWKBSize = OGR_G_WkbSize(hPolygon);
+    if (!nWKBSize) {
+        OGR_G_DestroyGeometry(hPolygon);
+        Rcpp::warning("failed to obtain WKB size of output geometry");
+        return R_NilValue;
+    }
+
+    Rcpp::RawVector wkb = Rcpp::no_init(nWKBSize);
+    bool result = exportGeomToWkb(hPolygon, &wkb[0], as_iso, byte_order);
+    OGR_G_DestroyGeometry(hPolygon);
+
+    if (!result) {
+        Rcpp::warning("failed to export WKB raw vector for output geometry");
+        return R_NilValue;
+    }
+
+    return wkb;
+}
+
+
+// *** geometry utilities ***
+
 
 //' @noRd
 // [[Rcpp::export(name = ".g_is_valid")]]

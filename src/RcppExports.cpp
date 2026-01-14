@@ -1240,16 +1240,31 @@ BEGIN_RCPP
 END_RCPP
 }
 // g_get_geom
-SEXP g_get_geom(const Rcpp::RawVector& container, int sub_geom_idx, bool as_iso, const std::string& byte_order);
+SEXP g_get_geom(const Rcpp::RObject& container, int sub_geom_idx, bool as_iso, const std::string& byte_order);
 RcppExport SEXP _gdalraster_g_get_geom(SEXP containerSEXP, SEXP sub_geom_idxSEXP, SEXP as_isoSEXP, SEXP byte_orderSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::RawVector& >::type container(containerSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type container(containerSEXP);
     Rcpp::traits::input_parameter< int >::type sub_geom_idx(sub_geom_idxSEXP);
     Rcpp::traits::input_parameter< bool >::type as_iso(as_isoSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type byte_order(byte_orderSEXP);
     rcpp_result_gen = Rcpp::wrap(g_get_geom(container, sub_geom_idx, as_iso, byte_order));
+    return rcpp_result_gen;
+END_RCPP
+}
+// g_build_polygon_from_edges
+SEXP g_build_polygon_from_edges(const Rcpp::RObject& lines, bool auto_close, double tolerance, bool as_iso, const std::string& byte_order);
+RcppExport SEXP _gdalraster_g_build_polygon_from_edges(SEXP linesSEXP, SEXP auto_closeSEXP, SEXP toleranceSEXP, SEXP as_isoSEXP, SEXP byte_orderSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type lines(linesSEXP);
+    Rcpp::traits::input_parameter< bool >::type auto_close(auto_closeSEXP);
+    Rcpp::traits::input_parameter< double >::type tolerance(toleranceSEXP);
+    Rcpp::traits::input_parameter< bool >::type as_iso(as_isoSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type byte_order(byte_orderSEXP);
+    rcpp_result_gen = Rcpp::wrap(g_build_polygon_from_edges(lines, auto_close, tolerance, as_iso, byte_order));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2573,6 +2588,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_g_add_geom", (DL_FUNC) &_gdalraster_g_add_geom, 4},
     {"_gdalraster_g_geom_count", (DL_FUNC) &_gdalraster_g_geom_count, 2},
     {"_gdalraster_g_get_geom", (DL_FUNC) &_gdalraster_g_get_geom, 4},
+    {"_gdalraster_g_build_polygon_from_edges", (DL_FUNC) &_gdalraster_g_build_polygon_from_edges, 5},
     {"_gdalraster_g_is_valid", (DL_FUNC) &_gdalraster_g_is_valid, 2},
     {"_gdalraster_g_make_valid", (DL_FUNC) &_gdalraster_g_make_valid, 6},
     {"_gdalraster_g_normalize", (DL_FUNC) &_gdalraster_g_normalize, 4},

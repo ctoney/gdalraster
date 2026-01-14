@@ -521,6 +521,52 @@ test_that("g_factory functions work", {
     expect_error(g_add_geom(g_create("LINESTRING"), geom, as_iso = "ISO"))
     expect_no_error(g_add_geom(g_create("LINESTRING"), geom, byte_order = NULL))
     expect_error(g_add_geom(g_create("LINESTRING"), geom, byte_order = TRUE))
+
+    ## build polygon from edges
+    wkt_vector <- c(
+        "LINESTRING (-87.601595 30.999522,-87.599623 31.000059,-87.599219 31.00017)",
+        "LINESTRING (-87.601595 30.999522,-87.604349 30.999493,-87.606935 30.99952)",
+        "LINESTRING (-87.59966 31.000756,-87.599851 31.000805,-87.599992 31.000805,-87.600215 31.000761,-87.600279 31.000723,-87.600586 31.000624,-87.601256 31.000508,-87.602501 31.000447,-87.602801 31.000469,-87.603108 31.000579,-87.603331 31.000716,-87.603523 31.000909,-87.603766 31.001233,-87.603913 31.00136)",
+        "LINESTRING (-87.606134 31.000182,-87.605885 31.000325,-87.605343 31.000716,-87.60466 31.001117,-87.604468 31.0012,-87.603913 31.00136)",
+        "LINESTRING (-87.599219 31.00017,-87.599289 31.0003,-87.599398 31.000426,-87.599564 31.000547,-87.599609 31.000701,-87.59966 31.000756)",
+        "LINESTRING (-87.606935 30.99952,-87.606713 30.999799,-87.6064 30.999981,-87.606134 31.000182)"
+    )
+
+    # geometry collection of line strings
+    line_coll <- "GEOMETRYCOLLECTION EMPTY"
+    for (wkt in wkt_vector) {
+        line_coll <- g_add_geom(wkt, line_coll)
+    }
+
+    poly <- g_build_polygon_from_edges(line_coll)
+    expect_equal(g_name(poly), "POLYGON")
+    expect_true(g_is_valid(poly))
+
+    # multilinestring
+    line_coll <- "MULTILINESTRING EMPTY"
+    for (wkt in wkt_vector) {
+        line_coll <- g_add_geom(wkt, line_coll)
+    }
+
+    poly <- g_build_polygon_from_edges(line_coll)
+    expect_equal(g_name(poly), "POLYGON")
+    expect_true(g_is_valid(poly))
+
+    # invalid geometries
+    pt <- "POINT (0 1)"
+    expect_warning(poly <- g_build_polygon_from_edges(pt))
+    expect_true(is.null(poly))
+
+    coll <- "GEOMETRYCOLLECTION (LINESTRING(0 1,2 3),POINT(0 1),LINESTRING(0 1,-2 3),LINESTRING(-2 3,2 3))"
+    expect_warning(poly <- g_build_polygon_from_edges(pt))
+    expect_true(is.null(poly))
+
+    # errors/input validation
+    expect_error(g_build_polygon_from_edges(line_coll, auto_close = 0))
+    expect_error(g_build_polygon_from_edges(line_coll, tolerance = FALSE))
+    expect_error(g_build_polygon_from_edges(line_coll, as_wkb = "WKB"))
+    expect_error(g_build_polygon_from_edges(line_coll, as_iso = "ISO"))
+    expect_error(g_build_polygon_from_edges(line_coll, byte_order = TRUE))
 })
 
 test_that("WKB/WKT conversion functions work", {

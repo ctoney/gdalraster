@@ -351,6 +351,9 @@ g_wk2wk <- function(geom, as_iso = FALSE, byte_order = "LSB") {
 #' exterior ring (`sub_geom_idx = 1`), and the interior rings are returned for
 #' `sub_geom_idx > 1`.
 #'
+#' `g_build_polygon_from_edges()` builds a polygon from a set of arcs given
+#' in a `GeometryCollection` or `MultiLineString`.
+#'
 #' @param geom_type Character string (case-insensitive), one of `"POINT"`,
 #' `"MULTIPOINT"`, `"LINESTRING"`, `"POLYGON"` (see Note) or
 #' `"GEOMETRYCOLLECTION"`.
@@ -370,11 +373,18 @@ g_wk2wk <- function(geom, as_iso = FALSE, byte_order = "LSB") {
 #' a container geometry type.
 #' @param sub_geom_idx An integer value giving the 1-based index of a
 #' sub-geometry (numeric values will be coerced to integer by truncation).
+#' @param lines Either a raw vector of WKB or a character string of WKT for
+#' a GeometryCollection or MultiLineString.
+#' @param auto_close A logical value, `TRUE` if the polygon should be closed
+#' when first and last points of the ring are the same (the default).
+#' @param tolerance A numeric value giving the tolerance into which two arcs are
+#' considered close enough to be joined.
 #' @return
 #' A geometry as WKB raw vector by default, or a WKT string if
 #' `as_wkb = FALSE`. In the case of multiple input points for creating Point
 #' geometry type, a list of WKB raw vectors or character vector of WKT strings
-#' will be returned.
+#' will be returned. `NULL` is returned with a warning if the an error occurs
+#' in the geometry operation.
 #'
 #' @note
 #' A `POLYGON` can be created for a single ring which will be the
@@ -567,6 +577,69 @@ g_get_geom <- function(container, sub_geom_idx, as_wkb = TRUE, as_iso = FALSE,
         stop("invalid 'byte_order'", call. = FALSE)
 
     wkb <- .g_get_geom(container, sub_geom_idx - 1, as_iso, byte_order)
+
+    if (as_wkb)
+        return(wkb)
+    else
+        return(g_wk2wk(wkb, as_iso))
+}
+
+#' @name g_factory
+#' @export
+g_build_polygon_from_edges <- function(lines, auto_close = TRUE,
+                                       tolerance = 0.0, as_wkb = TRUE,
+                                       as_iso = FALSE, byte_order = "LSB") {
+
+    if ((is.character(lines) || is.list(lines))
+        && length(lines) > 1) {
+
+        stop("'lines' must be a single GeometryCollection or MultiLineString",
+             call. = FALSE)
+    }
+
+    if (is.character(lines))
+        lines <- g_wk2wk(lines)
+
+    if (is.list(lines)) {
+        if (!is.raw(lines[[1]])) {
+            stop("'lines' as list input must be a WKB raw vector",
+                 call. = FALSE)
+        } else {
+            lines <- lines[[1]]
+        }
+    }
+
+    # auto_close
+    if (is.null(auto_close))
+        auto_close <- TRUE
+    if (!is.logical(auto_close) || length(auto_close) > 1)
+        stop("'auto_close' must be a single logical value", call. = FALSE)
+    # tolerance
+    if (is.null(tolerance))
+        tolerance <- 0.0
+    if (!(is.numeric(tolerance) && length(tolerance) == 1))
+        stop("'tolerance' must be a single numeric value", call. = FALSE)
+    # as_wkb
+    if (is.null(as_wkb))
+        as_wkb <- TRUE
+    if (!is.logical(as_wkb) || length(as_wkb) > 1)
+        stop("'as_wkb' must be a single logical value", call. = FALSE)
+    # as_iso
+    if (is.null(as_iso))
+        as_iso <- FALSE
+    if (!is.logical(as_iso) || length(as_iso) > 1)
+        stop("'as_iso' must be a single logical value", call. = FALSE)
+    # byte_order
+    if (is.null(byte_order))
+        byte_order <- "LSB"
+    if (!is.character(byte_order) || length(byte_order) > 1)
+        stop("'byte_order' must be a character string", call. = FALSE)
+    byte_order <- toupper(byte_order)
+    if (byte_order != "LSB" && byte_order != "MSB")
+        stop("invalid 'byte_order'", call. = FALSE)
+
+    wkb <- .g_build_polygon_from_edges(lines, auto_close, tolerance, as_iso,
+                                       byte_order)
 
     if (as_wkb)
         return(wkb)
