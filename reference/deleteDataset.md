@@ -61,7 +61,7 @@ ds$buildOverviews("BILINEAR", levels = c(2, 4, 8), bands = c(1))
 #> 0...10...20...30...40...50...60...70...80...90...100 - done.
 files <- ds$getFileList()
 print(files)
-#> [1] "/tmp/RtmpjIGT31/b5_tmp.tif"     "/tmp/RtmpjIGT31/b5_tmp.tif.ovr"
+#> [1] "/tmp/RtmpQ7g6vg/b5_tmp.tif"     "/tmp/RtmpQ7g6vg/b5_tmp.tif.ovr"
 ds$close()
 file.exists(files)
 #> [1] TRUE TRUE
