@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9020 (dev)
+# gdalraster 2.4.0.9021 (dev)
+
+* add `g_build_polygon_from_edges()`: build a polygon from a set of arcs, wrapper of `OGRBuildPolygonFromEdges()` (#863) (2026-01-13)
 
 * (internal) C++ code linting: use `CPLStringList` for `char **` (#862) (2026-01-12)
 
