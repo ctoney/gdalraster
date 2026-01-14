@@ -2633,6 +2633,11 @@ has_geos <- function() {
 }
 
 #' @noRd
+.g_build_polygon_from_edges <- function(lines, auto_close, tolerance, as_iso, byte_order) {
+    .Call(`_gdalraster_g_build_polygon_from_edges`, lines, auto_close, tolerance, as_iso, byte_order)
+}
+
+#' @noRd
 .g_is_valid <- function(geom, quiet = FALSE) {
     .Call(`_gdalraster_g_is_valid`, geom, quiet)
 }

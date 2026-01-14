@@ -5,6 +5,7 @@
 \alias{g_create}
 \alias{g_add_geom}
 \alias{g_get_geom}
+\alias{g_build_polygon_from_edges}
 \title{Create WKB/WKT geometries from vertices, and add/get sub-geometries}
 \usage{
 g_create(
@@ -26,6 +27,15 @@ g_add_geom(
 g_get_geom(
   container,
   sub_geom_idx,
+  as_wkb = TRUE,
+  as_iso = FALSE,
+  byte_order = "LSB"
+)
+
+g_build_polygon_from_edges(
+  lines,
+  auto_close = TRUE,
+  tolerance = 0,
   as_wkb = TRUE,
   as_iso = FALSE,
   byte_order = "LSB"
@@ -58,12 +68,22 @@ a container geometry type.}
 
 \item{sub_geom_idx}{An integer value giving the 1-based index of a
 sub-geometry (numeric values will be coerced to integer by truncation).}
+
+\item{lines}{Either a raw vector of WKB or a character string of WKT for
+a GeometryCollection or MultiLineString.}
+
+\item{auto_close}{A logical value, \code{TRUE} if the polygon should be closed
+when first and last points of the ring are the same (the default).}
+
+\item{tolerance}{A numeric value giving the tolerance into which two arcs are
+considered close enough to be joined.}
 }
 \value{
 A geometry as WKB raw vector by default, or a WKT string if
 \code{as_wkb = FALSE}. In the case of multiple input points for creating Point
 geometry type, a list of WKB raw vectors or character vector of WKT strings
-will be returned.
+will be returned. \code{NULL} is returned with a warning if the an error occurs
+in the geometry operation.
 }
 \description{
 These functions create WKB/WKT geometries from input vertices, and build
@@ -92,6 +112,9 @@ the container geometry is not modified.
 indexing). For a polygon, requesting the first sub-geometry returns the
 exterior ring (\code{sub_geom_idx = 1}), and the interior rings are returned for
 \code{sub_geom_idx > 1}.
+
+\code{g_build_polygon_from_edges()} builds a polygon from a set of arcs given
+in a \code{GeometryCollection} or \code{MultiLineString}.
 }
 \note{
 A \code{POLYGON} can be created for a single ring which will be the

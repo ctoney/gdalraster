@@ -42,8 +42,12 @@ Rcpp::RawVector g_add_geom(const Rcpp::RawVector &sub_geom,
                            bool as_iso, const std::string &byte_order);
 
 int g_geom_count(const Rcpp::RObject &geom, bool quiet);
-SEXP g_get_geom(const Rcpp::RawVector &container, int sub_geom_idx,
+SEXP g_get_geom(const Rcpp::RObject &container, int sub_geom_idx,
                 bool as_iso, const std::string &byte_order);
+
+SEXP g_build_polygon_from_edges(const Rcpp::RObject &lines,
+                                bool auto_close, double tolerance,
+                                bool as_iso, const std::string &byte_order);
 
 Rcpp::LogicalVector g_is_valid(const Rcpp::RObject &geom, bool quiet);
 SEXP g_make_valid(const Rcpp::RObject &geom, const std::string &method,
