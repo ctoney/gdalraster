@@ -11,7 +11,7 @@
 
 #include <Rcpp.h>
 
-#include <ogr_geometry.h>
+#include <ogr_api.h>
 
 #include <string>
 #include <vector>
@@ -19,9 +19,9 @@
 std::vector<int> getGEOSVersion();
 bool has_geos();  // GDAL built against GEOS is required at gdalraster 1.10
 
-OGRGeometryH createGeomFromWkb(const Rcpp::RawVector &wkb);
-bool exportGeomToWkb(OGRGeometryH hGeom, unsigned char *wkb, bool as_iso,
-                     const std::string &byte_order);
+OGRGeometryH createGeomFromWkb_(const Rcpp::RawVector &wkb);
+bool exportGeomToWkb_(OGRGeometryH hGeom, unsigned char *wkb, bool as_iso,
+                      const std::string &byte_order);
 
 Rcpp::String g_wkb2wkt(const Rcpp::RObject &geom, bool as_iso);
 
@@ -44,6 +44,11 @@ Rcpp::RawVector g_add_geom(const Rcpp::RawVector &sub_geom,
 int g_geom_count(const Rcpp::RObject &geom, bool quiet);
 SEXP g_get_geom(const Rcpp::RObject &container, int sub_geom_idx,
                 bool as_iso, const std::string &byte_order);
+
+Rcpp::RawVector g_build_collection(const Rcpp::List &geoms,
+                                   const std::string &coll_type,
+                                   bool as_iso,
+                                   const std::string &byte_order);
 
 SEXP g_build_polygon_from_edges(const Rcpp::RObject &lines,
                                 bool auto_close, double tolerance,

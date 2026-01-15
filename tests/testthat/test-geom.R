@@ -522,6 +522,66 @@ test_that("g_factory functions work", {
     expect_no_error(g_add_geom(g_create("LINESTRING"), geom, byte_order = NULL))
     expect_error(g_add_geom(g_create("LINESTRING"), geom, byte_order = TRUE))
 
+    ## build collection
+    lines <- c("LINESTRING (0 0,3 0)",
+               "LINESTRING (3 0,3 4)",
+               "LINESTRING (3 4,0 0)")
+
+    expect_no_error(coll <- g_build_collection(lines))
+    expect_equal(g_name(coll), "GEOMETRYCOLLECTION")
+    expect_equal(g_get_geom(coll, 1, as_wkb = FALSE), lines[1])
+    expect_equal(g_get_geom(coll, 2, as_wkb = FALSE), lines[2])
+    expect_equal(g_get_geom(coll, 3, as_wkb = FALSE), lines[3])
+
+    # as WKT
+    expect_true(g_equals(g_build_collection(lines, as_wkb = FALSE),
+                         g_wk2wk(coll)))
+
+    # build MultiLineString
+    expect_no_error(multi_line <- g_build_collection(lines, "MULTILINESTRING"))
+    expect_equal(g_name(multi_line), "MULTILINESTRING")
+    expect_equal(g_geom_count(multi_line), 3)
+
+    # input contains an invalid geometry
+    lines_wkb <- g_wk2wk(lines)
+    lines_wkb[[2]] <- lines_wkb[[2]][1:5]
+    expect_warning(
+        multi_line2 <- g_build_collection(lines_wkb, "MULTILINESTRING")) |>
+            expect_warning()  # two warnings emitted here so catch the second
+    expect_equal(g_name(multi_line2), "MULTILINESTRING")
+    expect_equal(g_geom_count(multi_line2), 2)
+
+    # input contains an element that is length-0 raw vector
+    lines_wkb[[2]] <- raw(0)
+    expect_warning(
+        multi_line2 <- g_build_collection(lines_wkb, "MULTILINESTRING"))
+    expect_equal(g_name(multi_line2), "MULTILINESTRING")
+    expect_equal(g_geom_count(multi_line2), 2)
+
+    # input contains an element that is not a raw vector
+    lines_wkb[[2]] <- list(NULL)
+    expect_warning(
+        multi_line2 <- g_build_collection(lines_wkb, "MULTILINESTRING"))
+    expect_equal(g_name(multi_line2), "MULTILINESTRING")
+    expect_equal(g_geom_count(multi_line2), 2)
+
+    # errors/input validation
+    expect_error(g_build_collection(NULL))
+    expect_error(g_build_collection(lines, coll_type = "INVALID"))
+    expect_error(g_build_collection(lines, coll_type = 1))
+    # no error, defaults to "GEOMETRYCOLLECTION":
+    expect_no_error(g_build_collection(lines, coll_type = NULL))
+    expect_error(g_build_collection(lines, as_wkb = "WKB"))
+    # no error, defaults to TRUE:
+    expect_no_error(g_build_collection(lines, as_wkb = NULL))
+    expect_error(g_build_collection(lines, as_iso = "ISO"))
+    # no error, defaults to FALSE:
+    expect_no_error(g_build_collection(lines, as_iso = NULL))
+    expect_error(g_build_collection(lines, byte_order = TRUE))
+    expect_error(g_build_collection(lines, byte_order = "invalid"))
+    # no error, defaults to "LSB":
+    expect_no_error(g_build_collection(lines, byte_order = NULL))
+
     ## build polygon from edges
     wkt_vector <- c(
         "LINESTRING (-87.601595 30.999522,-87.599623 31.000059,-87.599219 31.00017)",
@@ -532,21 +592,12 @@ test_that("g_factory functions work", {
         "LINESTRING (-87.606935 30.99952,-87.606713 30.999799,-87.6064 30.999981,-87.606134 31.000182)"
     )
 
-    # geometry collection of line strings
-    line_coll <- "GEOMETRYCOLLECTION EMPTY"
-    for (wkt in wkt_vector) {
-        line_coll <- g_add_geom(wkt, line_coll)
-    }
-
-    poly <- g_build_polygon_from_edges(line_coll)
+    poly <- g_build_polygon_from_edges(wkt_vector)
     expect_equal(g_name(poly), "POLYGON")
     expect_true(g_is_valid(poly))
 
-    # multilinestring
-    line_coll <- "MULTILINESTRING EMPTY"
-    for (wkt in wkt_vector) {
-        line_coll <- g_add_geom(wkt, line_coll)
-    }
+    # starting with MultiLineString WKB
+    line_coll <- g_build_collection(wkt_vector, "MULTILINESTRING")
 
     poly <- g_build_polygon_from_edges(line_coll)
     expect_equal(g_name(poly), "POLYGON")
@@ -562,11 +613,24 @@ test_that("g_factory functions work", {
     expect_true(is.null(poly))
 
     # errors/input validation
+    expect_error(g_build_polygon_from_edges(list(NULL)))
+    expect_error(g_build_polygon_from_edges(numeric()))
     expect_error(g_build_polygon_from_edges(line_coll, auto_close = 0))
+    # no error, defaults to TRUE:
+    expect_no_error(g_build_polygon_from_edges(line_coll, auto_close = NULL))
     expect_error(g_build_polygon_from_edges(line_coll, tolerance = FALSE))
+    # no error, defaults to 0.0:
+    expect_no_error(g_build_polygon_from_edges(line_coll, tolerance = NULL))
     expect_error(g_build_polygon_from_edges(line_coll, as_wkb = "WKB"))
+    # no error, defaults to TRUE:
+    expect_no_error(g_build_polygon_from_edges(line_coll, as_wkb = NULL))
     expect_error(g_build_polygon_from_edges(line_coll, as_iso = "ISO"))
+    # no error, defaults to FALSE:
+    expect_no_error(g_build_polygon_from_edges(line_coll, as_iso = NULL))
+    expect_error(g_build_polygon_from_edges(line_coll, byte_order = "invalid"))
     expect_error(g_build_polygon_from_edges(line_coll, byte_order = TRUE))
+    # no error, defaults to "LSB":
+    expect_no_error(g_build_polygon_from_edges(line_coll, byte_order = NULL))
 })
 
 test_that("WKB/WKT conversion functions work", {

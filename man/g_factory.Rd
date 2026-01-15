@@ -5,8 +5,9 @@
 \alias{g_create}
 \alias{g_add_geom}
 \alias{g_get_geom}
+\alias{g_build_collection}
 \alias{g_build_polygon_from_edges}
-\title{Create WKB/WKT geometries from vertices, and add/get sub-geometries}
+\title{Geometry factory functions}
 \usage{
 g_create(
   geom_type,
@@ -27,6 +28,14 @@ g_add_geom(
 g_get_geom(
   container,
   sub_geom_idx,
+  as_wkb = TRUE,
+  as_iso = FALSE,
+  byte_order = "LSB"
+)
+
+g_build_collection(
+  geoms,
+  coll_type = "GEOMETRYCOLLECTION",
   as_wkb = TRUE,
   as_iso = FALSE,
   byte_order = "LSB"
@@ -69,38 +78,45 @@ a container geometry type.}
 \item{sub_geom_idx}{An integer value giving the 1-based index of a
 sub-geometry (numeric values will be coerced to integer by truncation).}
 
-\item{lines}{Either a raw vector of WKB or a character string of WKT for
-a GeometryCollection or MultiLineString.}
+\item{geoms}{Either a list of WKB raw vectors or character vector of WKT
+strings.}
 
-\item{auto_close}{A logical value, \code{TRUE} if the polygon should be closed
-when first and last points of the ring are the same (the default).}
+\item{coll_type}{A character string specifying a geometry collection type,
+e.g., \code{"GEOMETRYCOLLECTION"} (the default), \code{"MULTIPOINT"},
+\code{"MULTILINESTRING"}, \verb{"MULTIPOLYGON".}}
+
+\item{lines}{Either a raw vector of WKB or a character string of WKT
+specifying a \code{GeometryCollection} or \code{MultiLineString}, or a list of WKB raw
+vectors for \code{LineString}s, or a character vector of WKT strings.}
+
+\item{auto_close}{A logical value, \code{TRUE} (the default) if the polygon should
+be closed when first and last points of the ring are the same.}
 
 \item{tolerance}{A numeric value giving the tolerance into which two arcs are
 considered close enough to be joined.}
 }
 \value{
 A geometry as WKB raw vector by default, or a WKT string if
-\code{as_wkb = FALSE}. In the case of multiple input points for creating Point
-geometry type, a list of WKB raw vectors or character vector of WKT strings
-will be returned. \code{NULL} is returned with a warning if the an error occurs
+\code{as_wkb = FALSE}. In the case of multiple input points for creating \verb{Point`` geometry type, a list of WKB raw vectors or character vector of WKT strings will be returned. }NULL` is returned with a warning if the an error occurs
 in the geometry operation.
 }
 \description{
-These functions create WKB/WKT geometries from input vertices, and build
-container geometry types from sub-geometries.
+These functions create WKB/WKT geometries from input vertices or arcs, and
+build container geometry types from sub-geometries.
 }
 \details{
 These functions use the GEOS library via GDAL headers.
 
 \code{g_create()} creates a geometry object from the given point(s) and returns
 a raw vector of WKB (the default) or a character string of WKT. Currently
-supports creating \code{Point}, \code{MultiPoint}, \code{LineString}, \code{Polygon}, and
-\code{GeometryCollection.}
-If multiple input points are given for creating \code{Point} type, then multiple
+supports creating \code{Point}, \code{MultiPoint}, \code{LineString}, and \code{Polygon}
+(including \verb{25D}, \code{Z}, \code{M}, \code{ZM} variants).
+If multiple input points are given for creating \code{Point}, then multiple
 geometries will be returned as a list of WKB raw vectors, or character
-vector of WKT strings (if \code{as_wkb = FALSE}). Otherwise, a single geometry
-is created from the input points. Only an empty \code{GeometryCollection} can be
-created with this function, for subsequent use with \code{g_add_geom()}.
+vector of WKT strings if \code{as_wkb = FALSE}. Otherwise, a single geometry
+is created from the input points. Only an empty \code{GeometryCollection} /
+\code{MultiLineString} / \code{MultiPolygon} can be created with this function (for
+subsequent use with \code{g_add_geom()}).
 
 \code{g_add_geom()} adds a geometry to a geometry container, e.g.,
 \code{Polygon} to \code{Polygon} (to add an interior ring), \code{Point} to \code{MultiPoint},
@@ -113,8 +129,14 @@ indexing). For a polygon, requesting the first sub-geometry returns the
 exterior ring (\code{sub_geom_idx = 1}), and the interior rings are returned for
 \code{sub_geom_idx > 1}.
 
+\code{g_build_collection()} builds a collection / container type geometry, e.g.,
+\code{GeometryCollection}, \code{MultiPoint}, \code{MultiLineString}, \code{MultiPolygon}, from
+a set of input geometries given as a list of WKB raw vectors or a character
+vector of WKT strings.
+
 \code{g_build_polygon_from_edges()} builds a polygon from a set of arcs given
-in a \code{GeometryCollection} or \code{MultiLineString}.
+in a \code{GeometryCollection}, \code{MultiLineString}, list of WKB raw vectors, or
+character vector of WKT strings.
 }
 \note{
 A \code{POLYGON} can be created for a single ring which will be the
@@ -155,15 +177,18 @@ mp2 <- g_create("POINT", c(11, 2)) |> g_add_geom(mp2)
 mp2 <- g_create("POINT", c(12, 3)) |> g_add_geom(mp2)
 g_wk2wk(mp2)
 
-# get sub-geometry from container
-g_get_geom(mp2, 2, as_wkb = FALSE)
+# or build a container/collection type geometry from WKB list or WKT vector
+lines <- c("LINESTRING (0 0,3 0)",
+           "LINESTRING (3 0,3 4)",
+           "LINESTRING (3 4,0 0)")
+(multi_line <- g_build_collection(lines, "MULTILINESTRING", as_wkb = FALSE))
 
-# plot WKT strings or a list of WKB raw vectors
-pts <- c(0, 0,
-         3, 0,
-         3, 4,
-         0, 0)
-m <- matrix(pts, ncol = 2, byrow = TRUE)
-(g <- g_create("POLYGON", m, as_wkb = FALSE))
-plot_geom(g)
+# get sub-geometry from container
+g_get_geom(multi_line, 2, as_wkb = FALSE)
+
+# build a polygon from a set of arcs
+(poly <- g_build_polygon_from_edges(lines, as_wkb = FALSE))
+
+# plot a vector of WKT strings or list of WKB raw vectors
+plot_geom(poly)
 }

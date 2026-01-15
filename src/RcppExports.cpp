@@ -1276,6 +1276,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// g_build_collection
+Rcpp::RawVector g_build_collection(const Rcpp::List& geoms, const std::string& coll_type, bool as_iso, const std::string& byte_order);
+RcppExport SEXP _gdalraster_g_build_collection(SEXP geomsSEXP, SEXP coll_typeSEXP, SEXP as_isoSEXP, SEXP byte_orderSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type geoms(geomsSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type coll_type(coll_typeSEXP);
+    Rcpp::traits::input_parameter< bool >::type as_iso(as_isoSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type byte_order(byte_orderSEXP);
+    rcpp_result_gen = Rcpp::wrap(g_build_collection(geoms, coll_type, as_iso, byte_order));
+    return rcpp_result_gen;
+END_RCPP
+}
 // g_build_polygon_from_edges
 SEXP g_build_polygon_from_edges(const Rcpp::RObject& lines, bool auto_close, double tolerance, bool as_iso, const std::string& byte_order);
 RcppExport SEXP _gdalraster_g_build_polygon_from_edges(SEXP linesSEXP, SEXP auto_closeSEXP, SEXP toleranceSEXP, SEXP as_isoSEXP, SEXP byte_orderSEXP) {
@@ -2613,6 +2627,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_g_add_geom", (DL_FUNC) &_gdalraster_g_add_geom, 4},
     {"_gdalraster_g_geom_count", (DL_FUNC) &_gdalraster_g_geom_count, 2},
     {"_gdalraster_g_get_geom", (DL_FUNC) &_gdalraster_g_get_geom, 4},
+    {"_gdalraster_g_build_collection", (DL_FUNC) &_gdalraster_g_build_collection, 4},
     {"_gdalraster_g_build_polygon_from_edges", (DL_FUNC) &_gdalraster_g_build_polygon_from_edges, 5},
     {"_gdalraster_g_is_valid", (DL_FUNC) &_gdalraster_g_is_valid, 2},
     {"_gdalraster_g_make_valid", (DL_FUNC) &_gdalraster_g_make_valid, 6},
