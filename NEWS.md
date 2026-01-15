@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9022 (dev)
+# gdalraster 2.4.0.9023 (dev)
+
+* add `vsi_uri_to_vsi_path()`: return VSI compatible paths from URIs / URLs, wrapper of `VSIURIToVSIPath()` in GDAL >= 3.12 (#865) (2026-01-14)
 
 * add `vsi_glob()`: get file and directory names matching a pattern that may contain wildcards, wrapper of `VSIGlob()` in GDAL >= 3.11 (#864) (2026-01-14)
 
