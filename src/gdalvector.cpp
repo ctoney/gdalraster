@@ -2104,8 +2104,7 @@ bool GDALVector::rollbackTransaction() {
 Rcpp::CharacterVector GDALVector::getMetadata() const {
     checkAccess_(GA_ReadOnly);
 
-    char **papszMD = nullptr;
-    papszMD = GDALGetMetadata(m_hLayer, nullptr);
+    CSLConstList papszMD = GDALGetMetadata(m_hLayer, nullptr);
 
     int nItems = CSLCount(papszMD);
     if (nItems > 0) {
@@ -2123,15 +2122,14 @@ Rcpp::CharacterVector GDALVector::getMetadata() const {
 bool GDALVector::setMetadata(const Rcpp::CharacterVector &metadata) {
     checkAccess_(GA_ReadOnly);
 
-    std::vector<const char *> metadata_in(metadata.size() + 1);
+    CPLStringList metadata_in;
     if (metadata.size() > 0) {
         for (R_xlen_t i = 0; i < metadata.size(); ++i) {
-            metadata_in[i] = (const char *) (metadata[i]);
+            metadata_in.AddString((const char *) metadata[i]);
         }
     }
-    metadata_in[metadata.size()] = nullptr;
 
-    OGRErr err = GDALSetMetadata(m_hLayer, metadata_in.data(), nullptr);
+    OGRErr err = GDALSetMetadata(m_hLayer, metadata_in.List(), nullptr);
 
     if (err != CE_None) {
         return false;

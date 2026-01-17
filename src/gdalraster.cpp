@@ -1552,7 +1552,7 @@ Rcpp::CharacterVector GDALRaster::getMetadata(int band,
 
     checkAccess_(GA_ReadOnly);
 
-    char **papszMD = nullptr;
+    CSLConstList papszMD = nullptr;
 
     if (band == 0) {
         papszMD = GDALGetMetadata(m_hDataset,
@@ -1582,25 +1582,24 @@ bool GDALRaster::setMetadata(int band, const Rcpp::CharacterVector &metadata,
 
     checkAccess_(GA_ReadOnly);
 
-    const char* domain_in = nullptr;
+    const char *domain_in = nullptr;
     if (domain != "")
         domain_in = domain.c_str();
 
-    std::vector<const char *> metadata_in(metadata.size() + 1);
+    CPLStringList metadata_in;
     if (metadata.size() > 0) {
         for (R_xlen_t i = 0; i < metadata.size(); ++i) {
-            metadata_in[i] = (const char *) (metadata[i]);
+            metadata_in.AddString((const char *) metadata[i]);
         }
     }
-    metadata_in[metadata.size()] = nullptr;
 
     CPLErr err = CE_None;
     if (band == 0) {
-        err = GDALSetMetadata(m_hDataset, metadata_in.data(), domain_in);
+        err = GDALSetMetadata(m_hDataset, metadata_in.List(), domain_in);
     }
     else {
         GDALRasterBandH hBand = getBand_(band);
-        err = GDALSetMetadata(hBand, metadata_in.data(), domain_in);
+        err = GDALSetMetadata(hBand, metadata_in.List(), domain_in);
     }
 
     if (err != CE_None) {

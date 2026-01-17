@@ -211,7 +211,7 @@ static bool CreateField_(GDALDatasetH hDS, OGRLayerH hLayer,
     OGRFieldType eFieldType = getOFT_(fld_type);
     OGRFieldSubType eFieldSubType = getOFTSubtype_(fld_subtype);
     GDALDriverH hDriver = GDALGetDatasetDriver(hDS);
-    char **papszMD = GDALGetMetadata(hDriver, nullptr);
+    CSLConstList papszDriverMD = GDALGetMetadata(hDriver, nullptr);
     bool ret = false;
 
     hFieldDefn = OGR_Fld_Create(fld_name.c_str(), eFieldType);
@@ -225,7 +225,7 @@ static bool CreateField_(GDALDatasetH hDS, OGRLayerH hLayer,
             OGR_Fld_SetPrecision(hFieldDefn, fld_precision);
 
         if (!is_nullable) {
-            if (CPLFetchBool(papszMD, GDAL_DCAP_NOTNULL_FIELDS, false))
+            if (CPLFetchBool(papszDriverMD, GDAL_DCAP_NOTNULL_FIELDS, false))
                 OGR_Fld_SetNullable(hFieldDefn, false);
             else
                 Rcpp::warning(
@@ -233,7 +233,7 @@ static bool CreateField_(GDALDatasetH hDS, OGRLayerH hLayer,
         }
 
         if (default_value != "") {
-            if (CPLFetchBool(papszMD, GDAL_DCAP_DEFAULT_FIELDS, false))
+            if (CPLFetchBool(papszDriverMD, GDAL_DCAP_DEFAULT_FIELDS, false))
                 OGR_Fld_SetDefault(hFieldDefn, default_value.c_str());
             else
                 Rcpp::warning(
@@ -242,7 +242,7 @@ static bool CreateField_(GDALDatasetH hDS, OGRLayerH hLayer,
 
 #if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 2, 0)
         if (is_unique) {
-            if (CPLFetchBool(papszMD, GDAL_DCAP_UNIQUE_FIELDS, false))
+            if (CPLFetchBool(papszDriverMD, GDAL_DCAP_UNIQUE_FIELDS, false))
                 OGR_Fld_SetUnique(hFieldDefn, true);
             else
                 Rcpp::warning(
@@ -290,14 +290,15 @@ static bool CreateGeomField_(GDALDatasetH hDS, OGRLayerH hLayer,
     }
 
     GDALDriverH hDriver = GDALGetDatasetDriver(hDS);
-    char **papszMD = GDALGetMetadata(hDriver, nullptr);
+    CSLConstList papszDriverMD = GDALGetMetadata(hDriver, nullptr);
     bool ret = false;
 
     OGRGeomFieldDefnH hGeomFieldDefn = nullptr;
     hGeomFieldDefn = OGR_GFld_Create(fld_name.c_str(), eGeomType);
     if (hGeomFieldDefn != nullptr) {
         if (!is_nullable) {
-            if (CPLFetchBool(papszMD, GDAL_DCAP_NOTNULL_GEOMFIELDS, false))
+            if (CPLFetchBool(papszDriverMD, GDAL_DCAP_NOTNULL_GEOMFIELDS,
+                             false))
                 OGR_GFld_SetNullable(hGeomFieldDefn, false);
             else
                 Rcpp::warning(
@@ -631,8 +632,8 @@ GDALVector *create_ogr(const std::string &format,
     const std::string dsn_in =
         Rcpp::as<std::string>(check_gdal_filename(dst_filename));
 
-    char **papszMetadata = GDALGetMetadata(hDriver, nullptr);
-    if (!CPLFetchBool(papszMetadata, GDAL_DCAP_CREATE, FALSE))
+    CSLConstList papszDriverMD = GDALGetMetadata(hDriver, nullptr);
+    if (!CPLFetchBool(papszDriverMD, GDAL_DCAP_CREATE, FALSE))
         Rcpp::stop("driver does not support create");
 
     if (fld_name != "" && fld_type == "")
@@ -796,8 +797,10 @@ SEXP ogr_ds_field_domain_names(const std::string &dsn) {
     }
 
     GDALDriverH hDriver = GDALGetDatasetDriver(hDS);
-    char **papszMD = GDALGetMetadata(hDriver, nullptr);
-    if (!CPLFetchBool(papszMD, GDAL_DCAP_FIELD_DOMAINS, false)) {
+    CSLConstList papszDriverMD =
+        (hDriver) ? GDALGetMetadata(hDriver, nullptr) : nullptr;
+
+    if (!CPLFetchBool(papszDriverMD, GDAL_DCAP_FIELD_DOMAINS, false)) {
         Rcpp::warning("format does not support reading field domains");
         GDALReleaseDataset(hDS);
         return R_NilValue;
