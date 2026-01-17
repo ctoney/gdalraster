@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9030 (dev)
+# gdalraster 2.4.0.9040 (dev)
+
+* (internal) use `CSLConstList` with `GDALGetMetadata()`, `GDALSetMetadata()`, <https://gdal.org/en/latest/user/migration_guide.html> (#868, thanks to @mdsumner) (2026-01-17)
 
 * add `g_build_collection()`: build a collection-type geometry from a set of input geometries given as a list of WKB `raw` vectors or a `character` vector of WKT strings (#867) (2026-01-16)
 
