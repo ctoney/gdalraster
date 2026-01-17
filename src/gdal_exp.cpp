@@ -4,6 +4,7 @@
 */
 
 #include <gdal.h>
+#include <gdal_priv.h>
 #include <cpl_port.h>
 #include <cpl_conv.h>
 #include <cpl_http.h>
@@ -30,6 +31,7 @@
 #include "gdalraster.h"
 #include "cmb_table.h"
 #include "ogr_util.h"
+#include "srs_api.h"
 #include "transform.h"
 
 //' Get GDAL version
@@ -2003,11 +2005,11 @@ bool footprint(const Rcpp::CharacterVector &src_filename,
 
 //' Check Line of Sight between pairs of points
 //'
-//' Wrapper of GDALIsLineOfSightVisible() in GDAL >= 3.9
+//' Interface to GDALIsLineOfSightVisible() in GDAL >= 3.9
 //'
 //' see also https://github.com/OSGeo/gdal/issues/12458:
-//' "GDALIsLineOfSightVisible(): points exactly on the DEM surface are never
-//' visible"
+//' GDALIsLineOfSightVisible(): points exactly on the DEM surface are never
+//' visible
 //'
 //' Called from and documented in R/gdalraster_proc.R
 //'
@@ -2046,16 +2048,48 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
     if (ptsB_in.ncol() != 3)
         Rcpp::stop("input matrix for 'ptsB' must have 3 columns (xyz)");
 
+    bool zA_interp_as_above_dem = false;
+    if (EQUAL(ZinterpA.c_str(), "ABOVE_DEM"))
+        zA_interp_as_above_dem = true;
+
+    bool zB_interp_as_above_dem = false;
+    if (EQUAL(ZinterpB.c_str(), "ABOVE_DEM"))
+        zB_interp_as_above_dem = true;
+
     if (srsA != "") {
         if (!quiet)
-            Rcpp::Rcout << "transforming 'ptsA'..." << std::endl;
-        ptsA_in = transform_xy(ptsA_in, srsA, ds->getProjection());
+            Rcpp::Rcout << "transforming 'ptsA'...\n";
+
+        if (!srs_is_vertical(srsA) || !zA_interp_as_above_dem) {
+            ptsA_in = transform_xy(ptsA_in, srsA, ds->getProjection());
+        }
+        else {
+            // don't include Z values if this is a vertical coordinate system
+            // and Z is given as relative to the DEM surface
+            Rcpp::SubMatrix<REALSXP> sub = ptsA_in(Rcpp::_, Rcpp::Range(0, 1));
+            Rcpp::NumericMatrix ptsA_xy_tmp = Rcpp::NumericMatrix(sub);
+            ptsA_xy_tmp = transform_xy(ptsA_xy_tmp, srsA, ds->getProjection());
+            ptsA_in.column(0) = ptsA_xy_tmp.column(0);
+            ptsA_in.column(1) = ptsA_xy_tmp.column(1);
+        }
     }
 
     if (srsB != "") {
         if (!quiet)
-            Rcpp::Rcout << "transforming 'ptsB'..." << std::endl;
-        ptsB_in = transform_xy(ptsB_in, srsB, ds->getProjection());
+            Rcpp::Rcout << "transforming 'ptsB'...\n";
+
+        if (!srs_is_vertical(srsB) || !zB_interp_as_above_dem) {
+            ptsA_in = transform_xy(ptsB_in, srsB, ds->getProjection());
+        }
+        else {
+            // don't include Z values if this is a vertical coordinate system
+            // and Z is given as relative to the DEM surface
+            Rcpp::SubMatrix<REALSXP> sub = ptsB_in(Rcpp::_, Rcpp::Range(0, 1));
+            Rcpp::NumericMatrix ptsB_xy_tmp = Rcpp::NumericMatrix(sub);
+            ptsB_xy_tmp = transform_xy(ptsB_xy_tmp, srsB, ds->getProjection());
+            ptsB_in.column(0) = ptsB_xy_tmp.column(0);
+            ptsB_in.column(1) = ptsB_xy_tmp.column(1);
+        }
     }
 
     if (ptsA_in.nrow() == 1) {
@@ -2067,30 +2101,21 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
         }
     }
 
-    R_xlen_t num_pts = ptsB_in.nrow();
+    const R_xlen_t num_pts = ptsB_in.nrow();
 
     Rcpp::NumericVector inv_gt = inv_geotransform(ds->getGeoTransform());
     if (Rcpp::any(Rcpp::is_na(inv_gt)))
         Rcpp::stop("failed to get inverse geotransform");
 
-    int raster_xsize = GDALGetRasterXSize(ds->getGDALDatasetH_());
-    int raster_ysize = GDALGetRasterYSize(ds->getGDALDatasetH_());
-    GDALProgressFunc pfnProgress = GDALTermProgressR;
+    const double raster_xsize = ds->getRasterXSize();
+    const double raster_ysize = ds->getRasterYSize();
     GDALRasterBandH hBand = ds->getBand_(band);
-
-    bool zA_interp_as_above_dem = false;
-    if (EQUAL(ZinterpA.c_str(), "ABOVE_DEM"))
-        zA_interp_as_above_dem = true;
-
-    bool zB_interp_as_above_dem = false;
-    if (EQUAL(ZinterpB.c_str(), "ABOVE_DEM"))
-        zB_interp_as_above_dem = true;
-
     Rcpp::LogicalVector out = Rcpp::no_init(num_pts);
     R_xlen_t pts_outside = 0;
+    GDALProgressFunc pfnProgress = GDALTermProgressR;
 
     if (!quiet) {
-        Rcpp::Rcout << "checking line-of-sight..." << std::endl;
+        Rcpp::Rcout << "checking line-of-sight...\n";
         pfnProgress(0, nullptr, nullptr);
     }
 
@@ -2131,21 +2156,21 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
         }
 
         // convert to raster row/column
-        // allow input coordinates exactly on the bottom or right edges
+        // allow input coordinates exactly on the bottom or right edges to
         // match behavior in: https://github.com/OSGeo/gdal/pull/12087
 
-        // TODO: only do this if ptsA_in.nrow() > 1
+        // TODO: only do this for ptsA if ptsA_in.nrow() > 1
         //       compute and check above before the loop for the case of 1 ptA
         double grid_xA = inv_gt[0] + inv_gt[1] * geo_xA + inv_gt[2] * geo_yA;
         double grid_yA = inv_gt[3] + inv_gt[4] * geo_xA + inv_gt[5] * geo_yA;
 
-        if (ARE_REAL_EQUAL(grid_xA, static_cast<double>(raster_xsize)))
+        if (ARE_REAL_EQUAL(grid_xA, raster_xsize))
             grid_xA -= 0.25;
-        if (ARE_REAL_EQUAL(grid_yA, static_cast<double>(raster_ysize)))
+        if (ARE_REAL_EQUAL(grid_yA, raster_ysize))
             grid_yA -= 0.25;
 
-        if ((grid_xA < 0 || grid_xA > static_cast<double>(raster_xsize) ||
-             grid_yA < 0 || grid_yA > static_cast<double>(raster_ysize))) {
+        if ((grid_xA < 0 || grid_xA > raster_xsize ||
+             grid_yA < 0 || grid_yA > raster_ysize)) {
 
             pts_outside += 1;
 
@@ -2156,13 +2181,13 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
         double grid_xB = inv_gt[0] + inv_gt[1] * geo_xB + inv_gt[2] * geo_yB;
         double grid_yB = inv_gt[3] + inv_gt[4] * geo_xB + inv_gt[5] * geo_yB;
 
-        if (ARE_REAL_EQUAL(grid_xB, static_cast<double>(raster_xsize)))
+        if (ARE_REAL_EQUAL(grid_xB, raster_xsize))
             grid_xB -= 0.25;
-        if (ARE_REAL_EQUAL(grid_yB, static_cast<double>(raster_ysize)))
+        if (ARE_REAL_EQUAL(grid_yB, raster_ysize))
             grid_yB -= 0.25;
 
-        if ((grid_xB < 0 || grid_xB > static_cast<double>(raster_xsize) ||
-             grid_yB < 0 || grid_yB > static_cast<double>(raster_ysize))) {
+        if ((grid_xB < 0 || grid_xB > raster_xsize ||
+             grid_yB < 0 || grid_yB > raster_ysize)) {
 
             pts_outside += 1;
 
@@ -2170,10 +2195,10 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
             continue;
         }
 
-        int xA = static_cast<int>(std::floor(grid_xA));
-        int yA = static_cast<int>(std::floor(grid_yA));
-        int xB = static_cast<int>(std::floor(grid_xB));
-        int yB = static_cast<int>(std::floor(grid_yB));
+        const int xA = static_cast<int>(std::floor(grid_xA));
+        const int yA = static_cast<int>(std::floor(grid_yA));
+        const int xB = static_cast<int>(std::floor(grid_xB));
+        const int yB = static_cast<int>(std::floor(grid_yB));
 
         if (zA_interp_as_above_dem) {
             Rcpp::NumericVector elev =
@@ -2190,9 +2215,9 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
         }
 
         if (zB_interp_as_above_dem) {
-            Rcpp::NumericVector elev = Rcpp::as<Rcpp::NumericVector>(
-                                                ds->read(band, xB, yB,
-                                                         1, 1, 1, 1));
+            Rcpp::NumericVector elev =
+                Rcpp::as<Rcpp::NumericVector>(ds->read(band, xB, yB,
+                                                       1, 1, 1, 1));
 
             if (Rcpp::NumericVector::is_na(elev[0])) {
                 out[i] = NA_LOGICAL;

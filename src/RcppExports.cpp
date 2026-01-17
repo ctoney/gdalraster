@@ -533,6 +533,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// isLineOfSightVisible
+Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const& ds, int band, const Rcpp::RObject& ptsA, const std::string& srsA, const std::string& ZinterpA, const Rcpp::RObject& ptsB, const std::string& srsB, const std::string& ZinterpB, bool quiet);
+RcppExport SEXP _gdalraster_isLineOfSightVisible(SEXP dsSEXP, SEXP bandSEXP, SEXP ptsASEXP, SEXP srsASEXP, SEXP ZinterpASEXP, SEXP ptsBSEXP, SEXP srsBSEXP, SEXP ZinterpBSEXP, SEXP quietSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const GDALRaster* const& >::type ds(dsSEXP);
+    Rcpp::traits::input_parameter< int >::type band(bandSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type ptsA(ptsASEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type srsA(srsASEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type ZinterpA(ZinterpASEXP);
+    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type ptsB(ptsBSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type srsB(srsBSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type ZinterpB(ZinterpBSEXP);
+    Rcpp::traits::input_parameter< bool >::type quiet(quietSEXP);
+    rcpp_result_gen = Rcpp::wrap(isLineOfSightVisible(ds, band, ptsA, srsA, ZinterpA, ptsB, srsB, ZinterpB, quiet));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ogr2ogr
 bool ogr2ogr(const Rcpp::CharacterVector& src_dsn, const Rcpp::CharacterVector& dst_dsn, const Rcpp::Nullable<Rcpp::CharacterVector>& src_layers, const Rcpp::Nullable<Rcpp::CharacterVector>& cl_arg, const Rcpp::Nullable<Rcpp::CharacterVector>& open_options);
 RcppExport SEXP _gdalraster_ogr2ogr(SEXP src_dsnSEXP, SEXP dst_dsnSEXP, SEXP src_layersSEXP, SEXP cl_argSEXP, SEXP open_optionsSEXP) {
@@ -2570,6 +2589,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_dem_proc", (DL_FUNC) &_gdalraster_dem_proc, 6},
     {"_gdalraster_fillNodata", (DL_FUNC) &_gdalraster_fillNodata, 6},
     {"_gdalraster_footprint", (DL_FUNC) &_gdalraster_footprint, 3},
+    {"_gdalraster_isLineOfSightVisible", (DL_FUNC) &_gdalraster_isLineOfSightVisible, 9},
     {"_gdalraster_ogr2ogr", (DL_FUNC) &_gdalraster_ogr2ogr, 5},
     {"_gdalraster_ogrinfo", (DL_FUNC) &_gdalraster_ogrinfo, 6},
     {"_gdalraster_polygonize", (DL_FUNC) &_gdalraster_polygonize, 9},
