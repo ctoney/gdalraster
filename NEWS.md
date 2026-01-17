@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9023 (dev)
+# gdalraster 2.4.0.9030 (dev)
+
+* add `g_build_collection()`: build a collection-type geometry from a set of input geometries given as a list of WKB `raw` vectors or a `character` vector of WKT strings (#867) (2026-01-16)
 
 * add `vsi_uri_to_vsi_path()`: return VSI compatible paths from URIs / URLs, wrapper of `VSIURIToVSIPath()` in GDAL >= 3.12 (#865) (2026-01-14)
 
