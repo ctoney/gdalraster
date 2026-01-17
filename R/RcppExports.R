@@ -848,6 +848,21 @@ footprint <- function(src_filename, dst_filename, cl_arg = NULL) {
     invisible(.Call(`_gdalraster_footprint`, src_filename, dst_filename, cl_arg))
 }
 
+#' Check Line of Sight between pairs of points
+#'
+#' Interface to GDALIsLineOfSightVisible() in GDAL >= 3.9
+#'
+#' see also https://github.com/OSGeo/gdal/issues/12458:
+#' GDALIsLineOfSightVisible(): points exactly on the DEM surface are never
+#' visible
+#'
+#' Called from and documented in R/gdalraster_proc.R
+#'
+#' @noRd
+.isLineOfSightVisible <- function(ds, band, ptsA, srsA, ZinterpA, ptsB, srsB, ZinterpB, quiet) {
+    .Call(`_gdalraster_isLineOfSightVisible`, ds, band, ptsA, srsA, ZinterpA, ptsB, srsB, ZinterpB, quiet)
+}
+
 #' Convert vector data between different formats
 #'
 #' `ogr2ogr()` is a wrapper of the \command{ogr2ogr} command-line

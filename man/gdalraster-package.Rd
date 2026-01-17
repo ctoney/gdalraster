@@ -43,6 +43,7 @@
   \item algorithms/utilities: \code{\link[=dem_proc]{dem_proc()}},
   \code{\link[=fillNodata]{fillNodata()}},
   \code{\link[=footprint]{footprint()}},
+  \code{\link[=is_los_visible]{is_los_visible()}},
   \code{\link[=make_chunk_index]{make_chunk_index()}},
   \code{\link[=polygonize]{polygonize()}},
   \code{\link[=rasterize]{rasterize()}},

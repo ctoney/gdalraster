@@ -54,6 +54,7 @@ reference:
   - dem_proc
   - fillNodata
   - footprint
+  - is_los_visible
   - make_chunk_index
   - polygonize
   - rasterize

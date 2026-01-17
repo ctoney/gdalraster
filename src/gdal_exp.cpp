@@ -4,6 +4,7 @@
 */
 
 #include <gdal.h>
+#include <gdal_priv.h>
 #include <cpl_port.h>
 #include <cpl_conv.h>
 #include <cpl_http.h>
@@ -30,6 +31,8 @@
 #include "gdalraster.h"
 #include "cmb_table.h"
 #include "ogr_util.h"
+#include "srs_api.h"
+#include "transform.h"
 
 //' Get GDAL version
 //'
@@ -1996,6 +1999,236 @@ bool footprint(const Rcpp::CharacterVector &src_filename,
 
     return ret;
 
+#endif
+}
+
+
+//' Check Line of Sight between pairs of points
+//'
+//' Interface to GDALIsLineOfSightVisible() in GDAL >= 3.9
+//'
+//' see also https://github.com/OSGeo/gdal/issues/12458:
+//' GDALIsLineOfSightVisible(): points exactly on the DEM surface are never
+//' visible
+//'
+//' Called from and documented in R/gdalraster_proc.R
+//'
+//' @noRd
+// [[Rcpp::export(name = ".isLineOfSightVisible")]]
+Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
+                                         int band,
+                                         const Rcpp::RObject &ptsA,
+                                         const std::string &srsA,
+                                         const std::string &ZinterpA,
+                                         const Rcpp::RObject &ptsB,
+                                         const std::string &srsB,
+                                         const std::string &ZinterpB,
+                                         bool quiet) {
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 9, 0)
+    Rcpp::stop("isLineOfSightVisible() requires GDAL >= 3.9");
+
+#else
+
+    Rcpp::NumericMatrix ptsA_in = xy_robject_to_matrix_(ptsA);
+    Rcpp::NumericMatrix ptsB_in = xy_robject_to_matrix_(ptsB);
+
+    if (ptsA_in.nrow() == 0)
+        Rcpp::stop("'ptsA' is empty");
+
+    if (ptsB_in.nrow() == 0)
+        Rcpp::stop("'ptsB' is empty");
+
+    if ((ptsA_in.nrow() != ptsB_in.nrow()) && ptsA_in.nrow() != 1)
+        Rcpp::stop("incompatible number of points in 'ptsA' vs 'ptsB'");
+
+    if (ptsA_in.ncol() != 3)
+        Rcpp::stop("input matrix for 'ptsA' must have 3 columns (xyz)");
+
+    if (ptsB_in.ncol() != 3)
+        Rcpp::stop("input matrix for 'ptsB' must have 3 columns (xyz)");
+
+    bool zA_interp_dem_relative = false;
+    if (EQUAL(ZinterpA.c_str(), "RELATIVE_TO_DEM"))
+        zA_interp_dem_relative = true;
+
+    bool zB_interp_dem_relative = false;
+    if (EQUAL(ZinterpB.c_str(), "RELATIVE_TO_DEM"))
+        zB_interp_dem_relative = true;
+
+    if (srsA != "") {
+        if (!quiet)
+            Rcpp::Rcout << "transforming 'ptsA'...\n";
+
+        if (srs_is_vertical(srsA) && zA_interp_dem_relative)
+            Rcpp::stop("CRS is vertical but Z values are not actual heights");
+
+        ptsA_in = transform_xy(ptsA_in, srsA, ds->getProjection());
+    }
+
+    if (srsB != "") {
+        if (!quiet)
+            Rcpp::Rcout << "transforming 'ptsB'...\n";
+
+        if (srs_is_vertical(srsB) && zB_interp_dem_relative)
+            Rcpp::stop("CRS is vertical but Z values are not actual heights");
+
+        ptsB_in = transform_xy(ptsB_in, srsB, ds->getProjection());
+    }
+
+    // if a single point A
+    if (ptsA_in.nrow() == 1) {
+        if (Rcpp::NumericVector::is_na(ptsA_in(0, 0)) ||
+            Rcpp::NumericVector::is_na(ptsA_in(0, 1)) ||
+            Rcpp::NumericVector::is_na(ptsA_in(0, 2))) {
+
+            Rcpp::stop("point A contains one or more missing value(s)");
+        }
+    }
+
+    const R_xlen_t num_pts = ptsB_in.nrow();
+
+    Rcpp::NumericVector inv_gt = inv_geotransform(ds->getGeoTransform());
+    if (Rcpp::any(Rcpp::is_na(inv_gt)))
+        Rcpp::stop("failed to get inverse geotransform");
+
+    const double raster_xsize = ds->getRasterXSize();
+    const double raster_ysize = ds->getRasterYSize();
+    GDALRasterBandH hBand = ds->getBand_(band);
+    Rcpp::LogicalVector out = Rcpp::no_init(num_pts);
+    R_xlen_t pts_outside = 0;
+    GDALProgressFunc pfnProgress = GDALTermProgressR;
+
+    if (!quiet) {
+        Rcpp::Rcout << "checking line-of-sight...\n";
+        pfnProgress(0, nullptr, nullptr);
+    }
+
+    for (R_xlen_t i = 0; i < num_pts; ++i) {
+        double geo_xA = NA_REAL;
+        double geo_yA = NA_REAL;
+        double zA = NA_REAL;
+        if (ptsA_in.nrow() > 1) {
+            geo_xA = ptsA_in(i, 0);
+            geo_yA = ptsA_in(i, 1);
+            zA = ptsA_in(i, 2);
+            if (Rcpp::NumericVector::is_na(geo_xA) ||
+                Rcpp::NumericVector::is_na(geo_yA) ||
+                Rcpp::NumericVector::is_na(zA)) {
+
+                out[i] = NA_LOGICAL;
+                continue;
+            }
+        }
+        else {
+            geo_xA = ptsA_in(0, 0);
+            geo_yA = ptsA_in(0, 1);
+            zA = ptsA_in(0, 2);
+        }
+
+        double geo_xB = ptsB_in(i, 0);
+        double geo_yB = ptsB_in(i, 1);
+        double zB = ptsB_in(i, 2);
+        if (Rcpp::NumericVector::is_na(geo_xB) ||
+            Rcpp::NumericVector::is_na(geo_yB) ||
+            Rcpp::NumericVector::is_na(zB)) {
+
+            out[i] = NA_LOGICAL;
+            continue;
+        }
+
+        // convert to raster row/column
+        // allow input coordinates exactly on the bottom or right edges to
+        // match behavior in: https://github.com/OSGeo/gdal/pull/12087
+
+        // we could only do this for ptsA if ptsA_in.nrow() > 1
+        // i.e., compute and check above before the loop for the case of 1 ptA
+        double grid_xA = inv_gt[0] + inv_gt[1] * geo_xA + inv_gt[2] * geo_yA;
+        double grid_yA = inv_gt[3] + inv_gt[4] * geo_xA + inv_gt[5] * geo_yA;
+
+        if (ARE_REAL_EQUAL(grid_xA, raster_xsize))
+            grid_xA -= 0.25;
+        if (ARE_REAL_EQUAL(grid_yA, raster_ysize))
+            grid_yA -= 0.25;
+
+        if ((grid_xA < 0 || grid_xA > raster_xsize ||
+             grid_yA < 0 || grid_yA > raster_ysize)) {
+
+            pts_outside += 1;
+
+            out[i] = NA_LOGICAL;
+            continue;
+        }
+
+        double grid_xB = inv_gt[0] + inv_gt[1] * geo_xB + inv_gt[2] * geo_yB;
+        double grid_yB = inv_gt[3] + inv_gt[4] * geo_xB + inv_gt[5] * geo_yB;
+
+        if (ARE_REAL_EQUAL(grid_xB, raster_xsize))
+            grid_xB -= 0.25;
+        if (ARE_REAL_EQUAL(grid_yB, raster_ysize))
+            grid_yB -= 0.25;
+
+        if ((grid_xB < 0 || grid_xB > raster_xsize ||
+             grid_yB < 0 || grid_yB > raster_ysize)) {
+
+            pts_outside += 1;
+
+            out[i] = NA_LOGICAL;
+            continue;
+        }
+
+        const int xA = static_cast<int>(std::floor(grid_xA));
+        const int yA = static_cast<int>(std::floor(grid_yA));
+        const int xB = static_cast<int>(std::floor(grid_xB));
+        const int yB = static_cast<int>(std::floor(grid_yB));
+
+        if (zA_interp_dem_relative) {
+            Rcpp::NumericVector elev =
+                Rcpp::as<Rcpp::NumericVector>(ds->read(band, xA, yA,
+                                                       1, 1, 1, 1));
+
+            if (Rcpp::NumericVector::is_na(elev[0])) {
+                out[i] = NA_LOGICAL;
+                continue;
+            }
+            else {
+                zA += elev[0];
+            }
+        }
+
+        if (zB_interp_dem_relative) {
+            Rcpp::NumericVector elev =
+                Rcpp::as<Rcpp::NumericVector>(ds->read(band, xB, yB,
+                                                       1, 1, 1, 1));
+
+            if (Rcpp::NumericVector::is_na(elev[0])) {
+                out[i] = NA_LOGICAL;
+                continue;
+            }
+            else {
+                zB += elev[0];
+            }
+        }
+
+        if (GDALIsLineOfSightVisible(hBand, xA, yA, zA, xB, yB, zB,
+                                     nullptr, nullptr, nullptr)) {
+            out[i] = TRUE;
+        }
+        else {
+            out[i] = FALSE;
+        }
+
+        if (!quiet)
+            pfnProgress((i + 1.0) / num_pts, nullptr, nullptr);
+    }
+
+    if (!quiet && pts_outside > 0) {
+        std::string msg =
+            "point(s) were outside the raster extent, NA returned";
+        Rcpp::warning(std::to_string(pts_outside) + " " + msg);
+    }
+
+    return out;
 #endif
 }
 

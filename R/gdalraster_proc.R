@@ -1527,6 +1527,257 @@ dem_proc <- function(mode,
 }
 
 
+#' Check line of sight between pairs of point locations
+#'
+#' @description
+#' `is_los_visible()` is an interface to GDAL's line-of-sight algorithm
+#' implemented by `GDALIsLineOfSightVisible()` in the Algorithms C API
+#' (\url{https://gdal.org/en/stable/api/gdal_alg.html}). It checks line of sight
+#' across a DEM surface using a Bresenham algorithm. The function can operate
+#' pairwise on sets of input points, or one-to-many. Requires GDAL >= 3.9.
+#'
+#' @param dem Either a character string giving the filename of the DEM
+#' raster, or an object of class `GDALRaster` for the DEM.
+#' @param ptsA A data frame or numeric matrix containing geospatial point
+#' coordinates, or point geometries (with Z values) as a list of WKB raw vectors
+#' or character vector of WKT strings. If data frame or matrix, the number of
+#' columns must be three (x, y, z). May be also be given as a numeric vector for
+#' one point (`c(x, y, z)`). If this argument contains a single point, then
+#' line of sight will be checked between it and each point in `ptsB`, otherwise
+#' `length(ptsA)` must equal `length(ptsB)`, and line of sight will be checked
+#' pairwise.
+#' @param ptsB The second set of points, as described above for `ptsA`.
+#' @param band An integer value specifying the band number in `dem` to use.
+#' Defaults to `1L`.
+#' @param srsA An optional character string specifying the spatial reference
+#' system for `ptsA`. May be in WKT format or any of the formats supported by
+#' [srs_to_wkt()]. If this argument is `NULL` (the default), then `ptsA` are
+#' assumed to be in the same coordinate reference system as `dem`. Otherwise,
+#' `ptsA` will be reprojected from `srsA` to the spatial reference of `dem`.
+#' @param srsB An optional character string specifying the spatial reference
+#' system for `ptsB` (see above). Defaults to `NULL`. If not `NULL`, `ptsB` will
+#' be reprojected from `srsB` to the spatial reference of `dem`.
+#' @param ZinterpA A character string specifying the interpretation of the Z
+#' values for `ptsA`. The default is `"RELATIVE_TO_DEM"`, in which case the
+#' location heights of `ptsA` are obtained by querying the DEM surface and
+#' adding the Z value given in `ptsA`. Alternatively, the Z values can be
+#' interpreted as absolute heights to be used unmodified by setting this
+#' argument to `"ACTUAL"`.
+#' @param ZinterpB A character string specifying the interpretation of the Z
+#' values for `ptsB`. See the description above for `ZinterpA`.
+#' @param quiet A logical value with default of `FALSE`. If set to `TRUE`, will
+#' suppress a progress bar and informational messages.
+#' @returns A logical vector of `length(ptsB)`, `TRUE` for each pair of points
+#' that are within line of sight, otherwise `FALSE`.
+#' The checks are done pairwise if `(length(ptsA) == length(ptsB))`, or
+#' one-to-many if `length(ptsA) == 1` and multiple points are given in `ptsB`.
+#'
+#' @note
+#' Input coordinates must be within the raster bounds. `NA` will be returned if
+#' either coordinate is outside the raster extent, or is missing a Z value.
+#'
+#' The GDAL documentation notes that line of sight is computed in raster
+#' coordinate space, and thus may not be appropriate for some applications. For
+#' example, datasets referenced against geographic coordinates at high latitudes
+#' may have issues.
+#'
+#' At the time of writing (GDAL 3.9 through 3.12.1), a point exactly on the
+#' surface of the DEM is never visible with `GDALIsLineOfSightVisible()`, even
+#' if viewed from a point directly above. For a detailed description, see
+#' \url{https://github.com/OSGeo/gdal/issues/12458}. A workaround for that case
+#' could be to set a small but negligible postive Z value (if using
+#' `"RELATIVE_TO_DEM"`) for points that are intended to be on the DEM surface,
+#' if appropriate for the use case.
+#'
+#' @seealso
+#' \url{https://www.researchgate.net/publication/2411280_Efficient_Line-of-Sight_Algorithms_for_Real_Terrain_Data}
+#'
+#' @examplesIf gdal_version_num() >= gdal_compute_version(3, 9, 0)
+#' dem <- system.file("extdata/storml_elev.tif", package="gdalraster")
+#'
+#' ## no reprojection, the point coordinates are in the same projection as DEM
+#'
+#' ## one-to-many
+#' ptA <- c(324625.0, 5104724.0, 1.7)
+#' ptsB <-c(324803.0, 5104517.0, 10,
+#'          325286.0, 5102923.0, 10,
+#'          323847.0, 5104538.0, 10)
+#' ptsB <- matrix(ptsB, nrow = 3, ncol = 3, byrow = TRUE)
+#'
+#' is_los_visible(dem, ptA, ptsB)
+#'
+#' ## pairwise, same ptA location with varying height
+#' ptsA <- c(324625.0, 5104724.0, 1,
+#'           324625.0, 5104724.0, 10,
+#'           324625.0, 5104724.0, 1000)
+#' ptsA <- matrix(ptsA, nrow = 3, ncol = 3, byrow = TRUE)
+#'
+#' is_los_visible(dem, ptsA, ptsB)
+#'
+#' ## WKB points
+#' (ptsA_wkb <- g_create("POINT", ptsA))
+#'
+#' # as WKT
+#' g_wk2wk(ptsA_wkb)
+#'
+#' # or as ISO WKT
+#' g_wk2wk(ptsA_wkb, as_iso = TRUE)
+#'
+#' is_los_visible(dem, ptsA_wkb, ptsB)
+#'
+#' ## reprojecting ptsA, and the DEM given as a dataset object
+#' (ds <- new(GDALRaster, dem))
+#'
+#' ptsA_wkb_wgs84 <- g_transform(ptsA_wkb, ds$getSpatialRef(), "WGS84")
+#' g_wk2wk(ptsA_wkb_wgs84)
+#'
+#' is_los_visible(ds, ptsA_wkb_wgs84, ptsB, srsA = "WGS84")
+#'
+#' ## read ptsB from a vector dataset, use original ptA
+#'
+#' dsn <- system.file("extdata/storml_los_pts_b.geojson", package="gdalraster")
+#' (lyr <- new(GDALVector, dsn))
+#'
+#' (features <- lyr$fetch(-1))
+#'
+#' is_los_visible(ds, ptA, features$geom, srsB = lyr$getSpatialRef(),
+#'                ZinterpB = "ACTUAL")
+#'
+#' ds$close()
+#' lyr$close()
+#' @export
+is_los_visible <- function(dem, ptsA, ptsB, band = 1L,
+                           srsA = NULL, srsB = NULL,
+                           ZinterpA = "RELATIVE_TO_DEM",
+                           ZinterpB = "RELATIVE_TO_DEM",
+                           quiet = FALSE) {
+
+    if (gdal_version_num() < gdal_compute_version(3, 9, 0))
+        stop("is_los_visible() requires GDAL >= 3.9", call. = FALSE)
+
+    ds <- NULL
+    close_ds <- FALSE
+    if (is(dem, "Rcpp_GDALRaster")) {
+        ds <- dem
+        if (!ds$isOpen()) {
+            stop("raster dataset is not open", call. = FALSE)
+        }
+    } else if (is.character(dem) && length(dem) == 1) {
+        ds <- new(GDALRaster, dem)
+        close_ds <- TRUE
+    } else {
+        stop("'dem' must be a character string or GDALRaster object",
+             call. = FALSE)
+    }
+
+    if (is.null(band))
+        band <- 1L
+    if (!(is.numeric(band) && length(band == 1)))
+        stop("'band' must be a single numeric value", call. = FALSE)
+
+    if (missing(ptsA) || is.null(ptsA))
+        stop("'ptsA' is required", call. = FALSE)
+
+    if (missing(ptsB) || is.null(ptsB))
+        stop("'ptsB' is required", call. = FALSE)
+
+    if (is.null(srsA))
+        srsA <- ""
+    else if (!is.character(srsA) || length(srsA) > 1)
+        stop("'srsA' must be a character string", call. = FALSE)
+
+    if (is.null(srsB))
+        srsB <- ""
+    else if (!is.character(srsB) || length(srsB) > 1)
+        stop("'srsB' must be a character string", call. = FALSE)
+
+    if (is.null(ZinterpA))
+        ZinterpA <- "RELATIVE_TO_DEM"
+    else if (!is.character(ZinterpA) || length(ZinterpA) > 1)
+        stop("'ZinterpA' must be a character string", call. = FALSE)
+    if (!(toupper(ZinterpA) %in% c("ACTUAL", "RELATIVE_TO_DEM"))) {
+        stop("'ZinterpA' must be one of \"ACTUAL\" or \"RELATIVE_TO_DEM\"",
+             call. = FALSE)
+    }
+
+    if (is.null(ZinterpB))
+        ZinterpB <- "RELATIVE_TO_DEM"
+    else if (!is.character(ZinterpB) || length(ZinterpB) > 1)
+        stop("'ZinterpB' must be a character string", call. = FALSE)
+    if (!(toupper(ZinterpB) %in% c("ACTUAL", "RELATIVE_TO_DEM"))) {
+        stop("'ZinterpB' must be one of \"ACTUAL\" or \"RELATIVE_TO_DEM\"",
+             call. = FALSE)
+    }
+
+    ptsA_in <- NULL
+    if (is.raw(ptsA) || (is.list(ptsA) && is.raw(ptsA[[1]]) ||
+        is.character(ptsA))) {
+
+        if (is.character(ptsA))
+            ptsA <- g_wk2wk(ptsA)
+
+        if (is.raw(ptsA)) {
+            geom_type <- g_name(ptsA)
+        } else {
+            geom_type <- g_name(ptsA[[1]])
+        }
+        if (!startsWith(geom_type, "POINT"))
+            stop("'ptsA' does not contain a POINT geometry type", call. = FALSE)
+
+        coords <- g_coords(ptsA)
+        if (!is.null(coords$z)) {
+            ptsA_in <- coords[, c("x", "y", "z")]
+        } else {
+            stop("'ptsA' does not contain Z values", call. = FALSE)
+        }
+    } else if (is.data.frame(ptsA) || is.matrix(ptsA) || is.vector(ptsA)) {
+        ptsA_in <- ptsA
+    } else {
+        stop("'ptsA' is not a valid input type", call. = FALSE)
+    }
+
+    ptsB_in <- NULL
+    if (is.raw(ptsB) || (is.list(ptsB) && is.raw(ptsB[[1]]) ||
+        is.character(ptsB))) {
+
+        if (is.character(ptsB))
+            ptsB <- g_wk2wk(ptsB)
+
+        if (is.raw(ptsB)) {
+            geom_type <- g_name(ptsB)
+        } else {
+            geom_type <- g_name(ptsB[[1]])
+        }
+        if (!startsWith(geom_type, "POINT"))
+            stop("'ptsB' does not contain a POINT geometry type", call. = FALSE)
+
+        coords <- g_coords(ptsB)
+        if (!is.null(coords$z)) {
+            ptsB_in <- coords[, c("x", "y", "z")]
+        } else {
+            stop("'ptsB' does not contain Z values", call. = FALSE)
+        }
+    } else if (is.data.frame(ptsB) || is.matrix(ptsB) || is.vector(ptsB)) {
+        ptsB_in <- ptsB
+    } else {
+        stop("'ptsB' is not a valid input type", call. = FALSE)
+    }
+
+    if (is.null(quiet))
+        quiet <- FALSE
+    if (!is.logical(quiet) || length(quiet) > 1)
+        stop("'quiet' must be a single logical value", call. = FALSE)
+
+    ret <- .isLineOfSightVisible(ds, band, ptsA_in, srsA, ZinterpA,
+                                 ptsB_in, srsB, ZinterpB, quiet)
+
+    if (close_ds)
+        ds$close()
+
+    return(ret)
+}
+
+
 #' Extract pixel values at geospatial point locations
 #'
 #' @description
