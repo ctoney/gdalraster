@@ -2725,6 +2725,11 @@ has_geos <- function() {
 }
 
 #' @noRd
+.g_build_collection <- function(geoms, coll_type, as_iso, byte_order) {
+    .Call(`_gdalraster_g_build_collection`, geoms, coll_type, as_iso, byte_order)
+}
+
+#' @noRd
 .g_build_polygon_from_edges <- function(lines, auto_close, tolerance, as_iso, byte_order) {
     .Call(`_gdalraster_g_build_polygon_from_edges`, lines, auto_close, tolerance, as_iso, byte_order)
 }

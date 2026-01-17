@@ -322,23 +322,24 @@ g_wk2wk <- function(geom, as_iso = FALSE, byte_order = "LSB") {
     }
 }
 
-#' Create WKB/WKT geometries from vertices, and add/get sub-geometries
+#' Geometry factory functions
 #'
-#' These functions create WKB/WKT geometries from input vertices, and build
-#' container geometry types from sub-geometries.
+#' These functions create WKB/WKT geometries from input vertices or arcs, and
+#' build container geometry types from sub-geometries.
 #' @name g_factory
 #' @details
 #' These functions use the GEOS library via GDAL headers.
 #'
 #' `g_create()` creates a geometry object from the given point(s) and returns
 #' a raw vector of WKB (the default) or a character string of WKT. Currently
-#' supports creating `Point`, `MultiPoint`, `LineString`, `Polygon`, and
-#' `GeometryCollection.`
-#' If multiple input points are given for creating `Point` type, then multiple
+#' supports creating `Point`, `MultiPoint`, `LineString`, and `Polygon`
+#' (including `25D`, `Z`, `M`, `ZM` variants).
+#' If multiple input points are given for creating `Point`, then multiple
 #' geometries will be returned as a list of WKB raw vectors, or character
-#' vector of WKT strings (if `as_wkb = FALSE`). Otherwise, a single geometry
-#' is created from the input points. Only an empty `GeometryCollection` can be
-#' created with this function, for subsequent use with `g_add_geom()`.
+#' vector of WKT strings if `as_wkb = FALSE`. Otherwise, a single geometry
+#' is created from the input points. Only an empty `GeometryCollection` /
+#' `MultiLineString` / `MultiPolygon` can be created with this function (for
+#' subsequent use with `g_add_geom()`).
 #'
 #' `g_add_geom()` adds a geometry to a geometry container, e.g.,
 #' `Polygon` to `Polygon` (to add an interior ring), `Point` to `MultiPoint`,
@@ -351,8 +352,14 @@ g_wk2wk <- function(geom, as_iso = FALSE, byte_order = "LSB") {
 #' exterior ring (`sub_geom_idx = 1`), and the interior rings are returned for
 #' `sub_geom_idx > 1`.
 #'
+#' `g_build_collection()` builds a collection / container type geometry, e.g.,
+#' `GeometryCollection`, `MultiPoint`, `MultiLineString`, `MultiPolygon`, from
+#' a set of input geometries given as a list of WKB raw vectors or a character
+#' vector of WKT strings.
+#'
 #' `g_build_polygon_from_edges()` builds a polygon from a set of arcs given
-#' in a `GeometryCollection` or `MultiLineString`.
+#' in a `GeometryCollection`, `MultiLineString`, list of WKB raw vectors, or
+#' character vector of WKT strings.
 #'
 #' @param geom_type Character string (case-insensitive), one of `"POINT"`,
 #' `"MULTIPOINT"`, `"LINESTRING"`, `"POLYGON"` (see Note) or
@@ -373,15 +380,21 @@ g_wk2wk <- function(geom, as_iso = FALSE, byte_order = "LSB") {
 #' a container geometry type.
 #' @param sub_geom_idx An integer value giving the 1-based index of a
 #' sub-geometry (numeric values will be coerced to integer by truncation).
-#' @param lines Either a raw vector of WKB or a character string of WKT for
-#' a GeometryCollection or MultiLineString.
-#' @param auto_close A logical value, `TRUE` if the polygon should be closed
-#' when first and last points of the ring are the same (the default).
+#' @param geoms Either a list of WKB raw vectors or character vector of WKT
+#' strings.
+#' @param coll_type A character string specifying a geometry collection type,
+#' e.g., `"GEOMETRYCOLLECTION"` (the default), `"MULTIPOINT"`,
+#' `"MULTILINESTRING"`, `"MULTIPOLYGON".`
+#' @param lines Either a raw vector of WKB or a character string of WKT
+#' specifying a `GeometryCollection` or `MultiLineString`, or a list of WKB raw
+#' vectors for `LineString`s, or a character vector of WKT strings.
+#' @param auto_close A logical value, `TRUE` (the default) if the polygon should
+#' be closed when first and last points of the ring are the same.
 #' @param tolerance A numeric value giving the tolerance into which two arcs are
 #' considered close enough to be joined.
 #' @return
 #' A geometry as WKB raw vector by default, or a WKT string if
-#' `as_wkb = FALSE`. In the case of multiple input points for creating Point
+#' `as_wkb = FALSE`. In the case of multiple input points for creating `Point``
 #' geometry type, a list of WKB raw vectors or character vector of WKT strings
 #' will be returned. `NULL` is returned with a warning if the an error occurs
 #' in the geometry operation.
@@ -425,17 +438,20 @@ g_wk2wk <- function(geom, as_iso = FALSE, byte_order = "LSB") {
 #' mp2 <- g_create("POINT", c(12, 3)) |> g_add_geom(mp2)
 #' g_wk2wk(mp2)
 #'
-#' # get sub-geometry from container
-#' g_get_geom(mp2, 2, as_wkb = FALSE)
+#' # or build a container/collection type geometry from WKB list or WKT vector
+#' lines <- c("LINESTRING (0 0,3 0)",
+#'            "LINESTRING (3 0,3 4)",
+#'            "LINESTRING (3 4,0 0)")
+#' (multi_line <- g_build_collection(lines, "MULTILINESTRING", as_wkb = FALSE))
 #'
-#' # plot WKT strings or a list of WKB raw vectors
-#' pts <- c(0, 0,
-#'          3, 0,
-#'          3, 4,
-#'          0, 0)
-#' m <- matrix(pts, ncol = 2, byrow = TRUE)
-#' (g <- g_create("POLYGON", m, as_wkb = FALSE))
-#' plot_geom(g)
+#' # get sub-geometry from container
+#' g_get_geom(multi_line, 2, as_wkb = FALSE)
+#'
+#' # build a polygon from a set of arcs
+#' (poly <- g_build_polygon_from_edges(lines, as_wkb = FALSE))
+#'
+#' # plot a vector of WKT strings or list of WKB raw vectors
+#' plot_geom(poly)
 #' @export
 g_create <- function(geom_type, pts = NULL, as_wkb = TRUE, as_iso = FALSE,
                      byte_order = "LSB") {
@@ -586,15 +602,63 @@ g_get_geom <- function(container, sub_geom_idx, as_wkb = TRUE, as_iso = FALSE,
 
 #' @name g_factory
 #' @export
+g_build_collection <- function(geoms, coll_type = "GEOMETRYCOLLECTION",
+                               as_wkb = TRUE, as_iso = FALSE,
+                               byte_order = "LSB") {
+
+    if (!(is.character(geoms) || is.list(geoms)))
+        stop("'geoms' must be a list or character vector", call. = FALSE)
+
+    if (is.character(geoms))
+        geoms <- g_wk2wk(geoms)
+
+    # coll_type
+    if (is.null(coll_type))
+        coll_type <- "GEOMETRYCOLLECTION"
+    if (!is.character(coll_type) || length(coll_type) > 1)
+        stop("'coll_type' must be a character string", call. = FALSE)
+    # as_wkb
+    if (is.null(as_wkb))
+        as_wkb <- TRUE
+    if (!is.logical(as_wkb) || length(as_wkb) > 1)
+        stop("'as_wkb' must be a single logical value", call. = FALSE)
+    # as_iso
+    if (is.null(as_iso))
+        as_iso <- FALSE
+    if (!is.logical(as_iso) || length(as_iso) > 1)
+        stop("'as_iso' must be a single logical value", call. = FALSE)
+    # byte_order
+    if (is.null(byte_order))
+        byte_order <- "LSB"
+    if (!is.character(byte_order) || length(byte_order) > 1)
+        stop("'byte_order' must be a character string", call. = FALSE)
+    byte_order <- toupper(byte_order)
+    if (byte_order != "LSB" && byte_order != "MSB")
+        stop("invalid 'byte_order'", call. = FALSE)
+
+    wkb <- .g_build_collection(geoms, coll_type, as_iso, byte_order)
+
+    if (as_wkb)
+        return(wkb)
+    else
+        return(g_wk2wk(wkb, as_iso))
+}
+
+#' @name g_factory
+#' @export
 g_build_polygon_from_edges <- function(lines, auto_close = TRUE,
                                        tolerance = 0.0, as_wkb = TRUE,
                                        as_iso = FALSE, byte_order = "LSB") {
 
+    if (!(is.character(lines) || is.list(lines) || is.raw(lines))) {
+        stop("'lines' must be a character vector, list, or raw vector",
+             call. = FALSE)
+    }
+
     if ((is.character(lines) || is.list(lines))
         && length(lines) > 1) {
 
-        stop("'lines' must be a single GeometryCollection or MultiLineString",
-             call. = FALSE)
+        lines <- g_build_collection(lines)
     }
 
     if (is.character(lines))
