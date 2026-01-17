@@ -139,7 +139,12 @@ Rcpp::DataFrame gdal_formats(const std::string &format = "") {
 
     for (int i = 0; i < nDriverCount; ++i) {
         GDALDriverH hDriver = GDALGetDriver(i);
-        char **papszMD = GDALGetMetadata(hDriver, nullptr);
+        CSLConstList papszMD =
+            (hDriver) ? GDALGetMetadata(hDriver, nullptr) : nullptr;
+
+        if (!papszMD)
+            continue;
+
         int out_idx = i;
         if (nRowsOut == 1)
             out_idx = 0;
@@ -805,8 +810,8 @@ GDALRaster *create(const std::string &format,
     if (hDriver == nullptr)
         Rcpp::stop("failed to get driver for the specified format");
 
-    char **papszMetadata = GDALGetMetadata(hDriver, nullptr);
-    if (!CPLFetchBool(papszMetadata, GDAL_DCAP_CREATE, FALSE))
+    CSLConstList papszDriverMD = GDALGetMetadata(hDriver, nullptr);
+    if (!CPLFetchBool(papszDriverMD, GDAL_DCAP_CREATE, FALSE))
         Rcpp::stop("driver does not support create");
 
     const std::string dst_filename_in =
@@ -864,9 +869,9 @@ GDALRaster *createCopy(const std::string &format,
     if (hDriver == nullptr)
         Rcpp::stop("failed to get driver from format name");
 
-    char **papszMetadata = GDALGetMetadata(hDriver, nullptr);
-    if (!CPLFetchBool(papszMetadata, GDAL_DCAP_CREATECOPY, FALSE) &&
-        !CPLFetchBool(papszMetadata, GDAL_DCAP_CREATE, FALSE)) {
+    CSLConstList papszDriverMD = GDALGetMetadata(hDriver, nullptr);
+    if (!CPLFetchBool(papszDriverMD, GDAL_DCAP_CREATECOPY, FALSE) &&
+        !CPLFetchBool(papszDriverMD, GDAL_DCAP_CREATE, FALSE)) {
 
         Rcpp::stop("driver does not support createCopy");
     }
@@ -3473,14 +3478,14 @@ SEXP gdal_get_driver_md(const std::string &format,
         }
     }
     else {
-        char **papszMD = nullptr;
-        papszMD = GDALGetMetadata(hDriver, nullptr);
-        int nItems = CSLCount(papszMD);
+        CSLConstList papszDriverMD = GDALGetMetadata(hDriver, nullptr);
+        int nItems = CSLCount(papszDriverMD);
         if (nItems > 0) {
             Rcpp::List md = Rcpp::List::create();
             for (int i = 0; i < nItems; ++i) {
                 char *pszKey = nullptr;
-                const char *pszValue = CPLParseNameValue(papszMD[i], &pszKey);
+                const char *pszValue =
+                    CPLParseNameValue(papszDriverMD[i], &pszKey);
                 if (pszValue)
                     md.push_back(pszValue, pszKey);
                 CPLFree(pszKey);
