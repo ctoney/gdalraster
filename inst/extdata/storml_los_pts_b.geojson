@@ -1,0 +1,10 @@
+{
+"type": "FeatureCollection",
+"name": "storml_los_pts_b",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "desc": "on Storm Lake" }, "geometry": { "type": "Point", "coordinates": [ -113.2655348, 46.07177056, 2505.0 ] } },
+{ "type": "Feature", "properties": { "desc": "south of lake, high on far ridge" }, "geometry": { "type": "Point", "coordinates": [ -113.2587088, 46.0575589, 2853.0 ] } },
+{ "type": "Feature", "properties": { "desc": "west of lake, over high ridge" }, "geometry": { "type": "Point", "coordinates": [ -113.2778951, 46.07171378, 2627.0 ] } }
+]
+}
