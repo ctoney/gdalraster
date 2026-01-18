@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9040 (dev)
+# gdalraster 2.4.0.9050 (dev)
+
+* add `is_los_visible()`: check line of sight between pairs of point locations using `GDALIsLineOfSightVisible()` (#869) (2026-01-18)
 
 * (internal) use `CSLConstList` with `GDALGetMetadata()`, `GDALSetMetadata()`, <https://gdal.org/en/latest/user/migration_guide.html> (#868, thanks to @mdsumner) (2026-01-17)
 
