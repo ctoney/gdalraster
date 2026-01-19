@@ -18,25 +18,63 @@ test_that("calc writes correct results", {
                     var.names = "ELEV_M",
                     dtName = "Int16",
                     setRasterNodataValue = TRUE)
-    on.exit(deleteDataset(hi_file), add=TRUE)
-    ds <- new(GDALRaster, hi_file, read_only=TRUE)
+    on.exit(deleteDataset(hi_file), add = TRUE)
+    ds <- new(GDALRaster, hi_file)
     dm <- ds$dim()
     chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
     ds$close()
     expect_equal(chk, 2978)
 
-    # NDVI
+    # NDVI, with return_obj = TRUE
     b4_file <- system.file("extdata/sr_b4_20200829.tif", package="gdalraster")
     b5_file <- system.file("extdata/sr_b5_20200829.tif", package="gdalraster")
-    expr <- "((B5-B4)/(B5+B4)) * 1000" # rescale for checksum
-    ndvi_file <- calc(expr = expr,
-                      rasterfiles = c(b4_file, b5_file),
-                      var.names = c("B4", "B5"),
-                      dtName = "Float32",
-                      nodata_value = -32767,
-                      setRasterNodataValue = TRUE)
-    on.exit(deleteDataset(ndvi_file), add=TRUE)
-    ds <- new(GDALRaster, ndvi_file, read_only=TRUE)
+    expr <- "((B5 - B4) / (B5 + B4)) * 1000"  # rescale for checksum
+    ndvi_file <- tempfile("ndvi", fileext = ".tif")
+    on.exit(deleteDataset(ndvi_file), add = TRUE)
+    ds <- calc(expr = expr,
+               rasterfiles = c(b4_file, b5_file),
+               var.names = c("B4", "B5"),
+               dstfile = ndvi_file,
+               dtName = "Float32",
+               nodata_value = -32767,
+               setRasterNodataValue = TRUE,
+               return_obj = TRUE)
+    expect_true(is(ds, "Rcpp_GDALRaster"))
+    dm <- ds$dim()
+    chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
+    ds$close()
+    expect_equal(chk, 63632)
+
+    # NDVI, output to MEM raster
+    rm(ds)
+    ds <- calc(expr = expr,
+               rasterfiles = c(b4_file, b5_file),
+               var.names = c("B4", "B5"),
+               fmt = "MEM",
+               dtName = "Float32",
+               nodata_value = -32767,
+               setRasterNodataValue = TRUE,
+               return_obj = TRUE)
+    expect_true(is(ds, "Rcpp_GDALRaster"))
+    dm <- ds$dim()
+    chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
+    ds$close()
+    expect_equal(chk, 63632)
+
+    # NDVI, existing dataset object for dstfile
+    rm(ds)
+    ndvi_file <- tempfile("ndvi", fileext = ".tif")
+    rasterFromRaster(b4_file, ndvi_file, dtName = "Float32",
+                     dstnodata = -32767)
+    ds <- new(GDALRaster, ndvi_file, read_only = FALSE)
+    res <- calc(expr = expr,
+                rasterfiles = c(b4_file, b5_file),
+                var.names = c("B4", "B5"),
+                dstfile = ds,
+                write_mode = "update")
+    expect_true(is(ds, "Rcpp_GDALRaster"))
+    expect_true(ds$isOpen())
+    expect_equal(res, ds$getDescription(band = 0))
     dm <- ds$dim()
     chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
     ds$close()
@@ -45,7 +83,7 @@ test_that("calc writes correct results", {
     # recode
     lcp_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
     tif_file <- paste0(tempdir(), "/", "storml_lndscp.tif")
-    on.exit(deleteDataset(tif_file), add=TRUE)
+    on.exit(deleteDataset(tif_file), add = TRUE)
     createCopy("GTiff", tif_file, lcp_file)
     expr <- "ifelse( SLP >= 40 & FBFM %in% c(101,102), 99, FBFM)"
     calc(expr = expr,
@@ -55,7 +93,7 @@ test_that("calc writes correct results", {
          dstfile = tif_file,
          out_band = 4,
          write_mode = "update")
-    ds <- new(GDALRaster, tif_file, read_only=TRUE)
+    ds <- new(GDALRaster, tif_file)
     dm <- ds$dim()
     chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
     ds$close()
@@ -63,20 +101,19 @@ test_that("calc writes correct results", {
 
     # multiband output
     # https://github.com/firelab/gdalraster/issues/319
-    expr <- "
-to_terrainrgb <- function(dtm) {
-    startingvalue <- 10000
-    precision <- 0.1
-    rfactor <- 256*256 * precision
-    gfactor <- 256 * precision
+    expr <- "to_terrainrgb <- function(dtm) {
+               startingvalue <- 10000
+               precision <- 0.1
+               rfactor <- 256 * 256 * precision
+               gfactor <- 256 * precision
 
-    r <- floor((startingvalue +dtm)*(1/precision) / 256 / 256)
-    g <- floor((startingvalue +dtm - r*rfactor)*(1/precision) / 256)
-    b <- floor((startingvalue +dtm - r*rfactor - g*gfactor)*(1/precision))
+               r <- floor((startingvalue + dtm) * (1 / precision) / 256 / 256)
+               g <- floor((startingvalue + dtm - r * rfactor) * (1 / precision) / 256)
+               b <- floor((startingvalue + dtm - r * rfactor - g * gfactor) * (1 / precision))
 
-    return(c(r,g,b))
-}
-to_terrainrgb(ELEV)"
+               return(c(r, g, b))
+             }
+             to_terrainrgb(ELEV)"
 
     out_file <- "/vsimem/multiband-calc.tif"
     result <- calc(expr = expr,
@@ -89,17 +126,16 @@ to_terrainrgb(ELEV)"
     expect_equal(result, out_file)
 
     # revert out_file using from_terrainrgb()
-    expr <- "
-from_terrainrgb <- function(R,G,B) {
-  elevation <- -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1)
-  return(elevation)
-}
-from_terrainrgb(R,G,B)"
+    expr <- "from_terrainrgb <- function(R,G,B) {
+               elevation <- -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1)
+               return(elevation)
+             }
+             from_terrainrgb(R,G,B)"
 
     revert_file <- "/vsimem/multiband-calc-revert.tif"
     result <- calc(expr = expr,
                    rasterfiles = c(out_file, out_file, out_file),
-                   bands = c(1, 2 ,3),
+                   bands = c(1, 2, 3),
                    var.names = c("R", "G", "B"),
                    dstfile = revert_file,
                    dtName = "Int16",
@@ -122,7 +158,7 @@ from_terrainrgb(R,G,B)"
     deleteDataset(revert_file)
 
     # test errors from input validation
-    expr <- "((B5-B4)/(B5+B4))"
+    expr <- "((B5 - B4) / (B5 + B4))"
     expect_error(calc(expr = expr,
                       rasterfiles = c(b4_file, paste0(b5_file, ".error")),
                       var.names = c("B4", "B5"),

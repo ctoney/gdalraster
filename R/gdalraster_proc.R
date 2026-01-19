@@ -7,17 +7,17 @@
 #' These values are currently used in `gdalraster` when a nodata value is
 #' needed but has not been specified:
 #' \preformatted{
-#'     list("Byte" = 255, "Int8" = -128,
+#'     list("Byte" = 255, "UInt8" = 255, "Int8" = -128,
 #'          "UInt16" = 65535, "Int16" = -32767,
 #'          "UInt32" = 4294967293, "Int32" = -2147483647,
-#'          "Float32" = -99999.0, "Float64" = -99999.0)
+#'          "Float32" = -99999.0, "Float64" = NaN)
 #' }
 #' @export
 DEFAULT_NODATA <- list(
-    "Byte" = 255, "Int8" = -128,
+    "Byte" = 255, "UInt8" = 255, "Int8" = -128,
     "UInt16" = 65535, "Int16" = -32767,
     "UInt32" = 4294967293, "Int32" = -2147483647,
-    "Float32" = -99999.0, "Float64" = -99999.0)
+    "Float32" = -99999.0, "Float64" = NaN)
 
 
 #' List of default DEM processing options
@@ -57,14 +57,14 @@ DEFAULT_DEM_PROC <- list(
 .getGDALformat <- function(file) {
     # Only for guessing common output formats
     file <- as.character(file)
-    if (endsWith(tolower(file), ".img")) {
-        return("HFA")
-    }
     if (endsWith(tolower(file), ".tif")) {
         return("GTiff")
     }
     if (endsWith(tolower(file), ".vrt")) {
         return("VRT")
+    }
+    if (endsWith(tolower(file), ".img")) {
+        return("HFA")
     }
     return(NULL)
 }
@@ -939,7 +939,7 @@ rasterToVRT <- function(srcfile,
 #' exists, set `write_mode = "update"` and set `out_band` to an existing
 #' band number(s) in `dstfile` (new bands cannot be created in `dstfile`).
 #'
-#' To write multiband output, `expr` must return a vector of values
+#' To write multi-band output, `expr` must return a vector of values
 #' interleaved by band. This is equivalent to, and can also be returned as,
 #' a matrix `m` with `nrow(m)` equal to `length()` of an input vector, and
 #' `ncol(m)` equal to the number of output bands. In matrix form, each column
@@ -953,35 +953,42 @@ rasterToVRT <- function(srcfile,
 #' @param bands Integer vector of band numbers to use for each raster layer.
 #' @param var.names Character vector of variable names to use for each raster
 #' layer.
-#' @param dstfile Character filename of output raster.
+#' @param dstfile Either a character string with the output raster filename, or
+#' an object of class `GDALRaster` with which to write output. If given as an
+#' object, the dataset must be open for write access, and the arguments below
+#' related to raster creation are ignored (i.e., `fmt`, `dtName`, `options`,
+#' `setRasterNodataValue`). The `write_mode` must be set to `"update"` for
+#' writing with an existing dataset object.
 #' @param fmt Output raster format name (e.g., "GTiff" or "HFA"). Will attempt
 #' to guess from the output filename if not specified.
 #' @param dtName Character name of output data type (e.g., Byte, Int16,
 #' UInt16, Int32, UInt32, Float32).
 #' @param out_band Integer band number(s) in `dstfile` for writing output.
-#' Defaults to `1`. Multiband output is supported as of gdalraster 1.11.0,
+#' Defaults to `1`. Multi-band output is supported as of gdalraster 1.11.0,
 #' in which case `out_band` would be a vector of band numbers.
 #' @param options Optional list of format-specific creation options in a
 #' vector of "NAME=VALUE" pairs
 #' (e.g., \code{options = c("COMPRESS=LZW")} to set LZW compression
 #' during creation of a GTiff file).
 #' @param nodata_value Numeric value to assign if `expr` returns NA.
-#' @param setRasterNodataValue Logical. `TRUE` will attempt to set the raster
-#' format nodata value to `nodata_value`, or `FALSE` not to set a raster
+#' @param setRasterNodataValue Logical value. `TRUE` will attempt to set the
+#' raster format nodata value to `nodata_value`, or `FALSE` not to set a raster
 #' nodata value.
-#' @param usePixelLonLat This argument is deprecated and will be removed in a
-#' future version. Variable names `pixelLon` and `pixelLat` can be used in
-#' `expr`, and the pixel x/y coordinates will be inverse projected to
-#' longitude/latitude (adds computation time).
-#' @param write_mode Character. Name of the file write mode for output.
+#' @param write_mode Character string. Name of the file write mode for output.
 #' One of:
 #'   * `safe` - execution stops if `dstfile` already exists (no output written)
-#'   * `overwrite` - if `dstfile` exists if will be overwritten with a new file
-#'   * `update` - if `dstfile` exists, will attempt to open in update mode
-#'   and write output to `out_band`
-#' @param quiet Logical scalar. If `TRUE`, a progress bar will not be
+#'   * `overwrite` - if `dstfile` exists it will be overwritten with a new file
+#'   * `update` - if `dstfile` exists, will attempt to open in update mode, or
+#'   write to the existing dataset if `dstfile` is given as an object
+#' @param quiet Logical value. If `TRUE`, a progress bar will not be
 #' displayed. Defaults to `FALSE`.
-#' @returns Returns the output filename invisibly.
+#' @param return_obj Logical value. If `TRUE`, an object of class
+#' [`GDALRaster`][GDALRaster] opened on the newly created dataset will be
+#' returned. The default is `FALSE`.
+#' @param ... Additional arguments, none currently supported.
+#' @returns By default, returns the output filename invisibly. An object of
+#' class [`GDALRaster`][GDALRaster] open on the output dataset will be returned
+#' if `return_obj = TRUE`.
 #'
 #' @seealso
 #' [`GDALRaster-class`][GDALRaster], [combine()], [rasterToVRT()]
@@ -1100,20 +1107,42 @@ calc <- function(expr,
                  rasterfiles,
                  bands = NULL,
                  var.names = NULL,
-                 dstfile = tempfile("rastcalc", fileext=".tif"),
+                 dstfile = tempfile("rastcalc", fileext = ".tif"),
                  fmt = NULL,
                  dtName = "Int16",
-                 out_band = NULL,
+                 out_band = 1L,
                  options = NULL,
                  nodata_value = NULL,
                  setRasterNodataValue = FALSE,
-                 usePixelLonLat = NULL,
                  write_mode = "safe",
-                 quiet = FALSE) {
+                 quiet = FALSE,
+                 return_obj = FALSE,
+                 ...) {
 
-    calc_expr <- parse(text=expr)
+    calc_expr <- parse(text = expr)
 
-    if (write_mode == "safe" && file.exists(dstfile))
+    dstfile_exists <- TRUE
+    dstfile_is_object <- FALSE
+    output_name <- ""
+
+    if (is(dstfile, "Rcpp_GDALRaster")) {
+        dstfile_is_object <- TRUE
+        if (!dstfile$isOpen() || dstfile$isReadOnly()) {
+            stop("'dstfile' as object must be open with write access",
+                 call. = FALSE)
+        }
+        output_name <- dstfile$getDescription(0)
+        fmt <- dstfile$getDriverShortName()
+    } else if (is.character(dstfile) && length(dstfile) == 1) {
+        output_name <- dstfile
+        if (!file.exists(dstfile))
+            dstfile_exists <- FALSE
+    } else {
+        stop("'dstfile' must be a character string or GDALRaster object",
+             call. = FALSE)
+    }
+
+    if (write_mode == "safe" && dstfile_exists)
         stop("'dstfile' already exists and 'write_mode' is \"safe\"",
              call. = FALSE)
 
@@ -1126,7 +1155,7 @@ calc <- function(expr,
     } else if (write_mode == "safe" || write_mode == "overwrite") {
         update_mode <- FALSE
         if (is.null(out_band))
-            out_band <- 1
+            out_band <- 1L
     } else {
         stop("unknown 'write_mode'", call. = FALSE)
     }
@@ -1139,7 +1168,7 @@ calc <- function(expr,
                  call. = FALSE)
         }
     } else {
-        bands <- rep(1, nrasters)
+        bands <- rep(1L, nrasters)
     }
 
     if (!is.null(var.names)) {
@@ -1156,12 +1185,18 @@ calc <- function(expr,
             stop("variable name '", nm, "' not in 'expr'", call. = FALSE)
     }
 
-    if (is.null(fmt)) {
-        fmt <- .getGDALformat(dstfile)
+    if (is.null(fmt) && !dstfile_is_object) {
+        fmt <- .getGDALformat(output_name)
         if (is.null(fmt)) {
             stop("use 'fmt' to specify a GDAL raster format code",
                  call. = FALSE)
         }
+    }
+    fmt <- toupper(fmt)
+    if (fmt == "MEM" && !return_obj) {
+        stop("'return_obj' must be TRUE for \"MEM\" format", call. = FALSE)
+    } else if (fmt == "MEM") {
+        output_name = "in-memory-raster"
     }
 
     if (is.null(nodata_value)) {
@@ -1171,21 +1206,25 @@ calc <- function(expr,
                  call. = FALSE)
         }
     }
+    if (!(is.numeric(nodata_value) && length(nodata_value) == 1))
+        stop("'nodata_value' must be a single numeric value", call. = FALSE)
 
     # use first raster as reference
-    ref <- new(GDALRaster, rasterfiles[1], TRUE)
+    ref <- new(GDALRaster, rasterfiles[1])
     nrows <- ref$getRasterYSize()
     ncols <- ref$getRasterXSize()
     cellsizeX <- ref$res()[1]
     cellsizeY <- ref$res()[2]
-    xmin <- ref$bbox()[1]
-    ymax <- ref$bbox()[4]
-    srs <- ref$getProjectionRef()
+    bb <- ref$bbox()
+    xmin <- bb[1]
+    ymax <- bb[4]
+    gt <- ref$getGeoTransform()
+    srs <- ref$getProjection()
     ref$close()
 
     if (nrasters > 1) {
         for (r in rasterfiles) {
-            ds <- new(GDALRaster, r, read_only=TRUE)
+            ds <- new(GDALRaster, r)
             dm <- ds$dim()
             ds$close()
             if (dm[2] != nrows || dm[1] != ncols) {
@@ -1198,27 +1237,43 @@ calc <- function(expr,
 
     if (update_mode) {
         # write to an existing raster
-        dst_ds <- new(GDALRaster, dstfile, read_only=FALSE)
+        if (dstfile_is_object)
+            dst_ds <- dstfile
+        else
+            dst_ds <- new(GDALRaster, output_name, read_only = FALSE)
+
+        dm <- dst_ds$dim()
+        if (dm[2] != nrows || dm[1] != ncols) {
+            if (!dstfile_is_object)
+                dst_ds$close()
+            stop("'dstfile' must have the same extent as the input raster(s)",
+                 call. = FALSE)
+        }
+
     } else {
         # create the output raster
-        dstnodata <- NULL
-        if (setRasterNodataValue)
-            dstnodata <- nodata_value
+        out_band <- as.integer(out_band)
+        if (isFALSE(all.equal(out_band, seq_along(out_band)))) {
+            stop("raster create: 'out_band' must be sequential starting at 1",
+                 call. = FALSE)
+        }
 
-        rasterFromRaster(rasterfiles[1],
-                         dstfile,
-                         fmt,
-                         nbands = length(out_band),
-                         dtName = dtName,
-                         options = options,
-                         dstnodata = dstnodata)
-        dst_ds <- new(GDALRaster, dstfile, read_only=FALSE)
+        dst_ds <- create(fmt, output_name, ncols, nrows, length(out_band),
+                         dtName, options, TRUE)
+
+        dst_ds$setGeoTransform(gt)
+        dst_ds$setProjection(srs)
+        if (setRasterNodataValue) {
+            for (band in out_band) {
+                dst_ds$setNoDataValue(band, nodata_value)
+            }
+        }
     }
 
     # list of GDALRaster objects for each raster layer
     ds_list <- list()
     for (i in seq_len(nrasters)) {
-        ds_list[[i]] <- new(GDALRaster, rasterfiles[i], read_only=TRUE)
+        ds_list[[i]] <- new(GDALRaster, rasterfiles[i])
     }
 
     # are pixel coordinates being used
@@ -1241,7 +1296,7 @@ calc <- function(expr,
     }
 
     if (usePixelX) {
-        x <- seq(from = xmin + (cellsizeX/2),
+        x <- seq(from = xmin + (cellsizeX / 2),
                  by = cellsizeX,
                  length.out = ncols)
         assign("pixelX", x)
@@ -1295,25 +1350,32 @@ calc <- function(expr,
             i <- i + 1
         }
         if (!quiet)
-            setTxtProgressBar(pb, row+1)
+            setTxtProgressBar(pb, row + 1)
 
         return()
     }
 
     if (!quiet) {
         message("calculating from ", nrasters, " input layer(s)...")
-        pb <- txtProgressBar(min=0, max=nrows)
+        pb <- txtProgressBar(min = 0, max = nrows)
     }
-    lapply(0:(nrows-1), process_row)
+    lapply(0:(nrows - 1), process_row)
     close(pb)
 
-    message("output written to: ", dstfile)
-    dst_ds$close()
+    dst_ds$flushCache()
+    message("output written to ", output_name)
+
     for (i in seq_len(nrasters)) {
         ds_list[[i]]$close()
     }
 
-    return(invisible(dstfile))
+    if (return_obj) {
+        return(dst_ds)
+    } else {
+        if (!dstfile_is_object)
+            dst_ds$close()
+        return(invisible(output_name))
+    }
 }
 
 

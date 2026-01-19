@@ -12,13 +12,14 @@ calc(
   dstfile = tempfile("rastcalc", fileext = ".tif"),
   fmt = NULL,
   dtName = "Int16",
-  out_band = NULL,
+  out_band = 1L,
   options = NULL,
   nodata_value = NULL,
   setRasterNodataValue = FALSE,
-  usePixelLonLat = NULL,
   write_mode = "safe",
-  quiet = FALSE
+  quiet = FALSE,
+  return_obj = FALSE,
+  ...
 )
 }
 \arguments{
@@ -31,7 +32,12 @@ calc(
 \item{var.names}{Character vector of variable names to use for each raster
 layer.}
 
-\item{dstfile}{Character filename of output raster.}
+\item{dstfile}{Either a character string with the output raster filename, or
+an object of class \code{GDALRaster} with which to write output. If given as an
+object, the dataset must be open for write access, and the arguments below
+related to raster creation are ignored (i.e., \code{fmt}, \code{dtName}, \code{options},
+\code{setRasterNodataValue}). The \code{write_mode} must be set to \code{"update"} for
+writing with an existing dataset object.}
 
 \item{fmt}{Output raster format name (e.g., "GTiff" or "HFA"). Will attempt
 to guess from the output filename if not specified.}
@@ -40,7 +46,7 @@ to guess from the output filename if not specified.}
 UInt16, Int32, UInt32, Float32).}
 
 \item{out_band}{Integer band number(s) in \code{dstfile} for writing output.
-Defaults to \code{1}. Multiband output is supported as of gdalraster 1.11.0,
+Defaults to \code{1}. Multi-band output is supported as of gdalraster 1.11.0,
 in which case \code{out_band} would be a vector of band numbers.}
 
 \item{options}{Optional list of format-specific creation options in a
@@ -50,29 +56,32 @@ during creation of a GTiff file).}
 
 \item{nodata_value}{Numeric value to assign if \code{expr} returns NA.}
 
-\item{setRasterNodataValue}{Logical. \code{TRUE} will attempt to set the raster
-format nodata value to \code{nodata_value}, or \code{FALSE} not to set a raster
+\item{setRasterNodataValue}{Logical value. \code{TRUE} will attempt to set the
+raster format nodata value to \code{nodata_value}, or \code{FALSE} not to set a raster
 nodata value.}
 
-\item{usePixelLonLat}{This argument is deprecated and will be removed in a
-future version. Variable names \code{pixelLon} and \code{pixelLat} can be used in
-\code{expr}, and the pixel x/y coordinates will be inverse projected to
-longitude/latitude (adds computation time).}
-
-\item{write_mode}{Character. Name of the file write mode for output.
+\item{write_mode}{Character string. Name of the file write mode for output.
 One of:
 \itemize{
 \item \code{safe} - execution stops if \code{dstfile} already exists (no output written)
-\item \code{overwrite} - if \code{dstfile} exists if will be overwritten with a new file
-\item \code{update} - if \code{dstfile} exists, will attempt to open in update mode
-and write output to \code{out_band}
+\item \code{overwrite} - if \code{dstfile} exists it will be overwritten with a new file
+\item \code{update} - if \code{dstfile} exists, will attempt to open in update mode, or
+write to the existing dataset if \code{dstfile} is given as an object
 }}
 
-\item{quiet}{Logical scalar. If \code{TRUE}, a progress bar will not be
+\item{quiet}{Logical value. If \code{TRUE}, a progress bar will not be
 displayed. Defaults to \code{FALSE}.}
+
+\item{return_obj}{Logical value. If \code{TRUE}, an object of class
+\code{\link{GDALRaster}} opened on the newly created dataset will be
+returned. The default is \code{FALSE}.}
+
+\item{...}{Additional arguments, none currently supported.}
 }
 \value{
-Returns the output filename invisibly.
+By default, returns the output filename invisibly. An object of
+class \code{\link{GDALRaster}} open on the output dataset will be returned
+if \code{return_obj = TRUE}.
 }
 \description{
 \code{calc()} evaluates an \R expression for each pixel in a raster layer or
@@ -115,7 +124,7 @@ Output will be written to \code{dstfile}. To update a file that already
 exists, set \code{write_mode = "update"} and set \code{out_band} to an existing
 band number(s) in \code{dstfile} (new bands cannot be created in \code{dstfile}).
 
-To write multiband output, \code{expr} must return a vector of values
+To write multi-band output, \code{expr} must return a vector of values
 interleaved by band. This is equivalent to, and can also be returned as,
 a matrix \code{m} with \code{nrow(m)} equal to \code{length()} of an input vector, and
 \code{ncol(m)} equal to the number of output bands. In matrix form, each column
