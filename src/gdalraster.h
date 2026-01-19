@@ -56,6 +56,7 @@ class GDALRaster {
     void setFilename(const std::string &filename);
     void open(bool read_only);
     bool isOpen() const;
+    bool isReadOnly() const;
     Rcpp::CharacterVector getFileList() const;
 
     void info() const;

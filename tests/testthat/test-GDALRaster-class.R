@@ -174,7 +174,7 @@ test_that("get/set metadata works", {
 
 test_that("open/close/re-open works", {
     elev_file <- system.file("extdata/storml_elev_orig.tif", package="gdalraster")
-    ds <- new(GDALRaster, elev_file, read_only=TRUE)
+    ds <- new(GDALRaster, elev_file)
     dm <- ds$dim()
     r <- read_ds(ds)
     ds$close()
@@ -184,16 +184,18 @@ test_that("open/close/re-open works", {
                      nbands = 1,
                      dtName = "UInt32",
                      init = DEFAULT_NODATA[["UInt32"]])
-    ds <- new(GDALRaster, mod_file, read_only=TRUE)
+    ds <- new(GDALRaster, mod_file)
     expect_true(ds$isOpen())
+    expect_true(ds$isReadOnly())
     expect_true(all(is.na(read_ds(ds))))
     ds$close()
     expect_false(ds$isOpen())
     expect_equal(ds$getFilename(), .check_gdal_filename(mod_file))
-    ds$open(read_only=FALSE)
+    ds$open(read_only = FALSE)
     expect_true(ds$isOpen())
-    ds$setDescription(band=1, "test")
-    expect_equal(ds$getDescription(band=1), "test")
+    expect_false(ds$isReadOnly())
+    ds$setDescription(band = 1, "test")
+    expect_equal(ds$getDescription(band = 1), "test")
     r[is.na(r)] <- DEFAULT_NODATA[["UInt32"]]
     ds$write(band=1, 0, 0, dm[1], dm[2], r)
     expect_silent(ds$flushCache())

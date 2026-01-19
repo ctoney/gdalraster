@@ -330,6 +330,15 @@ bool GDALRaster::isOpen() const {
         return true;
 }
 
+bool GDALRaster::isReadOnly() const {
+    checkAccess_(GA_ReadOnly);
+
+    if (m_eAccess == GA_ReadOnly)
+        return true;
+    else
+        return false;
+}
+
 void GDALRaster::info() const {
     checkAccess_(GA_ReadOnly);
 
@@ -2791,6 +2800,8 @@ RCPP_MODULE(mod_GDALRaster) {
         "(Re-)open the raster dataset on the existing filename")
     .const_method("isOpen", &GDALRaster::isOpen,
         "Is the raster dataset open")
+    .const_method("isReadOnly", &GDALRaster::isReadOnly,
+        "Does the raster dataset have read-only access")
     .const_method("getFileList", &GDALRaster::getFileList,
         "Fetch files forming dataset")
     .const_method("info", &GDALRaster::info,
