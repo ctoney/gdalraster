@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9050 (dev)
+# gdalraster 2.4.0.9060 (dev)
+
+* `calc()`: add support for input and output rasters as dataset objects, instead of only as file names (#870) (2026-01-19)
 
 * add `is_los_visible()`: check line of sight between pairs of point locations using `GDALIsLineOfSightVisible()` (#869) (2026-01-18)
 
