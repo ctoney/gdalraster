@@ -900,25 +900,22 @@ rasterToVRT <- function(srcfile,
 #'
 #' @description
 #' `calc()` evaluates an \R expression for each pixel in a raster layer or
-#' stack of layers. Each layer is defined by a raster filename, band number,
-#' and a variable name to use in the \R expression. If not specified, band
-#' defaults to 1 for each input raster.
-#' Variable names default to `LETTERS` if not specified
-#' (`A` (layer 1), `B` (layer 2), ...).
+#' stack of layers. Each layer is defined by a raster filename or dataset
+#' object, band number, and a variable name to use in the \R expression. If not
+#' specified, band defaults to `1` for each input raster. Variable names
+#' default to `LETTERS` if not specified (`A` (layer 1), `B` (layer 2), ...).
 #' All of the input layers must have the same extent and cell size.
-#' The projection will be read from the first raster in the list
-#' of inputs.
+#' The projection will be read from the first raster in the list of inputs.
 #' Individual pixel coordinates are also available as variables in the
 #' \R expression, as either x/y in the raster projected coordinate system or
 #' inverse projected longitude/latitude.
-#' Multiband output is supported as of gdalraster 1.11.0.
+#' Multi-band output is supported as of gdalraster 1.11.0.
 #'
 #' @details
-#' The variables in `expr` are vectors of length raster xsize
-#' (row vectors of the input raster layer(s)).
-#' The expression should return a vector also of length raster xsize
-#' (an output row).
-#' Four special variable names are available in `expr`:
+#' The variables in `expr` are vectors of length raster xsize (i.e., row
+#' vectors of the input raster layer(s), with length the number of raster
+#' columns). The expression should return a vector also of length raster xsize
+#' (an output row). Four special variable names are available in `expr`:
 #' `pixelX` and `pixelY` provide pixel center coordinates in projection units.
 #' `pixelLon` and `pixelLat` can also be used, in which case the pixel x/y
 #' coordinates will be inverse projected to longitude/latitude
@@ -926,9 +923,9 @@ rasterToVRT <- function(srcfile,
 #' which is read from the first input raster). Note that inverse projection
 #' adds computation time.
 #'
-#' To refer to specific bands in a multi-band input file, repeat the filename in
-#' `rasterfiles` and specify corresponding band numbers in `bands`, along with
-#' optional variable names in `var.names`, for example,
+#' To refer to specific bands in a multi-band input file, repeat the filename
+#' or dataset object in `rasterfiles` and specify corresponding band numbers in
+#' `bands`, along with optional variable names in `var.names`, e.g.,
 #' \preformatted{
 #' rasterfiles = c("multiband.tif", "multiband.tif")
 #' bands = c(4, 5)
@@ -938,6 +935,8 @@ rasterToVRT <- function(srcfile,
 #' Output will be written to `dstfile`. To update a file that already
 #' exists, set `write_mode = "update"` and set `out_band` to an existing
 #' band number(s) in `dstfile` (new bands cannot be created in `dstfile`).
+#' `dstfile` can optionally be given as an object of class `GDALRaster` open
+#' for write access.
 #'
 #' To write multi-band output, `expr` must return a vector of values
 #' interleaved by band. This is equivalent to, and can also be returned as,
@@ -950,8 +949,8 @@ rasterToVRT <- function(srcfile,
 #'
 #' @param expr An \R expression as a character string (e.g., `"A + B"`).
 #' @param rasterfiles Input rasters, either a character vector of filenames,
-#' or a list with each element either a character string filename or an object
-#' of class `GDALRaster` (must be an open dataset for the latter).
+#' or a list with each element either a filename as character string or an
+#' object of class `GDALRaster` (must be an open dataset for the latter).
 #' @param bands Integer vector of band numbers to use for each raster layer.
 #' @param var.names Character vector of variable names to use for each raster
 #' layer.
@@ -966,24 +965,24 @@ rasterToVRT <- function(srcfile,
 #' @param dtName Character name of output data type (e.g., Byte, Int16,
 #' UInt16, Int32, UInt32, Float32).
 #' @param out_band Integer band number(s) in `dstfile` for writing output.
-#' Defaults to `1`. Multi-band output is supported as of gdalraster 1.11.0,
+#' Defaults to `1L`. Multi-band output is supported as of gdalraster 1.11.0,
 #' in which case `out_band` would be a vector of band numbers.
 #' @param options Optional list of format-specific creation options in a
 #' vector of "NAME=VALUE" pairs
-#' (e.g., \code{options = c("COMPRESS=LZW")} to set LZW compression
-#' during creation of a GTiff file).
-#' @param nodata_value Numeric value to assign if `expr` returns NA.
+#' (e.g., \code{options = c("TILED=YES", "COMPRESS=LZW")} to set LZW compression
+#' during creation of a tiled GTiff file).
+#' @param nodata_value Numeric value to assign if `expr` returns `NA`.
 #' @param setRasterNodataValue Logical value. `TRUE` will attempt to set the
 #' raster format nodata value to `nodata_value`, or `FALSE` not to set a raster
-#' nodata value.
+#' nodata value on the output dataset.
 #' @param write_mode Character string. Name of the file write mode for output.
 #' One of:
 #'   * `safe` - execution stops if `dstfile` already exists (no output written)
 #'   * `overwrite` - if `dstfile` exists it will be overwritten with a new file
 #'   * `update` - if `dstfile` exists, will attempt to open in update mode, or
 #'   write to the existing dataset if `dstfile` is given as an object
-#' @param quiet Logical value. If `TRUE`, a progress bar will not be
-#' displayed. Defaults to `FALSE`.
+#' @param quiet Logical value. If `TRUE`, a progress bar and informational
+#' messages will not be displayed. Defaults to `FALSE`.
 #' @param return_obj Logical value. If `TRUE`, an object of class
 #' [`GDALRaster`][GDALRaster] opened on the newly created dataset will be
 #' returned. The default is `FALSE`.
@@ -1029,10 +1028,9 @@ rasterToVRT <- function(srcfile,
 #' ds$close()
 #' \dontshow{deleteDataset(hi_file)}
 #'
-#'
 #' ## Calculate normalized difference vegetation index (NDVI)
 #' ## input rasters given as dataset objects
-#' ## output to an in-memory raster (MEM)
+#' ## output to an in-memory raster (MEM format)
 #'
 #' # Landast band 4 (red) and band 5 (near infrared):
 #' b4_file <- system.file("extdata/sr_b4_20200829.tif", package="gdalraster")
@@ -1141,7 +1139,7 @@ calc <- function(expr,
         fmt <- dstfile$getDriverShortName()
     } else if (is.character(dstfile) && length(dstfile) == 1) {
         output_name <- dstfile
-        if (!file.exists(dstfile))
+        if (!vsi_stat_exists(dstfile))
             dstfile_exists <- FALSE
     } else {
         stop("'dstfile' must be a character string or GDALRaster object",

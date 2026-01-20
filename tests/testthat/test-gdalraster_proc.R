@@ -38,6 +38,7 @@ test_that("calc writes correct results", {
                dtName = "Float32",
                nodata_value = -32767,
                setRasterNodataValue = TRUE,
+               quiet = TRUE,
                return_obj = TRUE)
     expect_true(is(ds, "Rcpp_GDALRaster"))
     dm <- ds$dim()
@@ -54,6 +55,7 @@ test_that("calc writes correct results", {
                dtName = "Float32",
                nodata_value = -32767,
                setRasterNodataValue = TRUE,
+               quiet = TRUE,
                return_obj = TRUE)
     expect_true(is(ds, "Rcpp_GDALRaster"))
     dm <- ds$dim()
@@ -72,7 +74,8 @@ test_that("calc writes correct results", {
                 rasterfiles = c(b4_file, b5_file),
                 var.names = c("B4", "B5"),
                 dstfile = ds,
-                write_mode = "update")
+                write_mode = "update",
+                quiet = TRUE)
     expect_true(is(ds, "Rcpp_GDALRaster"))
     expect_true(ds$isOpen())
     expect_equal(res, ds$getDescription(band = 0))
@@ -94,6 +97,7 @@ test_that("calc writes correct results", {
                dtName = "Float32",
                nodata_value = -32767,
                setRasterNodataValue = TRUE,
+               quiet = TRUE,
                return_obj = TRUE)
     expect_true(is(ds, "Rcpp_GDALRaster"))
     dm <- ds$dim()
@@ -110,6 +114,7 @@ test_that("calc writes correct results", {
                dtName = "Float32",
                nodata_value = -32767,
                setRasterNodataValue = TRUE,
+               quiet = TRUE,
                return_obj = TRUE)
     expect_true(is(ds, "Rcpp_GDALRaster"))
     dm <- ds$dim()
@@ -129,7 +134,8 @@ test_that("calc writes correct results", {
          var.names = c("SLP", "FBFM"),
          dstfile = tif_file,
          out_band = 4,
-         write_mode = "update")
+         write_mode = "update",
+         quiet = TRUE)
     ds <- new(GDALRaster, tif_file)
     dm <- ds$dim()
     chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
@@ -165,7 +171,8 @@ test_that("calc writes correct results", {
                    dstfile = out_file,
                    dtName = "Byte",
                    out_band = 1:3,
-                   nodata_value = 0)
+                   nodata_value = 0,
+                   quiet = TRUE)
     expect_equal(result, out_file)
 
     # revert out_file using `from_terrainrgb()`
@@ -187,7 +194,8 @@ test_that("calc writes correct results", {
                    dstfile = revert_file,
                    dtName = "Int16",
                    nodata_value = -10000,
-                   setRasterNodataValue = TRUE)
+                   setRasterNodataValue = TRUE,
+                   quiet = TRUE)
     expect_equal(result, revert_file)
     # compare revert_file with the original elev_file
     ds <- new(GDALRaster, elev_file)
@@ -204,12 +212,24 @@ test_that("calc writes correct results", {
 
     # test errors from input validation
     expr <- "((B5 - B4) / (B5 + B4))"
+    # test with output file already existing using `revert_file` from above:
     expect_error(calc(expr = expr,
-                      rasterfiles = c(b4_file, paste0(b5_file, ".error")),
+                      rasterfiles = c(b4_file, b5_file),
                       var.names = c("B4", "B5"),
+                      dstfile = revert_file,
                       dtName = "Float32",
                       nodata_value = -32767,
                       setRasterNodataValue = TRUE))
+    # with overwrite
+    expect_no_error(calc(expr = expr,
+                         rasterfiles = c(b4_file, b5_file),
+                         var.names = c("B4", "B5"),
+                         dstfile = revert_file,
+                         dtName = "Float32",
+                         nodata_value = -32767,
+                         setRasterNodataValue = TRUE,
+                         write_mode = "overwrite",
+                         quiet = TRUE))
 
     expect_error(calc(expr = expr,
                       rasterfiles = c(b4_file, b5_file),
