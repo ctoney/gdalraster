@@ -949,7 +949,9 @@ rasterToVRT <- function(srcfile,
 #' read from the return value of `expr`.
 #'
 #' @param expr An \R expression as a character string (e.g., `"A + B"`).
-#' @param rasterfiles Character vector of source raster filenames.
+#' @param rasterfiles Input rasters, either a character vector of filenames,
+#' or a list with each element either a character string filename or an object
+#' of class `GDALRaster` (must be an open dataset for the latter).
 #' @param bands Integer vector of band numbers to use for each raster layer.
 #' @param var.names Character vector of variable names to use for each raster
 #' layer.
@@ -1029,25 +1031,29 @@ rasterToVRT <- function(srcfile,
 #'
 #'
 #' ## Calculate normalized difference vegetation index (NDVI)
+#' ## input rasters given as dataset objects
+#' ## output to an in-memory raster (MEM)
 #'
 #' # Landast band 4 (red) and band 5 (near infrared):
 #' b4_file <- system.file("extdata/sr_b4_20200829.tif", package="gdalraster")
+#' b4 <- new(GDALRaster, b4_file)
 #' b5_file <- system.file("extdata/sr_b5_20200829.tif", package="gdalraster")
+#' b5 <- new(GDALRaster, b5_file)
 #'
 #' expr <- "((B5 * 0.0000275 - 0.2) - (B4 * 0.0000275 - 0.2)) /
 #'          ((B5 * 0.0000275 - 0.2) + (B4 * 0.0000275 - 0.2))"
-#' ndvi_file <- calc(expr = expr,
-#'                   rasterfiles = c(b4_file, b5_file),
-#'                   var.names = c("B4", "B5"),
-#'                   dtName = "Float32",
-#'                   nodata_value = -32767,
-#'                   setRasterNodataValue = TRUE)
 #'
-#' ds <- new(GDALRaster, ndvi_file)
-#' ds$getStatistics(band=1, approx_ok=FALSE, force=TRUE)
-#' ds$close()
-#' \dontshow{deleteDataset(ndvi_file)}
+#' (ndvi <- calc(expr, list(b4, b5), var.names = c("B4", "B5"), fmt = "MEM",
+#'               dtName = "Float32", setRasterNodataValue = TRUE,
+#'               return_obj = TRUE))
 #'
+#' plot_raster(ndvi, legend = TRUE,
+#'             col_map_fn = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837"),
+#'             main = "Storm Lake NDVI 2020-08-29")
+#'
+#' ndvi$close()
+#' b4$close()
+#' b5$close()
 #'
 #' ## Reclassify a variable by rule set
 #'
@@ -1128,7 +1134,7 @@ calc <- function(expr,
     if (is(dstfile, "Rcpp_GDALRaster")) {
         dstfile_is_object <- TRUE
         if (!dstfile$isOpen() || dstfile$isReadOnly()) {
-            stop("'dstfile' as object must be open with write access",
+            stop("'dstfile' as dataset object must be open with write access",
                  call. = FALSE)
         }
         output_name <- dstfile$getDescription(0)
@@ -1161,10 +1167,12 @@ calc <- function(expr,
     }
 
     nrasters <- length(rasterfiles)
+    if (nrasters == 0)
+        stop("'rasterfiles' is empty", call. = FALSE)
 
     if (!is.null(bands)) {
         if (length(bands) != nrasters) {
-            stop("'bands' must have same length as 'rasterfiles'",
+            stop("'bands' must have the same length as 'rasterfiles'",
                  call. = FALSE)
         }
     } else {
@@ -1173,7 +1181,7 @@ calc <- function(expr,
 
     if (!is.null(var.names)) {
         if (length(var.names) != nrasters) {
-            stop("'var.names' must have same length as 'rasterfiles'",
+            stop("'var.names' must have the same length as 'rasterfiles'",
                  call. = FALSE)
         }
     } else {
@@ -1188,7 +1196,7 @@ calc <- function(expr,
     if (is.null(fmt) && !dstfile_is_object) {
         fmt <- .getGDALformat(output_name)
         if (is.null(fmt)) {
-            stop("use 'fmt' to specify a GDAL raster format code",
+            stop("use 'fmt' to specify the short name of a GDAL raster format",
                  call. = FALSE)
         }
     }
@@ -1202,17 +1210,39 @@ calc <- function(expr,
     if (is.null(nodata_value)) {
         nodata_value <- DEFAULT_NODATA[[dtName]]
         if (is.null(nodata_value)) {
-            stop("a default nodata value is not available for 'dtName'",
+            stop("a default nodata value is unknown for the given 'dtName'",
                  call. = FALSE)
         }
     }
     if (!(is.numeric(nodata_value) && length(nodata_value) == 1))
         stop("'nodata_value' must be a single numeric value", call. = FALSE)
 
+    in_raster_is_object <- rep(FALSE, nrasters)
+    if (is.list(rasterfiles)) {
+        for (i in seq_along(rasterfiles)) {
+            if (is(rasterfiles[[i]], "Rcpp_GDALRaster")) {
+                if (!rasterfiles[[i]]$isOpen()) {
+                    stop("'rasterfiles[[", i, "]]:' dataset is not open",
+                         call. = FALSE)
+                }
+                in_raster_is_object[i] <- TRUE
+            }
+            else if (!is.character(rasterfiles[[i]])) {
+                stop("'rasterfiles[[", i, "]]' is not a valid input type",
+                     call. = FALSE)
+            }
+        }
+    } else if (!is.character(rasterfiles)) {
+        stop("'rasterfiles' must be a list or character vector", call. = FALSE)
+    }
+
     # use first raster as reference
-    ref <- new(GDALRaster, rasterfiles[1])
-    nrows <- ref$getRasterYSize()
-    ncols <- ref$getRasterXSize()
+    if (in_raster_is_object[1])
+        ref <- rasterfiles[[1]]
+    else
+        ref <- new(GDALRaster, rasterfiles[[1]])
+    nrows <- as.integer(ref$getRasterYSize())
+    ncols <- as.integer(ref$getRasterXSize())
     cellsizeX <- ref$res()[1]
     cellsizeY <- ref$res()[2]
     bb <- ref$bbox()
@@ -1220,16 +1250,25 @@ calc <- function(expr,
     ymax <- bb[4]
     gt <- ref$getGeoTransform()
     srs <- ref$getProjection()
-    ref$close()
+    if (!in_raster_is_object[1])
+        ref$close()
 
     if (nrasters > 1) {
-        for (r in rasterfiles) {
-            ds <- new(GDALRaster, r)
+        # currently only checking that raster dims are the same
+        for (i in seq_along(rasterfiles[2:length(rasterfiles)])) {
+            if (in_raster_is_object[i])
+                ds <- rasterfiles[[i]]
+            else
+                ds <- new(GDALRaster, rasterfiles[[i]])
+
             dm <- ds$dim()
-            ds$close()
-            if (dm[2] != nrows || dm[1] != ncols) {
-                message(r)
-                stop("all input rasters must have the same extent",
+
+            if (!in_raster_is_object[i])
+                ds$close()
+
+            if (dm[1] != ncols || dm[2] != nrows) {
+                message("rasterfiles[", i, "] has incompatible dimension")
+                stop("all input rasters must have the same X size/Y size",
                      call. = FALSE)
             }
         }
@@ -1246,7 +1285,7 @@ calc <- function(expr,
         if (dm[2] != nrows || dm[1] != ncols) {
             if (!dstfile_is_object)
                 dst_ds$close()
-            stop("'dstfile' must have the same extent as the input raster(s)",
+            stop("'dstfile' must have the same extent as the input rasters",
                  call. = FALSE)
         }
 
@@ -1271,9 +1310,12 @@ calc <- function(expr,
     }
 
     # list of GDALRaster objects for each raster layer
-    ds_list <- list()
+    ds_list <- vector("list", nrasters)
     for (i in seq_len(nrasters)) {
-        ds_list[[i]] <- new(GDALRaster, rasterfiles[i])
+        if (in_raster_is_object[i])
+            ds_list[[i]] <- rasterfiles[[i]]
+        else
+            ds_list[[i]] <- new(GDALRaster, rasterfiles[[i]])
     }
 
     # are pixel coordinates being used
@@ -1319,54 +1361,56 @@ calc <- function(expr,
         }
 
         for (i in seq_len(nrasters)) {
-            inrow <- ds_list[[i]]$read(band = bands[i],
-                                       xoff = 0,
-                                       yoff = row,
-                                       xsize = ncols,
-                                       ysize = 1,
-                                       out_xsize = ncols,
-                                       out_ysize = 1)
+            inrow <- ds_list[[i]]$read(bands[i], 0, row, ncols, 1, ncols, 1)
             assign(var.names[i], inrow)
         }
 
         outrow <- eval(calc_expr)
+
         if (length(outrow) != expect_outrow_len) {
-            dst_ds$close()
+            if (!dstfile_is_object)
+                dst_ds$close()
             for (i in seq_len(nrasters)) {
-                ds_list[[i]]$close()
+                if (!in_raster_is_object[i])
+                    ds_list[[i]]$close()
             }
             stop("result vector is the wrong size", call. = FALSE)
         }
-        outrow <- ifelse(is.na(outrow), nodata_value, outrow)
+
+        outrow[is.na(outrow)] <- nodata_value
         dim(outrow) <- c(ncols, num_out_bands)
-        i <- 1
+        i <- 1L
         for (b in out_band) {
-            dst_ds$write(band = b,
-                         offx = 0,
-                         offy = row,
-                         xsize = ncols,
-                         ysize = 1,
-                         rasterData = outrow[, i])
-            i <- i + 1
+            dst_ds$write(b, 0, row, ncols, 1, outrow[, i])
+            i <- i + 1L
         }
         if (!quiet)
-            setTxtProgressBar(pb, row + 1)
+            setTxtProgressBar(pb, row + 1L)
 
         return()
     }
 
+    # process by rows
     if (!quiet) {
-        message("calculating from ", nrasters, " input layer(s)...")
+        if (nrasters == 1)
+            message("calculating from 1 input raster...")
+        else
+            message("calculating from ", nrasters, " input rasters...")
         pb <- txtProgressBar(min = 0, max = nrows)
     }
-    lapply(0:(nrows - 1), process_row)
-    close(pb)
+
+    lapply(seq.int(0L, (nrows - 1L), 1L), process_row)
+
+    if (!quiet)
+        close(pb)
 
     dst_ds$flushCache()
-    message("output written to ", output_name)
+    if (!quiet)
+        message("output written to ", output_name)
 
     for (i in seq_len(nrasters)) {
-        ds_list[[i]]$close()
+        if (!in_raster_is_object[i])
+            ds_list[[i]]$close()
     }
 
     if (return_obj) {

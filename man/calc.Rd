@@ -25,7 +25,9 @@ calc(
 \arguments{
 \item{expr}{An \R expression as a character string (e.g., \code{"A + B"}).}
 
-\item{rasterfiles}{Character vector of source raster filenames.}
+\item{rasterfiles}{Input rasters, either a character vector of filenames,
+or a list with each element either a character string filename or an object
+of class \code{GDALRaster} (must be an open dataset for the latter).}
 
 \item{bands}{Integer vector of band numbers to use for each raster layer.}
 
@@ -169,25 +171,29 @@ ds$close()
 
 
 ## Calculate normalized difference vegetation index (NDVI)
+## input rasters given as dataset objects
+## output to an in-memory raster (MEM)
 
 # Landast band 4 (red) and band 5 (near infrared):
 b4_file <- system.file("extdata/sr_b4_20200829.tif", package="gdalraster")
+b4 <- new(GDALRaster, b4_file)
 b5_file <- system.file("extdata/sr_b5_20200829.tif", package="gdalraster")
+b5 <- new(GDALRaster, b5_file)
 
 expr <- "((B5 * 0.0000275 - 0.2) - (B4 * 0.0000275 - 0.2)) /
          ((B5 * 0.0000275 - 0.2) + (B4 * 0.0000275 - 0.2))"
-ndvi_file <- calc(expr = expr,
-                  rasterfiles = c(b4_file, b5_file),
-                  var.names = c("B4", "B5"),
-                  dtName = "Float32",
-                  nodata_value = -32767,
-                  setRasterNodataValue = TRUE)
 
-ds <- new(GDALRaster, ndvi_file)
-ds$getStatistics(band=1, approx_ok=FALSE, force=TRUE)
-ds$close()
-\dontshow{deleteDataset(ndvi_file)}
+(ndvi <- calc(expr, list(b4, b5), var.names = c("B4", "B5"), fmt = "MEM",
+              dtName = "Float32", setRasterNodataValue = TRUE,
+              return_obj = TRUE))
 
+plot_raster(ndvi, legend = TRUE,
+            col_map_fn = c("#7b3294", "#c2a5cf", "#a6dba0", "#008837"),
+            main = "Storm Lake NDVI 2020-08-29")
+
+ndvi$close()
+b4$close()
+b5$close()
 
 ## Reclassify a variable by rule set
 

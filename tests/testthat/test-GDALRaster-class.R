@@ -395,13 +395,14 @@ test_that("build overviews runs without error", {
 
 test_that("get/set color table works", {
     f <- system.file("extdata/storml_evc.tif", package="gdalraster")
-    f2 <- paste0(tempdir(), "/", "storml_evc_ct.tif")
-    calc("A", f, dstfile=f2, dtName="UInt16", nodata_value=65535,
-         setRasterNodataValue=TRUE)
-    ds <- new(GDALRaster, f2, read_only=FALSE)
+    f2 <- tempfile("storml_evc_ct", fileext = ".tif")
+    on.exit(deleteDataset(f2), add = TRUE)
+    calc("A", f, dstfile = f2, dtName = "UInt16", nodata_value = 65535,
+         setRasterNodataValue = TRUE)
+    ds <- new(GDALRaster, f2, read_only = FALSE)
     evc_csv <- system.file("extdata/LF20_EVC_220.csv", package="gdalraster")
     vat <- read.csv(evc_csv)
-    ct <- vat[,c(1,3:5)]
+    ct <- vat[, c(1, 3:5)]
     expect_warning(ds$setColorTable(1, ct, "RGB"))
     # close and re-open flushes the write cache
     ds$open(read_only = TRUE)
@@ -411,7 +412,6 @@ test_that("get/set color table works", {
     ds$open(read_only = FALSE)
     expect_true(ds$clearColorTable(1))
     ds$close()
-    deleteDataset(f2)
 })
 
 test_that("get/set band color interpretation works", {
