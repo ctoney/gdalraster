@@ -18,25 +18,105 @@ test_that("calc writes correct results", {
                     var.names = "ELEV_M",
                     dtName = "Int16",
                     setRasterNodataValue = TRUE)
-    on.exit(deleteDataset(hi_file), add=TRUE)
-    ds <- new(GDALRaster, hi_file, read_only=TRUE)
+    on.exit(deleteDataset(hi_file), add = TRUE)
+    ds <- new(GDALRaster, hi_file)
     dm <- ds$dim()
     chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
     ds$close()
     expect_equal(chk, 2978)
 
-    # NDVI
+    # NDVI, with return_obj = TRUE
     b4_file <- system.file("extdata/sr_b4_20200829.tif", package="gdalraster")
     b5_file <- system.file("extdata/sr_b5_20200829.tif", package="gdalraster")
-    expr <- "((B5-B4)/(B5+B4)) * 1000" # rescale for checksum
-    ndvi_file <- calc(expr = expr,
-                      rasterfiles = c(b4_file, b5_file),
-                      var.names = c("B4", "B5"),
-                      dtName = "Float32",
-                      nodata_value = -32767,
-                      setRasterNodataValue = TRUE)
-    on.exit(deleteDataset(ndvi_file), add=TRUE)
-    ds <- new(GDALRaster, ndvi_file, read_only=TRUE)
+    expr <- "((B5 - B4) / (B5 + B4)) * 1000"  # rescale for checksum
+    ndvi_file <- tempfile("ndvi", fileext = ".tif")
+    on.exit(deleteDataset(ndvi_file), add = TRUE)
+    ds <- calc(expr = expr,
+               rasterfiles = c(b4_file, b5_file),
+               var.names = c("B4", "B5"),
+               dstfile = ndvi_file,
+               dtName = "Float32",
+               nodata_value = -32767,
+               setRasterNodataValue = TRUE,
+               quiet = TRUE,
+               return_obj = TRUE)
+    expect_true(is(ds, "Rcpp_GDALRaster"))
+    dm <- ds$dim()
+    chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
+    ds$close()
+    expect_equal(chk, 63632)
+
+    # NDVI, output to MEM raster
+    rm(ds)
+    ds <- calc(expr = expr,
+               rasterfiles = c(b4_file, b5_file),
+               var.names = c("B4", "B5"),
+               fmt = "MEM",
+               dtName = "Float32",
+               nodata_value = -32767,
+               setRasterNodataValue = TRUE,
+               quiet = TRUE,
+               return_obj = TRUE)
+    expect_true(is(ds, "Rcpp_GDALRaster"))
+    dm <- ds$dim()
+    chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
+    ds$close()
+    expect_equal(chk, 63632)
+
+    # NDVI, existing dataset object for dstfile
+    rm(ds)
+    ndvi_file <- tempfile("ndvi", fileext = ".tif")
+    on.exit(deleteDataset(ndvi_file), add = TRUE)
+    rasterFromRaster(b4_file, ndvi_file, dtName = "Float32",
+                     dstnodata = -32767)
+    ds <- new(GDALRaster, ndvi_file, read_only = FALSE)
+    res <- calc(expr = expr,
+                rasterfiles = c(b4_file, b5_file),
+                var.names = c("B4", "B5"),
+                dstfile = ds,
+                write_mode = "update",
+                quiet = TRUE)
+    expect_true(is(ds, "Rcpp_GDALRaster"))
+    expect_true(ds$isOpen())
+    expect_equal(res, ds$getDescription(band = 0))
+    dm <- ds$dim()
+    chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
+    ds$close()
+    expect_equal(chk, 63632)
+
+    # NDVI, both input rasters as dataset objects
+    rm(ds)
+    ds_b4 <- new(GDALRaster, b4_file)
+    on.exit(ds_b4$close(), add = TRUE)
+    ds_b5 <- new(GDALRaster, b5_file)
+    on.exit(ds_b5$close(), add = TRUE)
+    ds <- calc(expr = expr,
+               rasterfiles = list(ds_b4, ds_b5),
+               var.names = c("B4", "B5"),
+               fmt = "MEM",
+               dtName = "Float32",
+               nodata_value = -32767,
+               setRasterNodataValue = TRUE,
+               quiet = TRUE,
+               return_obj = TRUE)
+    expect_true(is(ds, "Rcpp_GDALRaster"))
+    dm <- ds$dim()
+    chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
+    ds$close()
+    expect_equal(chk, 63632)
+
+    # NDVI, rasters as a combination of filename and dataset object
+    rm(ds)
+    ds <- calc(expr = expr,
+               rasterfiles = list(ds_b4, b5_file),
+               var.names = c("B4", "B5"),
+               fmt = "MEM",
+               dtName = "Float32",
+               nodata_value = -32767,
+               setRasterNodataValue = TRUE,
+               quiet = TRUE,
+               return_obj = TRUE)
+    expect_true(is(ds, "Rcpp_GDALRaster"))
     dm <- ds$dim()
     chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
     ds$close()
@@ -44,8 +124,8 @@ test_that("calc writes correct results", {
 
     # recode
     lcp_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
-    tif_file <- paste0(tempdir(), "/", "storml_lndscp.tif")
-    on.exit(deleteDataset(tif_file), add=TRUE)
+    tif_file <- tempfile("storml_lndscp", fileext = ".tif")
+    on.exit(deleteDataset(tif_file), add = TRUE)
     createCopy("GTiff", tif_file, lcp_file)
     expr <- "ifelse( SLP >= 40 & FBFM %in% c(101,102), 99, FBFM)"
     calc(expr = expr,
@@ -54,57 +134,68 @@ test_that("calc writes correct results", {
          var.names = c("SLP", "FBFM"),
          dstfile = tif_file,
          out_band = 4,
-         write_mode = "update")
-    ds <- new(GDALRaster, tif_file, read_only=TRUE)
+         write_mode = "update",
+         quiet = TRUE)
+    ds <- new(GDALRaster, tif_file)
     dm <- ds$dim()
     chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
     ds$close()
     expect_equal(chk, 28017)
 
-    # multiband output
+    # multi-band output
     # https://github.com/firelab/gdalraster/issues/319
-    expr <- "
-to_terrainrgb <- function(dtm) {
-    startingvalue <- 10000
-    precision <- 0.1
-    rfactor <- 256*256 * precision
-    gfactor <- 256 * precision
+    # The user-defined function is included in `expr` here only for the
+    # {testthat} special environment. Normally it could be defined in the
+    # global environment and then referenced in `expr`.
+    expr <- "to_terrainrgb <- function(dtm) {
+               startingvalue <- 10000
+               precision <- 0.1
+               rfactor <- 256 * 256 * precision
+               gfactor <- 256 * precision
 
-    r <- floor((startingvalue +dtm)*(1/precision) / 256 / 256)
-    g <- floor((startingvalue +dtm - r*rfactor)*(1/precision) / 256)
-    b <- floor((startingvalue +dtm - r*rfactor - g*gfactor)*(1/precision))
+               r <- floor((startingvalue + dtm) * (1 / precision) / 256 / 256)
+               g <- floor((startingvalue + dtm - r * rfactor) *
+                          (1 / precision) / 256)
+               b <- floor((startingvalue + dtm - r * rfactor - g * gfactor) *
+                          (1 / precision))
 
-    return(c(r,g,b))
-}
-to_terrainrgb(ELEV)"
+               return(c(r, g, b))
+             }
+             to_terrainrgb(ELEV)"
 
     out_file <- "/vsimem/multiband-calc.tif"
+    on.exit(deleteDataset(out_file), add = TRUE)
     result <- calc(expr = expr,
                    rasterfiles = elev_file,
                    var.names = "ELEV",
                    dstfile = out_file,
                    dtName = "Byte",
                    out_band = 1:3,
-                   nodata_value = 0)
+                   nodata_value = 0,
+                   quiet = TRUE)
     expect_equal(result, out_file)
 
-    # revert out_file using from_terrainrgb()
-    expr <- "
-from_terrainrgb <- function(R,G,B) {
-  elevation <- -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1)
-  return(elevation)
-}
-from_terrainrgb(R,G,B)"
+    # revert out_file using `from_terrainrgb()`
+    # The user-defined function is included in `expr` here only for the
+    # {testthat} special environment. Normally it could be defined in the
+    # global environment and then referenced in `expr`.
+    expr <- "from_terrainrgb <- function(R, G, B) {
+               elevation <- -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1)
+               return(elevation)
+             }
+             from_terrainrgb(R, G, B)"
 
     revert_file <- "/vsimem/multiband-calc-revert.tif"
+    on.exit(deleteDataset(revert_file), add = TRUE)
     result <- calc(expr = expr,
                    rasterfiles = c(out_file, out_file, out_file),
-                   bands = c(1, 2 ,3),
+                   bands = c(1, 2, 3),
                    var.names = c("R", "G", "B"),
                    dstfile = revert_file,
                    dtName = "Int16",
                    nodata_value = -10000,
-                   setRasterNodataValue = TRUE)
+                   setRasterNodataValue = TRUE,
+                   quiet = TRUE)
     expect_equal(result, revert_file)
     # compare revert_file with the original elev_file
     ds <- new(GDALRaster, elev_file)
@@ -118,17 +209,27 @@ from_terrainrgb(R,G,B)"
     expect_equal(revert_elev_values, orig_elev_values)
     expect_equal(mean(revert_elev_values, na.rm = TRUE),
                  mean(orig_elev_values, na.rm = TRUE))
-    deleteDataset(out_file)
-    deleteDataset(revert_file)
 
     # test errors from input validation
-    expr <- "((B5-B4)/(B5+B4))"
+    expr <- "((B5 - B4) / (B5 + B4))"
+    # test with output file already existing using `revert_file` from above:
     expect_error(calc(expr = expr,
-                      rasterfiles = c(b4_file, paste0(b5_file, ".error")),
+                      rasterfiles = c(b4_file, b5_file),
                       var.names = c("B4", "B5"),
+                      dstfile = revert_file,
                       dtName = "Float32",
                       nodata_value = -32767,
                       setRasterNodataValue = TRUE))
+    # with overwrite
+    expect_no_error(calc(expr = expr,
+                         rasterfiles = c(b4_file, b5_file),
+                         var.names = c("B4", "B5"),
+                         dstfile = revert_file,
+                         dtName = "Float32",
+                         nodata_value = -32767,
+                         setRasterNodataValue = TRUE,
+                         write_mode = "overwrite",
+                         quiet = TRUE))
 
     expect_error(calc(expr = expr,
                       rasterfiles = c(b4_file, b5_file),

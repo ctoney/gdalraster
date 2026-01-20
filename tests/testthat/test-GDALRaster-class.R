@@ -174,7 +174,7 @@ test_that("get/set metadata works", {
 
 test_that("open/close/re-open works", {
     elev_file <- system.file("extdata/storml_elev_orig.tif", package="gdalraster")
-    ds <- new(GDALRaster, elev_file, read_only=TRUE)
+    ds <- new(GDALRaster, elev_file)
     dm <- ds$dim()
     r <- read_ds(ds)
     ds$close()
@@ -184,16 +184,18 @@ test_that("open/close/re-open works", {
                      nbands = 1,
                      dtName = "UInt32",
                      init = DEFAULT_NODATA[["UInt32"]])
-    ds <- new(GDALRaster, mod_file, read_only=TRUE)
+    ds <- new(GDALRaster, mod_file)
     expect_true(ds$isOpen())
+    expect_true(ds$isReadOnly())
     expect_true(all(is.na(read_ds(ds))))
     ds$close()
     expect_false(ds$isOpen())
     expect_equal(ds$getFilename(), .check_gdal_filename(mod_file))
-    ds$open(read_only=FALSE)
+    ds$open(read_only = FALSE)
     expect_true(ds$isOpen())
-    ds$setDescription(band=1, "test")
-    expect_equal(ds$getDescription(band=1), "test")
+    expect_false(ds$isReadOnly())
+    ds$setDescription(band = 1, "test")
+    expect_equal(ds$getDescription(band = 1), "test")
     r[is.na(r)] <- DEFAULT_NODATA[["UInt32"]]
     ds$write(band=1, 0, 0, dm[1], dm[2], r)
     expect_silent(ds$flushCache())
@@ -393,13 +395,14 @@ test_that("build overviews runs without error", {
 
 test_that("get/set color table works", {
     f <- system.file("extdata/storml_evc.tif", package="gdalraster")
-    f2 <- paste0(tempdir(), "/", "storml_evc_ct.tif")
-    calc("A", f, dstfile=f2, dtName="UInt16", nodata_value=65535,
-         setRasterNodataValue=TRUE)
-    ds <- new(GDALRaster, f2, read_only=FALSE)
+    f2 <- tempfile("storml_evc_ct", fileext = ".tif")
+    on.exit(deleteDataset(f2), add = TRUE)
+    calc("A", f, dstfile = f2, dtName = "UInt16", nodata_value = 65535,
+         setRasterNodataValue = TRUE)
+    ds <- new(GDALRaster, f2, read_only = FALSE)
     evc_csv <- system.file("extdata/LF20_EVC_220.csv", package="gdalraster")
     vat <- read.csv(evc_csv)
-    ct <- vat[,c(1,3:5)]
+    ct <- vat[, c(1, 3:5)]
     expect_warning(ds$setColorTable(1, ct, "RGB"))
     # close and re-open flushes the write cache
     ds$open(read_only = TRUE)
@@ -409,7 +412,6 @@ test_that("get/set color table works", {
     ds$open(read_only = FALSE)
     expect_true(ds$clearColorTable(1))
     ds$close()
-    deleteDataset(f2)
 })
 
 test_that("get/set band color interpretation works", {

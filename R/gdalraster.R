@@ -63,6 +63,7 @@
 #' ds$setFilename(filename)
 #' ds$open(read_only)
 #' ds$isOpen()
+#' ds$isReadOnly()
 #' ds$getFileList()
 #'
 #' ds$info()
@@ -228,7 +229,11 @@
 #' No return value, called for side effects.
 #'
 #' \code{$isOpen()}\cr
-#' Returns logical indicating whether the associated raster dataset is open.
+#' Returns a logical value, `TRUE` if the raster dataset is open.
+#'
+#' \code{$isReadOnly()}\cr
+#' Returns a logical value, `TRUE` if the raster dataset has read-only access
+#' or `FALSE` if it is writable.
 #'
 #' \code{$getFileList()}\cr
 #' Returns a character vector of files believed to be part of this dataset.
