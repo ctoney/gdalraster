@@ -26,8 +26,8 @@ calc(
 \item{expr}{An \R expression as a character string (e.g., \code{"A + B"}).}
 
 \item{rasterfiles}{Input rasters, either a character vector of filenames,
-or a list with each element either a character string filename or an object
-of class \code{GDALRaster} (must be an open dataset for the latter).}
+or a list with each element either a filename as character string or an
+object of class \code{GDALRaster} (must be an open dataset for the latter).}
 
 \item{bands}{Integer vector of band numbers to use for each raster layer.}
 
@@ -48,19 +48,19 @@ to guess from the output filename if not specified.}
 UInt16, Int32, UInt32, Float32).}
 
 \item{out_band}{Integer band number(s) in \code{dstfile} for writing output.
-Defaults to \code{1}. Multi-band output is supported as of gdalraster 1.11.0,
+Defaults to \code{1L}. Multi-band output is supported as of gdalraster 1.11.0,
 in which case \code{out_band} would be a vector of band numbers.}
 
 \item{options}{Optional list of format-specific creation options in a
 vector of "NAME=VALUE" pairs
-(e.g., \code{options = c("COMPRESS=LZW")} to set LZW compression
-during creation of a GTiff file).}
+(e.g., \code{options = c("TILED=YES", "COMPRESS=LZW")} to set LZW compression
+during creation of a tiled GTiff file).}
 
-\item{nodata_value}{Numeric value to assign if \code{expr} returns NA.}
+\item{nodata_value}{Numeric value to assign if \code{expr} returns \code{NA}.}
 
 \item{setRasterNodataValue}{Logical value. \code{TRUE} will attempt to set the
 raster format nodata value to \code{nodata_value}, or \code{FALSE} not to set a raster
-nodata value.}
+nodata value on the output dataset.}
 
 \item{write_mode}{Character string. Name of the file write mode for output.
 One of:
@@ -71,8 +71,8 @@ One of:
 write to the existing dataset if \code{dstfile} is given as an object
 }}
 
-\item{quiet}{Logical value. If \code{TRUE}, a progress bar will not be
-displayed. Defaults to \code{FALSE}.}
+\item{quiet}{Logical value. If \code{TRUE}, a progress bar and informational
+messages will not be displayed. Defaults to \code{FALSE}.}
 
 \item{return_obj}{Logical value. If \code{TRUE}, an object of class
 \code{\link{GDALRaster}} opened on the newly created dataset will be
@@ -87,25 +87,22 @@ if \code{return_obj = TRUE}.
 }
 \description{
 \code{calc()} evaluates an \R expression for each pixel in a raster layer or
-stack of layers. Each layer is defined by a raster filename, band number,
-and a variable name to use in the \R expression. If not specified, band
-defaults to 1 for each input raster.
-Variable names default to \code{LETTERS} if not specified
-(\code{A} (layer 1), \code{B} (layer 2), ...).
+stack of layers. Each layer is defined by a raster filename or dataset
+object, band number, and a variable name to use in the \R expression. If not
+specified, band defaults to \code{1} for each input raster. Variable names
+default to \code{LETTERS} if not specified (\code{A} (layer 1), \code{B} (layer 2), ...).
 All of the input layers must have the same extent and cell size.
-The projection will be read from the first raster in the list
-of inputs.
+The projection will be read from the first raster in the list of inputs.
 Individual pixel coordinates are also available as variables in the
 \R expression, as either x/y in the raster projected coordinate system or
 inverse projected longitude/latitude.
-Multiband output is supported as of gdalraster 1.11.0.
+Multi-band output is supported as of gdalraster 1.11.0.
 }
 \details{
-The variables in \code{expr} are vectors of length raster xsize
-(row vectors of the input raster layer(s)).
-The expression should return a vector also of length raster xsize
-(an output row).
-Four special variable names are available in \code{expr}:
+The variables in \code{expr} are vectors of length raster xsize (i.e., row
+vectors of the input raster layer(s), with length the number of raster
+columns). The expression should return a vector also of length raster xsize
+(an output row). Four special variable names are available in \code{expr}:
 \code{pixelX} and \code{pixelY} provide pixel center coordinates in projection units.
 \code{pixelLon} and \code{pixelLat} can also be used, in which case the pixel x/y
 coordinates will be inverse projected to longitude/latitude
@@ -113,9 +110,9 @@ coordinates will be inverse projected to longitude/latitude
 which is read from the first input raster). Note that inverse projection
 adds computation time.
 
-To refer to specific bands in a multi-band input file, repeat the filename in
-\code{rasterfiles} and specify corresponding band numbers in \code{bands}, along with
-optional variable names in \code{var.names}, for example,
+To refer to specific bands in a multi-band input file, repeat the filename
+or dataset object in \code{rasterfiles} and specify corresponding band numbers in
+\code{bands}, along with optional variable names in \code{var.names}, e.g.,
 \preformatted{
 rasterfiles = c("multiband.tif", "multiband.tif")
 bands = c(4, 5)
@@ -125,6 +122,8 @@ var.names = c("B4", "B5")
 Output will be written to \code{dstfile}. To update a file that already
 exists, set \code{write_mode = "update"} and set \code{out_band} to an existing
 band number(s) in \code{dstfile} (new bands cannot be created in \code{dstfile}).
+\code{dstfile} can optionally be given as an object of class \code{GDALRaster} open
+for write access.
 
 To write multi-band output, \code{expr} must return a vector of values
 interleaved by band. This is equivalent to, and can also be returned as,
@@ -169,10 +168,9 @@ ds$getStatistics(band = 1, approx_ok = FALSE, force = TRUE)
 ds$close()
 \dontshow{deleteDataset(hi_file)}
 
-
 ## Calculate normalized difference vegetation index (NDVI)
 ## input rasters given as dataset objects
-## output to an in-memory raster (MEM)
+## output to an in-memory raster (MEM format)
 
 # Landast band 4 (red) and band 5 (near infrared):
 b4_file <- system.file("extdata/sr_b4_20200829.tif", package="gdalraster")
