@@ -63,6 +63,7 @@ class GDALVector {
     // exposed methods
     void open(bool read_only);
     bool isOpen() const;
+    bool isReadOnly() const;
     std::string getDsn() const;
     Rcpp::CharacterVector getFileList() const;
     void info() const;

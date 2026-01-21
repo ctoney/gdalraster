@@ -91,6 +91,7 @@ lyr$transactionsForce
 ## Methods
 lyr$open(read_only)
 lyr$isOpen()
+lyr$isReadOnly()
 lyr$getDsn()
 lyr$getFileList()
 lyr$info()
@@ -273,6 +274,10 @@ No return value, called for side effects.
 
 \code{$isOpen()}\cr
 Returns a \code{logical} value indicating whether the vector dataset is open.
+
+\code{$isReadOnly()}\cr
+Returns a logical value, \code{TRUE} if the vector dataset has read-only access
+or \code{FALSE} if it is writable.
 
 \code{$getDsn()}\cr
 Returns a character string containing the \code{dsn} associated with this

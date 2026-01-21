@@ -183,6 +183,15 @@ bool GDALVector::isOpen() const {
         return true;
 }
 
+bool GDALVector::isReadOnly() const {
+    checkAccess_(GA_ReadOnly);
+
+    if (m_eAccess == GA_ReadOnly)
+        return true;
+    else
+        return false;
+}
+
 std::string GDALVector::getDsn() const {
     return m_dsn;
 }
@@ -3927,6 +3936,8 @@ RCPP_MODULE(mod_GDALVector) {
         "Return the DSN")
     .const_method("isOpen", &GDALVector::isOpen,
         "Is the dataset open?")
+    .const_method("isReadOnly", &GDALVector::isReadOnly,
+        "Does the vector dataset have read-only access")
     .method("open", &GDALVector::open,
         "(Re-)open the dataset on the existing DSN and layer")
     .const_method("getFileList", &GDALVector::getFileList,
