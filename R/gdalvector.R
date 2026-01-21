@@ -79,6 +79,7 @@
 #' ## Methods
 #' lyr$open(read_only)
 #' lyr$isOpen()
+#' lyr$isReadOnly()
 #' lyr$getDsn()
 #' lyr$getFileList()
 #' lyr$info()
@@ -252,6 +253,10 @@
 #'
 #' \code{$isOpen()}\cr
 #' Returns a `logical` value indicating whether the vector dataset is open.
+#'
+#' \code{$isReadOnly()}\cr
+#' Returns a logical value, `TRUE` if the vector dataset has read-only access
+#' or `FALSE` if it is writable.
 #'
 #' \code{$getDsn()}\cr
 #' Returns a character string containing the `dsn` associated with this

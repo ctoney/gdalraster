@@ -77,6 +77,7 @@ test_that("class basic interface works", {
     expect_true(is(lyr, "Rcpp_GDALVector"))
     expect_output(show(lyr), "MULTIPOLYGON")
 
+    expect_true(lyr$isReadOnly())
     expect_equal(lyr$getDriverShortName(), "GPKG")
     expect_equal(lyr$getDriverLongName(), "GeoPackage")
     expect_length(lyr$getFileList(), 1)
@@ -93,6 +94,7 @@ test_that("class basic interface works", {
     expect_false(cap$RandomWrite)
     # re-open with write access
     lyr$open(read_only = FALSE)
+    expect_false(lyr$isReadOnly())
     expect_true(lyr$testCapability()$SequentialWrite)
     expect_true(lyr$testCapability()$RandomWrite)
 
