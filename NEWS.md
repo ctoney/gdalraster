@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9062 (dev)
+# gdalraster 2.4.0.9063 (dev)
+
+* add `read_to_nativeRaster()`: reads raster data directly as a `nativeRaster` object for fast rendering. Supports datasets with 1, 3, or 4 bands of Byte data type. Grayscale (1-band) data is replicated across RGB channels. Also available as class method `GDALRaster$readToNativeRaster()`. (#875, thanks to @mdsumner) (2026-01-22)
 
 * fix `read_ds()`: the argument `as_wkb` and dataset property `readByteAsRaw` were not synchronized (#873, thanks to @mdsumner) (2026-01-21)
 
