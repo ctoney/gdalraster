@@ -773,6 +773,25 @@
 #' xsize, ysize). Returns a vector of pixel values with length equal to the
 #' chunk `xsize * ysize`, otherwise as described above for \code{$read()}.
 #'
+#' \code{$readToNativeRaster(xoff, yoff, xsize, ysize, out_xsize, out_ysize)}\cr
+#' Reads a region of raster data from \code{band}. The method takes care of
+#' pixel decimation / replication if the output size
+#' (\code{out_xsize * out_ysize}) is different than the size of the region
+#' being accessed (\code{xsize * ysize}).
+#' \code{xoff} is the pixel (column) offset to the top left corner of the
+#' region of the band to be accessed (zero to start from the left side).
+#' \code{yoff} is the line (row) offset to the top left corner of the region of
+#' the band to be accessed (zero to start from the top).
+#' \emph{Note that raster row/column offsets use 0-based indexing.}
+#' \code{xsize} is the width in pixels of the region to be accessed.
+#' \code{ysize} is the height in pixels of the region to be accessed.
+#' \code{out_xsize} is the width of the output array into which the desired
+#' region will be read (typically the same value as xsize).
+#' \code{out_ysize} is the height of the output array into which the desired
+#' region will be read (typically the same value as ysize).
+#' Returns a numeric or complex vector containing the values that were read.
+#' It is organized in left to right, top to bottom pixel order.
+#'
 #' \code{$write(band, xoff, yoff, xsize, ysize, rasterData)}\cr
 #' Writes a region of raster data to \code{band}.
 #' \code{xoff} is the pixel (column) offset to the top left corner of the

@@ -1891,6 +1891,76 @@ SEXP GDALRaster::readChunk(int band,
         chunk_def[5 - adj_for_chunk_x_y]);
 }
 
+SEXP GDALRaster::readToNativeRaster(int xoff, int yoff, int xsize, int ysize,
+                                    int out_xsize, int out_ysize) const {
+  
+  if (!isOpen())
+    Rcpp::stop("dataset is not open");
+  
+  if (out_xsize < 1 || out_ysize < 1)
+    Rcpp::stop("'out_xsize' and 'out_ysize' must be > 0");
+  
+  const int nBands = GDALGetRasterCount(m_hDataset);
+  if (nBands != 1 && nBands != 3 && nBands != 4)
+    Rcpp::stop("readToNativeRaster requires 1, 3, or 4 bands");
+  
+  // verify all bands are Byte
+  for (int b = 1; b <= nBands; b++) {
+    GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, b);
+    if (hBand == nullptr)
+      Rcpp::stop("failed to access band %d", b);
+    if (GDALGetRasterDataType(hBand) != GDT_Byte)
+      Rcpp::stop("readToNativeRaster requires Byte data type");
+  }
+  
+  const R_xlen_t buf_size = static_cast<R_xlen_t>(out_xsize) * out_ysize;
+  
+  // allocate band buffers
+  std::vector<std::vector<uint8_t>> bands(nBands);
+  for (int b = 0; b < nBands; b++) {
+    bands[b].resize(buf_size);
+    GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, b + 1);
+    CPLErr err = GDALRasterIO(hBand, GF_Read, xoff, yoff, xsize, ysize,
+                              bands[b].data(), out_xsize, out_ysize, GDT_Byte,
+                              0, 0);
+    if (err == CE_Failure)
+      Rcpp::stop("read raster failed on band %d", b + 1);
+  }
+  
+  // pack into nativeRaster
+  Rcpp::IntegerVector res = Rcpp::no_init(buf_size);
+  int *pres = res.begin();
+  
+  if (nBands == 1) {
+    const uint8_t *p0 = bands[0].data();
+    for (R_xlen_t i = 0; i < buf_size; i++) {
+      pres[i] = static_cast<int>(R_RGB(p0[i], p0[i], p0[i]));
+    }
+  } else if (nBands == 3) {
+    const uint8_t *p0 = bands[0].data();
+    const uint8_t *p1 = bands[1].data();
+    const uint8_t *p2 = bands[2].data();
+    for (R_xlen_t i = 0; i < buf_size; i++) {
+      pres[i] = static_cast<int>(R_RGB(p0[i], p1[i], p2[i]));
+    }
+  } else {
+    const uint8_t *p0 = bands[0].data();
+    const uint8_t *p1 = bands[1].data();
+    const uint8_t *p2 = bands[2].data();
+    const uint8_t *p3 = bands[3].data();
+    for (R_xlen_t i = 0; i < buf_size; i++) {
+      pres[i] = static_cast<int>(R_RGBA(p0[i], p1[i], p2[i], p3[i]));
+    }
+  }
+  
+  // set dim [height, width] - nativeRaster convention
+  res.attr("dim") = Rcpp::IntegerVector::create(out_ysize, out_xsize);
+  res.attr("class") = "nativeRaster";
+  res.attr("channels") = (nBands == 4) ? 4 : 3;
+  
+  return res;
+}
+
 void GDALRaster::write(int band, int xoff, int yoff, int xsize, int ysize,
                        const Rcpp::RObject &rasterData) {
 
@@ -2917,6 +2987,8 @@ RCPP_MODULE(mod_GDALRaster) {
         "Read a block of raster data")
     .const_method("readChunk", &GDALRaster::readChunk,
         "Read a multi-block user-defined chunk of raster data")
+    .const_method("readToNativeRaster", &GDALRaster::readToNativeRaster,
+        "Read raster data as nativeRaster")
     .method("write", &GDALRaster::write,
         "Write a region of raster data for a band")
     .method("writeBlock", &GDALRaster::writeBlock,

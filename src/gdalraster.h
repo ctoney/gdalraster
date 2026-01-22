@@ -149,6 +149,9 @@ class GDALRaster {
 
     SEXP readChunk(int band, const Rcpp::IntegerVector &chunk_def) const;
 
+    SEXP readToNativeRaster(int xoff, int yoff, int xsize, int ysize,
+                            int out_xsize, int out_ysize) const;
+    
     void write(int band, int xoff, int yoff, int xsize, int ysize,
                const Rcpp::RObject &rasterData);
 
