@@ -16,6 +16,8 @@
 #include <gdal_utils.h>
 
 #include <Rcpp.h>
+// for R_RGB / R_RGBA
+#include <R_ext/GraphicsEngine.h>
 
 #include <algorithm>
 #include <cmath>
@@ -1894,8 +1896,7 @@ SEXP GDALRaster::readChunk(int band,
 SEXP GDALRaster::readToNativeRaster(int xoff, int yoff, int xsize, int ysize,
                                     int out_xsize, int out_ysize) const {
   
-  if (!isOpen())
-    Rcpp::stop("dataset is not open");
+  checkAccess_(GA_ReadOnly);
   
   if (out_xsize < 1 || out_ysize < 1)
     Rcpp::stop("'out_xsize' and 'out_ysize' must be > 0");
@@ -2988,7 +2989,7 @@ RCPP_MODULE(mod_GDALRaster) {
     .const_method("readChunk", &GDALRaster::readChunk,
         "Read a multi-block user-defined chunk of raster data")
     .const_method("readToNativeRaster", &GDALRaster::readToNativeRaster,
-        "Read raster data as nativeRaster")
+        "Read raster data as an object of class nativeRaster")
     .method("write", &GDALRaster::write,
         "Write a region of raster data for a band")
     .method("writeBlock", &GDALRaster::writeBlock,

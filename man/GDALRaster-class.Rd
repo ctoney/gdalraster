@@ -165,6 +165,7 @@ ds$getMetadataDomainList(band)
 ds$read(band, xoff, yoff, xsize, ysize, out_xsize, out_ysize)
 ds$readBlock(band, xblockoff, yblockoff)
 ds$readChunk(band, chunk_def)
+ds$readToNativeRaster(xoff, yoff, xsize, ysize, out_xsize, out_ysize)
 
 ds$write(band, xoff, yoff, xsize, ysize, rasterData)
 ds$writeBlock(band, xblockoff, yblockoff, rasterData)
@@ -830,9 +831,8 @@ the band to be accessed (zero to start from the top).
 region will be read (typically the same value as xsize).
 \code{out_ysize} is the height of the output array into which the desired
 region will be read (typically the same value as ysize).
-Returns an integer matrix of class 'nativeRaster' with attributes 'dim', and
+Returns an object of class \code{nativeRaster} with attributes 'dim', and
 'channels'  containing the values that were read in R's native RGB/A encoding.
-It is organized in left to right, top to bottom pixel order.
 
 \code{$write(band, xoff, yoff, xsize, ysize, rasterData)}\cr
 Writes a region of raster data to \code{band}.

@@ -1254,7 +1254,7 @@ test_that("read to nativeRaster works", {
 
   ## we are >= 3.1.0 so we can assume vrt://...?bands=
   ds <- new(GDALRaster, sprintf("vrt://%s?bands=1,1,1", gray_file))
-  r3<- ds$readToNativeRaster(0, 0, 20, 20, 20, 20)
+  r3 <- ds$readToNativeRaster(0, 0, 20, 20, 20, 20)
   expect_true(attr(r3, "channels") == 3)  
   r4 <- read_to_nativeRaster(ds)
   expect_true(attr(r4, "channels") == 3)  

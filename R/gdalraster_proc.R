@@ -2749,10 +2749,10 @@ rasterize <- function(src_dsn,
 #' Read raster data as nativeRaster
 #'
 #' @description
-#' `read_to_nativeRaster()` will read from a raster dataset that is already 
-#' open in a `GDALRaster` object and return the data as a `nativeRaster` 
-#' object suitable for fast rendering. By default, it attempts to read the 
-#' full raster extent at full resolution.
+#' `read_to_nativeRaster()` will read from a raster dataset that is already open
+#' in a `GDALRaster` object and return a `nativeRaster` object suitable for fast
+#' rendering. By default, it attempts to read the full raster extent at full
+#' resolution.
 #'
 #' @details
 #' The dataset must have 1, 3, or 4 bands of Byte data type. For 1-band 
@@ -2774,7 +2774,7 @@ rasterize <- function(src_dsn,
 #' @param out_ysize Integer. The height in pixels of the output buffer into
 #' which the desired region will be read (e.g., to read a reduced resolution
 #' overview).
-#' @returns A `nativeRaster` object (integer matrix with class `nativeRaster`).
+#' @returns An object of class `nativeRaster`.
 #'
 #' @note
 #' By default, this function will attempt to read the full raster into memory.

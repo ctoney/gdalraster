@@ -37,13 +37,13 @@ which the desired region will be read (e.g., to read a reduced resolution
 overview).}
 }
 \value{
-A \code{nativeRaster} object (integer matrix with class \code{nativeRaster}).
+An object of class \code{nativeRaster}.
 }
 \description{
-\code{read_to_nativeRaster()} will read from a raster dataset that is already
-open in a \code{GDALRaster} object and return the data as a \code{nativeRaster}
-object suitable for fast rendering. By default, it attempts to read the
-full raster extent at full resolution.
+\code{read_to_nativeRaster()} will read from a raster dataset that is already open
+in a \code{GDALRaster} object and return a \code{nativeRaster} object suitable for fast
+rendering. By default, it attempts to read the full raster extent at full
+resolution.
 }
 \details{
 The dataset must have 1, 3, or 4 bands of Byte data type. For 1-band
