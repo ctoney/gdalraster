@@ -334,6 +334,12 @@ test_that("Byte I/O works", {
     ds$readByteAsRaw <- TRUE
     expect_warning(r_raw1 <- read_ds(ds, as_raw = TRUE))
 
+    ## read as raw via field only (no as_raw argument)
+    ds$readByteAsRaw <- TRUE
+    r_raw2 <- read_ds(ds)
+    expect_type(r_raw2, "raw")
+    ds$readByteAsRaw <- FALSE
+    
     deleteDataset(f)
 
     expect_type(r_int, "integer")

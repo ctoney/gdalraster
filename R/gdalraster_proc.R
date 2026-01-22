@@ -257,7 +257,11 @@ read_ds <- function(ds, bands = NULL, xoff = 0, yoff = 0,
     for (b in bands) {
         dtype <- dt_union(dtype, ds$getDataTypeName(b))
     }
-
+    # sync as_raw with object property for Byte data
+    if (!as_raw && ds$readByteAsRaw && dtype == "Byte") {
+      as_raw <- TRUE
+    }
+    
     if (as_list) {
         r <- list()
     } else {
