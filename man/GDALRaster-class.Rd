@@ -165,6 +165,7 @@ ds$getMetadataDomainList(band)
 ds$read(band, xoff, yoff, xsize, ysize, out_xsize, out_ysize)
 ds$readBlock(band, xblockoff, yblockoff)
 ds$readChunk(band, chunk_def)
+ds$readToNativeRaster(xoff, yoff, xsize, ysize, out_xsize, out_ysize)
 
 ds$write(band, xoff, yoff, xsize, ysize, rasterData)
 ds$writeBlock(band, xblockoff, yblockoff, rasterData)
@@ -813,6 +814,25 @@ argument. \code{chunk_def} can also be given as an numeric vector of length 4
 containing the 0-based pixel offsets and pixel sizes for a chunk (xoff, yoff,
 xsize, ysize). Returns a vector of pixel values with length equal to the
 chunk \code{xsize * ysize}, otherwise as described above for \code{$read()}.
+
+\code{$readToNativeRaster(xoff, yoff, xsize, ysize, out_xsize, out_ysize)}\cr
+Reads a region of raster data from \code{band}. The method takes care of
+pixel decimation / replication if the output size
+(\code{out_xsize * out_ysize}) is different than the size of the region
+being accessed (\code{xsize * ysize}).
+\code{xoff} is the pixel (column) offset to the top left corner of the
+region of the band to be accessed (zero to start from the left side).
+\code{yoff} is the line (row) offset to the top left corner of the region of
+the band to be accessed (zero to start from the top).
+\emph{Note that raster row/column offsets use 0-based indexing.}
+\code{xsize} is the width in pixels of the region to be accessed.
+\code{ysize} is the height in pixels of the region to be accessed.
+\code{out_xsize} is the width of the output array into which the desired
+region will be read (typically the same value as xsize).
+\code{out_ysize} is the height of the output array into which the desired
+region will be read (typically the same value as ysize).
+Returns an object of class \code{nativeRaster} with attributes 'dim', and
+'channels'  containing the values that were read in R's native RGB/A encoding.
 
 \code{$write(band, xoff, yoff, xsize, ysize, rasterData)}\cr
 Writes a region of raster data to \code{band}.

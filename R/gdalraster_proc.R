@@ -2744,3 +2744,89 @@ rasterize <- function(src_dsn,
 
     return(invisible(ret))
 }
+
+
+#' Read raster data as nativeRaster
+#'
+#' @description
+#' `read_to_nativeRaster()` will read from a raster dataset that is already open
+#' in a `GDALRaster` object and return a `nativeRaster` object suitable for fast
+#' rendering. By default, it attempts to read the full raster extent at full
+#' resolution.
+#'
+#' @details
+#' The dataset must have 1, 3, or 4 bands of Byte data type. For 1-band 
+#' (grayscale) data, the value is replicated across RGB channels. For 3-band 
+#' data, bands are interpreted as RGB. For 4-band data, bands are interpreted 
+#' as RGBA.
+#'
+#' @param ds An object of class `GDALRaster` in open state, with 1, 3, or 4 
+#' bands of Byte data type.
+#' @param xoff Integer. The pixel (column) offset to the top left corner of the
+#' raster region to be read (zero to start from the left side).
+#' @param yoff Integer. The line (row) offset to the top left corner of the
+#' raster region to be read (zero to start from the top).
+#' @param xsize Integer. The width in pixels of the region to be read.
+#' @param ysize Integer. The height in pixels of the region to be read.
+#' @param out_xsize Integer. The width in pixels of the output buffer into
+#' which the desired region will be read (e.g., to read a reduced resolution
+#' overview).
+#' @param out_ysize Integer. The height in pixels of the output buffer into
+#' which the desired region will be read (e.g., to read a reduced resolution
+#' overview).
+#' @returns An object of class `nativeRaster`.
+#'
+#' @note
+#' By default, this function will attempt to read the full raster into memory.
+#' It generally should not be called on large raster datasets using the default
+#' argument values. Use `out_xsize` and `out_ysize` for quick setting to smallish values, 
+#' such as 1024.
+#'
+#' @seealso
+#' [read_ds()], [`GDALRaster$readToNativeRaster()`][GDALRaster]
+#'
+#' @examples
+#' # read an RGB image as nativeRaster
+#' img_file <- system.file("help/figures/logo.png", package="survival")
+#' if (file.exists(img_file)) {
+#' ds <- new(GDALRaster, img_file)
+#' r <- read_to_nativeRaster(ds)
+#' bb <- ds$bbox()  ## will warn for non-spatial image but is harmless
+#' ds$close()
+#' plot(NA, xlab = "", ylab = "", asp = 1, xlim = bb[c(1, 3)], ylim = bb[c(2, 4)])
+#' rasterImage(r, bb[1], bb[2], bb[3], bb[4])
+#' }
+#' @export
+read_to_nativeRaster <- function(ds, xoff = 0, yoff = 0,
+                                 xsize = ds$getRasterXSize(),
+                                 ysize = ds$getRasterYSize(),
+                                 out_xsize = xsize, out_ysize = ysize) {
+  
+  if (!is(ds, "Rcpp_GDALRaster")) {
+    stop("'ds' must be an object of class GDALRaster", call. = FALSE)
+  }
+  if (is.null(xoff) || !(is.numeric(xoff) && length(xoff) == 1)) {
+    stop("'xoff' must be a numeric value", call. = FALSE)
+  }
+  if (is.null(yoff) || !(is.numeric(yoff) && length(yoff) == 1)) {
+    stop("'yoff' must be a numeric value", call. = FALSE)
+  }
+  if (is.null(xsize) || !(is.numeric(xsize) && length(xsize) == 1)) {
+    stop("'xsize' must be a numeric value", call. = FALSE)
+  }
+  if (is.null(ysize) || !(is.numeric(ysize) && length(ysize) == 1)) {
+    stop("'ysize' must be a numeric value", call. = FALSE)
+  }
+  if (is.null(out_xsize) ||
+      !(is.numeric(out_xsize) && length(out_xsize) == 1)) {
+    
+    stop("'out_xsize' must be a numeric value", call. = FALSE)
+  }
+  if (is.null(out_ysize) ||
+      !(is.numeric(out_ysize) && length(out_ysize) == 1)) {
+    
+    stop("'out_ysize' must be a numeric value", call. = FALSE)
+  }
+  r <- ds$readToNativeRaster(xoff, yoff, xsize, ysize, out_xsize, out_ysize)
+  r
+}

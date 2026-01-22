@@ -1231,3 +1231,32 @@ test_that("getMinMaxLocation works", {
 
     ds$close()
 })
+
+test_that("read to nativeRaster works", {
+  gray_file <- system.file("extdata/geomatrix.tif", package="gdalraster")
+  ds <- new(GDALRaster, gray_file)
+  r1 <- ds$readToNativeRaster(0, 0, 10, 12, 20, 24)
+  r1_1 <- read_to_nativeRaster(ds, xsize = 10, ysize = 12, out_xsize = 20, out_ysize =  24)
+  expect_true(identical(r1, r1_1))
+  
+  expect_true(all(dim(r1) == c(24, 20)))
+  expect_s3_class(r1, "nativeRaster")
+  expect_true(attr(r1, "channels") == 3)
+  r2 <- ds$readToNativeRaster(0, 0, ds$getRasterXSize(), ds$getRasterYSize(), ds$getRasterXSize(), ds$getRasterYSize())
+  r2_2 <- read_to_nativeRaster(ds)
+  expect_true(identical(r2, r2_2))
+  
+  expect_true(unique(dim(r2)) == 20)
+  expect_s3_class(r2, "nativeRaster")
+  expect_true(attr(r2, "channels") == 3)
+  
+  ds$close()
+
+  ## we are >= 3.1.0 so we can assume vrt://...?bands=
+  ds <- new(GDALRaster, sprintf("vrt://%s?bands=1,1,1", gray_file))
+  r3 <- ds$readToNativeRaster(0, 0, 20, 20, 20, 20)
+  expect_true(attr(r3, "channels") == 3)  
+  r4 <- read_to_nativeRaster(ds)
+  expect_true(attr(r4, "channels") == 3)  
+  ds$close()
+})
