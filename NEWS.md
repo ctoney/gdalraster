@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9061 (dev)
+# gdalraster 2.4.0.9062 (dev)
+
+* fix `read_ds()`: the argument `as_wkb` and dataset property `readByteAsRaw` were not synchronized (#873, thanks to @mdsumner) (2026-01-21)
 
 * add `GDALVector::isReadOnly()` (2026-01-20)
 
