@@ -1,10 +1,10 @@
 Package: gdalraster
 Title: Bindings to 'GDAL'
-Version: 2.4.0.9061
+Version: 2.4.0.9062
 Authors@R: c(
     person("Chris", "Toney", email = "jctoney@gmail.com",
             role = c("aut", "cre"), comment = c(ORCID = "0000-0001-5734-6510")),
-    person("Michael D.","Sumner", role = c("ctb")),
+    person("Michael D.","Sumner", role = c("ctb"), comment = c(ORCID = "0000-0002-2471-7511")),
     person("Frank", "Warmerdam",
             role = c("ctb", "cph"), comment = "GDAL API documentation; src/progress_r.cpp from gdal/port/cpl_progress.cpp"),
     person("Even", "Rouault",
