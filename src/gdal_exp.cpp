@@ -3805,3 +3805,31 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
 
 #endif
 }
+
+
+// [[Rcpp::export(name = ".gt_from_dim_bbox")]]
+Rcpp::NumericVector gt_from_dim_bbox_(const Rcpp::NumericVector &dim, 
+                                      const Rcpp::NumericVector &bbox) {
+  if (bbox[2] <= bbox[0])
+    Rcpp::stop("invalid bbox: xmax must be greater than xmin");
+  if (bbox[3] <= bbox[1])
+    Rcpp::stop("invalid bbox: ymax must be greater than ymin");
+  
+  if (dim[0] < 1)
+    Rcpp::stop("invalid dim (ncol,nrow): xsize (ncol) must be greater than 0");
+  if (dim[1] < 1)
+    Rcpp::stop("invalid dim (ncol,nrow): ysize (nrow) must be greater than 0");
+  
+  // bbox: xmin, ymin, xmax, ymax
+  // dim: ncol, nrow 
+  Rcpp::NumericVector gt(6);
+  gt[0] = bbox[0];                              // xmin
+  gt[1] = (bbox[2] - bbox[0]) / dim[0];         // pixel width
+  gt[2] = 0.0;                                  // no rotation
+  gt[3] = bbox[3];                              // ymax (north-up)
+  gt[4] = 0.0;                                  // no rotation
+  gt[5] = (bbox[1] - bbox[3]) / dim[1];         // pixel height (negative)
+  return gt;
+}
+
+

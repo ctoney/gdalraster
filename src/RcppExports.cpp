@@ -802,6 +802,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// gt_from_dim_bbox_
+Rcpp::NumericVector gt_from_dim_bbox_(const Rcpp::NumericVector& dim, const Rcpp::NumericVector& bbox);
+RcppExport SEXP _gdalraster_gt_from_dim_bbox_(SEXP dimSEXP, SEXP bboxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type dim(dimSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type bbox(bboxSEXP);
+    rcpp_result_gen = Rcpp::wrap(gt_from_dim_bbox_(dim, bbox));
+    return rcpp_result_gen;
+END_RCPP
+}
 // mdim_info
 std::string mdim_info(const Rcpp::CharacterVector& dsn, const std::string& array_name, bool pretty, bool detailed, int limit, bool stats, const Rcpp::Nullable<Rcpp::CharacterVector>& array_options, const Rcpp::Nullable<Rcpp::CharacterVector>& allowed_drivers, const Rcpp::Nullable<Rcpp::CharacterVector>& open_options, bool cout);
 RcppExport SEXP _gdalraster_mdim_info(SEXP dsnSEXP, SEXP array_nameSEXP, SEXP prettySEXP, SEXP detailedSEXP, SEXP limitSEXP, SEXP statsSEXP, SEXP array_optionsSEXP, SEXP allowed_driversSEXP, SEXP open_optionsSEXP, SEXP coutSEXP) {
@@ -2607,6 +2619,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_validateCreationOptions", (DL_FUNC) &_gdalraster_validateCreationOptions, 2},
     {"_gdalraster_gdal_get_driver_md", (DL_FUNC) &_gdalraster_gdal_get_driver_md, 2},
     {"_gdalraster_addFileInZip", (DL_FUNC) &_gdalraster_addFileInZip, 6},
+    {"_gdalraster_gt_from_dim_bbox_", (DL_FUNC) &_gdalraster_gt_from_dim_bbox_, 2},
     {"_gdalraster_mdim_info", (DL_FUNC) &_gdalraster_mdim_info, 10},
     {"_gdalraster_mdim_translate", (DL_FUNC) &_gdalraster_mdim_translate, 12},
     {"_gdalraster_vsi_copy_file", (DL_FUNC) &_gdalraster_vsi_copy_file, 3},
