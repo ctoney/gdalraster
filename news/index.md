@@ -1,6 +1,22 @@
 # Changelog
 
-## gdalraster 2.4.0.9063 (dev)
+## gdalraster 2.4.0.9065 (dev)
+
+- add
+  [`gt_from_dim_bbox()`](https://firelab.github.io/gdalraster/reference/gt_from_dim_bbox.md)
+  and
+  [`bbox_from_dim_gt()`](https://firelab.github.io/gdalraster/reference/bbox_from_dim_gt.md):
+  standalone functions for converting between geotransform coefficients
+  and bounding boxes. Also a new class method `GDALRaster$setBbox()` as
+  a convenience wrapper for setting geotransform from a bounding box.
+  ([\#878](https://github.com/firelab/gdalraster/issues/878), thanks to
+  [@mdsumner](https://github.com/mdsumner)) (2026-01-23)
+
+- fix test for
+  [`identifyDriver()`](https://firelab.github.io/gdalraster/reference/identifyDriver.md)
+  conditional on PostGISRaster / PostgreSQL driver presence
+  ([\#880](https://github.com/firelab/gdalraster/issues/880))
+  (2026-01-23)
 
 - add
   [`read_to_nativeRaster()`](https://firelab.github.io/gdalraster/reference/read_to_nativeRaster.md):
