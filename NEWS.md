@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9063 (dev)
+# gdalraster 2.4.0.9064 (dev)
+
+* fix test for `identifyDriver()` conditional on PostGISRaster / PostgreSQL driver presence (#880) (2026-01-23)
 
 * add `read_to_nativeRaster()`: reads raster data directly as a `nativeRaster` object for fast rendering. Supports datasets with 1, 3, or 4 bands of Byte data type. Grayscale (1-band) data is replicated across RGB channels. Also available as class method `GDALRaster$readToNativeRaster()`. (#875, thanks to @mdsumner) (2026-01-22)
 
