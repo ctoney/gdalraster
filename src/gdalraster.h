@@ -69,6 +69,7 @@ class GDALRaster {
     double getRasterYSize() const;
     Rcpp::NumericVector getGeoTransform() const;
     bool setGeoTransform(const Rcpp::NumericVector &transform);
+    bool setBbox(const Rcpp::NumericVector &bbox);
     int getRasterCount() const;
     bool addBand(const std::string &dataType,
                  const Rcpp::Nullable<Rcpp::CharacterVector> &options);
@@ -292,6 +293,9 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject &xy,
 Rcpp::NumericVector bbox_grid_to_geo_(const Rcpp::NumericVector &gt,
                                       double grid_xmin, double grid_xmax,
                                       double grid_ymin, double grid_ymax);
+
+Rcpp::NumericVector gt_from_dim_bbox_(const Rcpp::NumericVector &dim, 
+                                      const Rcpp::NumericVector &bbox); 
 
 Rcpp::NumericMatrix make_chunk_index_(int raster_xsize, int raster_ysize,
                                       int block_xsize, int block_ysize,

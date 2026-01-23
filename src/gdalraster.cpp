@@ -500,7 +500,14 @@ bool GDALRaster::setGeoTransform(const Rcpp::NumericVector &transform) {
         return true;
     }
 }
-
+bool GDALRaster::setBbox(const Rcpp::NumericVector &bbox) {
+  checkAccess_(GA_Update);
+  if (bbox.size() != 4)
+    Rcpp::stop("setBbox() requires a numeric vector of length 4");
+  
+  Rcpp::NumericVector dim = {getRasterXSize(), getRasterYSize()};
+  return setGeoTransform(gt_from_dim_bbox_(dim, bbox));
+}
 int GDALRaster::getRasterCount() const {
     checkAccess_(GA_ReadOnly);
 
@@ -2891,6 +2898,8 @@ RCPP_MODULE(mod_GDALRaster) {
         "Return the affine transformation coefficients")
     .method("setGeoTransform", &GDALRaster::setGeoTransform,
         "Set the affine transformation coefficients for this dataset")
+    .method("setBbox", &GDALRaster::setBbox,
+        "Set the bounding box (xmin,ymin,xmax,ymax) for this dataset")
     .const_method("getRasterCount", &GDALRaster::getRasterCount,
         "Return the number of raster bands on this dataset")
     .method("addBand", &GDALRaster::addBand,

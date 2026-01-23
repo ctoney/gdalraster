@@ -84,6 +84,8 @@ reference:
   - get_pixel_line
   - inv_geotransform
   - pixel_extract
+  - bbox_from_dim_gt
+  - gt_from_dim_bbox
 - subtitle: Coordinate transformation
 - contents:
   - inv_project

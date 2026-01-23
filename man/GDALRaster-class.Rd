@@ -120,6 +120,7 @@ ds$setProjection(projection)
 ds$bbox()
 ds$res()
 ds$dim()
+ds$setBbox(bbox)
 
 ds$apply_geotransform(col_row)
 ds$get_pixel_line(xy)
@@ -367,6 +368,12 @@ format string. Equivalent to \code{ds$getProjectionRef()}.
 \code{$bbox()}\cr
 Returns a numeric vector of length four containing the bounding box
 (xmin, ymin, xmax, ymax).
+
+\code{$setBbox(bbox)}\cr
+Sets the bounding box on this dataset.
+\code{bbox} is a numeric vector of length four.
+Returns logical \code{TRUE} on success or \code{FALSE} if the bbox
+could not be set.
 
 \code{$res()}\cr
 Returns a numeric vector of length two containing the resolution

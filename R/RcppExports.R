@@ -1506,6 +1506,10 @@ gdal_get_driver_md <- function(format, mdi_name = "") {
     .Call(`_gdalraster_addFileInZip`, zip_filename, overwrite, archive_filename, in_filename, options, quiet)
 }
 
+.gt_from_dim_bbox <- function(dim, bbox) {
+    .Call(`_gdalraster_gt_from_dim_bbox_`, dim, bbox)
+}
+
 #' Report structure and content of a multidimensional dataset
 #'
 #' `mdim_info()` is an interface to the \command{gdalmdiminfo} command-line
