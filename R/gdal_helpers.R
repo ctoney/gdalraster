@@ -800,7 +800,7 @@ inspectDataset <- function(filename, ...) {
 #'
 #' tail(blocks)
 #'
-#' ## chunk as 16 consectutive blocks
+#' ## chunk as 16 consecutive blocks
 #' chunks <- make_chunk_index(raster_xsize = 156335, raster_ysize = 101538,
 #'                            block_xsize = 256, block_ysize = 256,
 #'                            gt = c(-2362395, 30, 0, 3267405, 0, -30),
@@ -819,4 +819,39 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
 
     return(.make_chunk_index(raster_xsize, raster_ysize, block_xsize,
                              block_ysize, gt, max_pixels))
+}
+
+
+#' @export
+.index_pts_to_chunks <- function(pts, chunk_index) {
+
+    if (!is.numeric(chunk_index))
+        stop("'chunk_index' must be a numeric matrix", call. = FALSE)
+    if (is.vector(chunk_index) && length(chunk_index) == 10)
+        dim(chunk_index) <- c(1, 10)
+    if (!is.matrix(chunk_index))
+        stop("'chunk_index' must be a numeric matrix", call. = FALSE)
+    if (ncol(chunk_index) != 10)
+        stop("'chunk_index' must have 10 columns", call. = FALSE)
+    if (is.null(colnames(chunk_index))) {
+        colnames(chunk_index) <- c("xchunkoff", "ychunkoff", "xoff", "yoff",
+                                   "xsize", "ysize", "xmin", "xmax", "ymin",
+                                   "ymax")
+    }
+
+    pts_wkb <- g_create("POINT", pts)
+
+    idx_out <- numeric(length(pts_wkb))
+    for (i in seq_len(nrow(chunk_index))) {
+        v <- c(chunk_index[i, "xmin"], chunk_index[i, "ymin"],
+               chunk_index[i, "xmax"], chunk_index[i, "ymin"],
+               chunk_index[i, "xmax"], chunk_index[i, "ymax"],
+               chunk_index[i, "xmin"], chunk_index[i, "ymax"],
+               chunk_index[i, "xmin"], chunk_index[i, "ymin"])
+        poly <- g_create("POLYGON", matrix(v, 5, 2, byrow = TRUE))
+        intersects <- g_intersects(poly, pts_wkb)
+        idx_out[intersects] <- i
+    }
+
+    return(idx_out)
 }
