@@ -1479,54 +1479,153 @@ Rcpp::NumericVector g_envelope(const Rcpp::RObject &geom, bool as_3d = false,
 
 //' @noRd
 // [[Rcpp::export(name = ".g_intersects")]]
-Rcpp::LogicalVector g_intersects(const Rcpp::RObject &this_geom,
-                                 const Rcpp::RObject &other_geom,
+Rcpp::LogicalVector g_intersects(const Rcpp::List &this_geom,
+                                 const Rcpp::List &other_geom,
                                  bool quiet = false) {
-// Determines whether two geometries intersect. If GEOS is enabled, then this
-// is done in rigorous fashion otherwise TRUE is returned if the envelopes
-// (bounding boxes) of the two geometries overlap.
+// Determines whether two geometries intersect.
 
-    if (this_geom.isNULL() || !Rcpp::is<Rcpp::RawVector>(this_geom))
-        return Rcpp::LogicalVector::create(NA_LOGICAL);
+// *** This function operates on lists of WKB input geometries ***
+// Done in batch mode if this_geom size is 1 and other_geom size is > 1
 
-    const Rcpp::RawVector this_geom_in(this_geom);
-    if (this_geom_in.size() == 0)
-        return Rcpp::LogicalVector::create(NA_LOGICAL);
+    bool batch_mode = false;
+    if (this_geom.size() == 0 || other_geom.size() == 0)
+        Rcpp::stop("one or more inputs is an empty list");
+    if (this_geom.size() == 1 && other_geom.size() > 1)
+        batch_mode = true;
+    else if (this_geom.size() != other_geom.size())
+        Rcpp::stop("input lists do not have compatible lengths");
 
-    OGRGeometryH hGeom_this = createGeomFromWkb_(this_geom_in);
-    if (hGeom_this == nullptr) {
-        if (!quiet) {
-            Rcpp::warning(
-                "failed to create geometry object from WKB, NA returned");
+    OGRGeometryH hGeom_this = nullptr;
+    bool prepared_geom_support = false;
+
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 3, 0)
+    OGRPreparedGeometryH hPreparedGeom_this = nullptr;
+    prepared_geom_support = CPL_TO_BOOL(OGRHasPreparedGeometrySupport());
+#endif
+
+    if (batch_mode) {
+        if (!Rcpp::is<Rcpp::RawVector>(this_geom[0]))
+            Rcpp::stop("'this_geom' does not contain a WKB raw vector");
+
+        const Rcpp::RawVector this_geom_in = this_geom[0];
+        if (this_geom_in.size() == 0)
+            Rcpp::stop("'this_geom' contains an empty WKB vector");
+
+        hGeom_this = createGeomFromWkb_(this_geom_in);
+        if (!hGeom_this)
+            Rcpp::stop("failed to create 'this_geom' from WKB");
+
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 3, 0)
+        if (prepared_geom_support) {
+            hPreparedGeom_this = OGRCreatePreparedGeometry(hGeom_this);
+            if (!hPreparedGeom_this) {
+                prepared_geom_support = false;
+            }
+            else {
+                OGR_G_DestroyGeometry(hGeom_this);
+                hGeom_this = nullptr;
+            }
         }
-        return Rcpp::LogicalVector::create(NA_LOGICAL);
+#endif
     }
 
-    if (other_geom.isNULL() || !Rcpp::is<Rcpp::RawVector>(other_geom)) {
-        OGR_G_DestroyGeometry(hGeom_this);
-        return Rcpp::LogicalVector::create(NA_LOGICAL);
-    }
+    R_xlen_t nGeom = other_geom.size();
+    Rcpp::LogicalVector out = Rcpp::no_init(nGeom);
 
-    const Rcpp::RawVector other_geom_in(other_geom);
-    if (other_geom_in.size() == 0) {
-        OGR_G_DestroyGeometry(hGeom_this);
-        return Rcpp::LogicalVector::create(NA_LOGICAL);
-    }
+    for (R_xlen_t i = 0; i < nGeom; ++i) {
+        if (!batch_mode) {
+            if (!Rcpp::is<Rcpp::RawVector>(this_geom[i])) {
+                if (!quiet) {
+                    Rcpp::warning(
+                        "input 'this_geom' is not a raw vector, NA returned");
+                }
+                out[i] = NA_LOGICAL;
+                continue;
+            }
 
-    OGRGeometryH hGeom_other = createGeomFromWkb_(other_geom_in);
-    if (hGeom_other == nullptr) {
-        OGR_G_DestroyGeometry(hGeom_this);
-        if (!quiet) {
-            Rcpp::warning(
-                "failed to create geometry object from WKB, NA returned");
+            const Rcpp::RawVector this_geom_in = this_geom[i];
+            if (this_geom_in.size() == 0) {
+                if (!quiet)
+                    Rcpp::warning("input 'this_geom' is empty, NA returned");
+                out[i] = NA_LOGICAL;
+                continue;
+            }
+
+            hGeom_this = createGeomFromWkb_(this_geom_in);
+            if (!hGeom_this) {
+                if (!quiet)
+                    Rcpp::warning("failed to create geom object, NA returned");
+                out[i] = NA_LOGICAL;
+                continue;
+            }
         }
-        return Rcpp::LogicalVector::create(NA_LOGICAL);
+
+        if (!Rcpp::is<Rcpp::RawVector>(other_geom[i])) {
+            if (!quiet) {
+                Rcpp::warning(
+                    "input 'other_geom' is not a raw vector, NA returned");
+            }
+            out[i] = NA_LOGICAL;
+            continue;
+        }
+
+        const Rcpp::RawVector other_geom_in = other_geom[i];
+        if (other_geom_in.size() == 0) {
+            if (!quiet)
+                Rcpp::warning("an input 'other_geom' is empty, NA returned");
+            out[i] = NA_LOGICAL;
+            if (!batch_mode) {
+                OGR_G_DestroyGeometry(hGeom_this);
+                hGeom_this = nullptr;
+            }
+            continue;
+        }
+
+        OGRGeometryH hGeom_other = createGeomFromWkb_(other_geom_in);
+        if (!hGeom_other) {
+            if (!quiet)
+                Rcpp::warning("failed to create geom object, NA returned");
+            out[i] = NA_LOGICAL;
+            if (!batch_mode) {
+                OGR_G_DestroyGeometry(hGeom_this);
+                hGeom_this = nullptr;
+            }
+            continue;
+        }
+
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 3, 0)
+        if (batch_mode && prepared_geom_support) {
+            out[i] =
+                OGRPreparedGeometryIntersects(hPreparedGeom_this, hGeom_other);
+            OGR_G_DestroyGeometry(hGeom_other);
+            hGeom_other = nullptr;
+            continue;
+        }
+#endif
+
+        out[i] = OGR_G_Intersects(hGeom_this, hGeom_other);
+        OGR_G_DestroyGeometry(hGeom_other);
+        hGeom_other = nullptr;
+        if (!batch_mode) {
+            OGR_G_DestroyGeometry(hGeom_this);
+            hGeom_this = nullptr;
+        }
     }
 
-    bool ret = OGR_G_Intersects(hGeom_this, hGeom_other);
-    OGR_G_DestroyGeometry(hGeom_other);
-    OGR_G_DestroyGeometry(hGeom_this);
-    return ret;
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 3, 0)
+    if (batch_mode) {
+        if (prepared_geom_support)
+            OGRDestroyPreparedGeometry(hPreparedGeom_this);
+        else
+            OGR_G_DestroyGeometry(hGeom_this);
+    }
+#else
+    if (batch_mode) {
+        OGR_G_DestroyGeometry(hGeom_this);
+    }
+#endif
+
+    return out;
 }
 
 //' @noRd

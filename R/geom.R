@@ -1545,6 +1545,7 @@ g_envelope <- function(geom, as_3d = FALSE, quiet = FALSE) {
 g_intersects <- function(this_geom, other_geom, quiet = FALSE) {
     if (is.character(this_geom))
         this_geom <- g_wk2wk(this_geom)
+
     if (!(.is_raw_or_null(this_geom) || (is.list(this_geom) &&
                                          .is_raw_or_null(this_geom[[1]])))) {
 
@@ -1554,6 +1555,7 @@ g_intersects <- function(this_geom, other_geom, quiet = FALSE) {
 
     if (is.character(other_geom))
         other_geom <- g_wk2wk(other_geom)
+
     if (!(.is_raw_or_null(other_geom) || (is.list(other_geom) &&
                                           .is_raw_or_null(other_geom[[1]])))) {
 
@@ -1566,42 +1568,13 @@ g_intersects <- function(this_geom, other_geom, quiet = FALSE) {
     if (!is.logical(quiet) || length(quiet) > 1)
         stop("'quiet' must be a single logical value", call. = FALSE)
 
-    if (is.list(this_geom) && length(this_geom) == 1)
-        this_geom <- this_geom[[1]]
-    if (is.list(other_geom) && length(other_geom) == 1)
-        other_geom <- other_geom[[1]]
+    if (!is.list(this_geom))
+        this_geom <- list(this_geom)
 
-    ret <- NULL
-    one_to_many <- FALSE
-    if (.is_raw_or_null(this_geom) && .is_raw_or_null(other_geom)) {
-        ret <- .g_intersects(this_geom, other_geom, quiet)
-    } else if ((.is_raw_or_null(this_geom) || is.list(this_geom)) &&
-               is.list(other_geom)) {
+    if (!is.list(other_geom))
+        other_geom <- list(other_geom)
 
-        if (.is_raw_or_null(this_geom) && is.list(other_geom)) {
-            one_to_many <- TRUE
-
-        } else if (is.list(this_geom) &&
-                   length(this_geom) != length(other_geom)) {
-
-            stop("many-to-many input must contain equal numbers of geometries",
-                 call. = FALSE)
-        }
-
-        ret <- rep(NA, length(other_geom))
-        for (i in seq_along(other_geom)) {
-            if (one_to_many)
-                ret[i] <- .g_intersects(this_geom, other_geom[[i]], quiet)
-            else
-                ret[i] <- .g_intersects(this_geom[[i]], other_geom[[i]], quiet)
-        }
-
-    } else {
-        stop("inputs must contain equal number of geometries, or one-to-many",
-             call. = FALSE)
-    }
-
-    return(ret)
+    return(.g_intersects(this_geom, other_geom, quiet))
 }
 
 #' @name g_binary_pred
