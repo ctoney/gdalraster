@@ -79,17 +79,17 @@ test_that("geom functions work on wkb/wkt geometries", {
     # vector of WKT
     expected_value <- c(TRUE, FALSE, NA)
     expect_warning(
-        expect_equal(g_intersects(wkt_vec_1, wkt_vec_2), expected_value)
+        expect_equal(g_intersects(wkt_vec_1, wkt_vec_2, TRUE), expected_value)
     )
     # WKB
     expect_true(g_intersects(bb_wkb, pt_wkb))
     # list of WKB
     expect_true(g_intersects(list(bb_wkb), list(pt_wkb)))
-    expect_equal(g_intersects(wkb_list_1, wkb_list_2), expected_value)
+    expect_equal(g_intersects(wkb_list_1, wkb_list_2, TRUE), expected_value)
     # unequal length
     expect_error(g_intersects(wkb_list_1, wkb_list_2[1:2]))
     # one-to-many
-    expect_equal(g_intersects(pt, wkb_list_1), expected_value)
+    expect_equal(g_intersects(pt, wkb_list_1,TRUE), expected_value)
 
     # WKT
     expect_false(g_equals(bb, bnd))
@@ -996,8 +996,8 @@ test_that("geometry binary predicates/ops return correct values", {
     expect_false(g_overlaps(bb, bnd))
 
     # test NA return if either input is an empty raw vector
-    expect_true(is.na(g_intersects(raw(0), bnd_overlaps)))
-    expect_true(is.na(g_intersects(bb, raw(0))))
+    expect_true(is.na(g_intersects(raw(0), bnd_overlaps, quiet = TRUE)))
+    expect_true(is.na(g_intersects(bb, raw(0), quiet = TRUE)))
     expect_true(is.na(g_equals(raw(0), bnd_overlaps)))
     expect_true(is.na(g_equals(bb, raw(0))))
     expect_true(is.na(g_disjoint(raw(0), bnd_overlaps)))

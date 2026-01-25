@@ -80,8 +80,8 @@ Rcpp::String g_summary(const Rcpp::RObject &geom, bool quiet);
 Rcpp::NumericVector g_envelope(const Rcpp::RObject &geom, bool as_3d,
                                bool quiet);
 
-Rcpp::LogicalVector g_intersects(const Rcpp::RObject &this_geom,
-                                 const Rcpp::RObject &other_geom,
+Rcpp::LogicalVector g_intersects(const Rcpp::List &this_geom,
+                                 const Rcpp::List &other_geom,
                                  bool quiet);
 
 Rcpp::LogicalVector g_equals(const Rcpp::RObject &this_geom,

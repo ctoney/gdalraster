@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9070 (dev)
+# gdalraster 2.4.0.9071 (dev)
+
+* `g_intersects()`: performance improvements and use prepared geometry in 1:many batch mode (2026-01-24)
 
 * add `gt_from_dim_bbox()` and `bbox_from_dim_gt()`:  standalone functions for converting between geotransform coefficients and bounding boxes. Also a new class method `GDALRaster$setBbox()` as a convenience wrapper for setting geotransform from a bounding box. (#878, thanks to @mdsumner) (2026-01-23)
 

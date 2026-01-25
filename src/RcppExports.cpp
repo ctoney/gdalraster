@@ -1508,13 +1508,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // g_intersects
-Rcpp::LogicalVector g_intersects(const Rcpp::RObject& this_geom, const Rcpp::RObject& other_geom, bool quiet);
+Rcpp::LogicalVector g_intersects(const Rcpp::List& this_geom, const Rcpp::List& other_geom, bool quiet);
 RcppExport SEXP _gdalraster_g_intersects(SEXP this_geomSEXP, SEXP other_geomSEXP, SEXP quietSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type this_geom(this_geomSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type other_geom(other_geomSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type this_geom(this_geomSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type other_geom(other_geomSEXP);
     Rcpp::traits::input_parameter< bool >::type quiet(quietSEXP);
     rcpp_result_gen = Rcpp::wrap(g_intersects(this_geom, other_geom, quiet));
     return rcpp_result_gen;
