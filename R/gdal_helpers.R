@@ -822,6 +822,7 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
 }
 
 
+#' @noRd
 #' @export
 .index_pts_to_chunks <- function(pts, chunk_index) {
 
@@ -833,25 +834,26 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
         stop("'chunk_index' must be a numeric matrix", call. = FALSE)
     if (ncol(chunk_index) != 10)
         stop("'chunk_index' must have 10 columns", call. = FALSE)
-    if (is.null(colnames(chunk_index))) {
-        colnames(chunk_index) <- c("xchunkoff", "ychunkoff", "xoff", "yoff",
-                                   "xsize", "ysize", "xmin", "xmax", "ymin",
-                                   "ymax")
+
+    xchunkoff <- rep_len(NA_integer_, nrow(pts))
+    x_chunk_index <- unique(chunk_index[, c(1, 7, 8)])
+    for (i in seq_len(nrow(x_chunk_index))) {
+        xchunkoff[pts[, 1] >= x_chunk_index[i, 2] &
+                  pts[, 1] <= x_chunk_index[i, 3]] <- x_chunk_index[i, 1]
     }
 
-    pts_wkb <- g_create("POINT", pts)
-
-    idx_out <- numeric(length(pts_wkb))
-    for (i in seq_len(nrow(chunk_index))) {
-        v <- c(chunk_index[i, "xmin"], chunk_index[i, "ymin"],
-               chunk_index[i, "xmax"], chunk_index[i, "ymin"],
-               chunk_index[i, "xmax"], chunk_index[i, "ymax"],
-               chunk_index[i, "xmin"], chunk_index[i, "ymax"],
-               chunk_index[i, "xmin"], chunk_index[i, "ymin"])
-        poly <- g_create("POLYGON", matrix(v, 5, 2, byrow = TRUE))
-        intersects <- g_intersects(poly, pts_wkb)
-        idx_out[intersects] <- i
+    ychunkoff <- rep_len(NA_integer_, nrow(pts))
+    y_chunk_index <- unique(chunk_index[, c(2, 9, 10)])
+    for (i in seq_len(nrow(y_chunk_index))) {
+        ychunkoff[pts[, 2] >= y_chunk_index[i, 2] &
+                  pts[, 2] <= y_chunk_index[i, 3]] <- y_chunk_index[i, 1]
     }
 
-    return(idx_out)
+    if (is.null(colnames(pts)))
+        colnames(pts) <- c("ptx", "pty")
+
+    pts_idx <- cbind(pts, cbind(xchunkoff, ychunkoff))
+    colnames(pts_idx) <- c(colnames(pts), "xchunkoff", "ychunkoff")
+
+    return(pts_idx)
 }
