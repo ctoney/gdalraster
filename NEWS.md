@@ -1,4 +1,4 @@
-# gdalraster 2.4.0.9072 (dev)
+# gdalraster 2.4.0.9073 (dev)
 
 * class `VSIFile`: fix crash when using file open options due to incorrectly sized buffer, and add const correctness (#883, thanks to @pepijn-devries) (2026-01-27)
 
