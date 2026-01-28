@@ -37,10 +37,10 @@
 class VSIFile {
  public:
     VSIFile();
-    explicit VSIFile(Rcpp::CharacterVector filename);
-    VSIFile(Rcpp::CharacterVector filename, std::string access);
-    VSIFile(Rcpp::CharacterVector filename, std::string access,
-            Rcpp::CharacterVector options);
+    explicit VSIFile(const Rcpp::CharacterVector &filename);
+    VSIFile(const Rcpp::CharacterVector &filename, const std::string &access);
+    VSIFile(const Rcpp::CharacterVector &filename, const std::string &access,
+            const Rcpp::CharacterVector &options);
     ~VSIFile();
 
     void open();

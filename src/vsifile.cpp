@@ -26,15 +26,17 @@ VSIFile::VSIFile()
         : m_filename(""), m_access("r"),
           m_options(Rcpp::CharacterVector::create()), m_fp(nullptr) {}
 
-VSIFile::VSIFile(Rcpp::CharacterVector filename)
+VSIFile::VSIFile(const Rcpp::CharacterVector &filename)
         : VSIFile(filename, "r", Rcpp::CharacterVector::create()) {}
 
-VSIFile::VSIFile(Rcpp::CharacterVector filename, std::string access)
+VSIFile::VSIFile(const Rcpp::CharacterVector &filename,
+                 const std::string &access)
         : VSIFile(filename, access, Rcpp::CharacterVector::create()) {}
 
-VSIFile::VSIFile(Rcpp::CharacterVector filename, std::string access,
-                 Rcpp::CharacterVector options)
-        : m_fp(nullptr) {
+VSIFile::VSIFile(const Rcpp::CharacterVector &filename,
+                 const std::string &access,
+                 const Rcpp::CharacterVector &options)
+        : m_options(options), m_fp(nullptr) {
 
     m_filename = Rcpp::as<std::string>(check_gdal_filename(filename));
     if (access.length() > 0 && access.length() < 4)
@@ -42,7 +44,6 @@ VSIFile::VSIFile(Rcpp::CharacterVector filename, std::string access,
     else
         Rcpp::stop("'access' should be 'r', 'r+', 'w' or 'w+'");
 
-    m_options = options;
     open();
 }
 
@@ -59,11 +60,12 @@ void VSIFile::open() {
         if (gdal_version_num() < 3030000)
             Rcpp::stop("'options' parameter requires GDAL >= 3.3");
 
-        std::vector<const char *> opt_list(m_options.size());
+        std::vector<const char*> opt_list;
         for (R_xlen_t i = 0; i < m_options.size(); ++i) {
-            opt_list[i] = (const char *) (m_options[i]);
+            Rcpp::String s(m_options[i]);
+            opt_list.push_back(s.get_cstring());
         }
-        opt_list[m_options.size()] = nullptr;
+        opt_list.push_back(nullptr);
 
         m_fp = VSIFOpenEx2L(m_filename.c_str(), m_access.c_str(), TRUE,
                             opt_list.data());
