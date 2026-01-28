@@ -1,7 +1,6 @@
-test_that("VSIFile works", {
+test_that("VSIFile constructors work", {
     lcp_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
 
-    ## Constructors
     # default constructor, no file
     expect_no_error(vf <- new(VSIFile))
     expect_true(is(vf, "Rcpp_VSIFile"))
@@ -40,9 +39,21 @@ test_that("VSIFile works", {
     # url <- paste0(url, "lf_elev_220_mt_hood_utm.tif")
     # expect_error(vf <- new(VSIFile, url, "r", "INAVLID_OPTION=YES"))
 
-    ## Methods
+    # at least test that passing options does not crash to avoid the issue in:
+    # https://github.com/firelab/gdalraster/issues/883
 
-    # function to identify LCP file
+    skip_if(gdal_version_num() < gdal_compute_version(3, 10, 0))
+    skip_on_cran()
+
+    f_invalid <- "/vsis3/eodata/Sentinel-1/_invalid-file-name_.tif"
+    opt <- c("DISABLE_READDIR_ON_OPEN=YES", "CACHE=NO")
+    expect_error(vf <- new(VSIFile, f_invalid, "r", opt))
+})
+
+test_that("VSIFile methods work", {
+    lcp_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
+
+    # function to identify an LCP file
     is_lcp <- function(bytes) {
         values <- readBin(bytes, "integer", 3)
         if ((values[1] == 20 || values[1] == 21) &&
