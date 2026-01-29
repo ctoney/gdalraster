@@ -1,6 +1,6 @@
 Package: gdalraster
 Title: Bindings to 'GDAL'
-Version: 2.4.0.9073
+Version: 2.4.0.9074
 Authors@R: c(
     person("Chris", "Toney", email = "jctoney@gmail.com",
             role = c("aut", "cre"), comment = c(ORCID = "0000-0001-5734-6510")),
@@ -68,7 +68,8 @@ Suggests:
     knitr,
     rmarkdown,
     scales,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    vctrs (>= 0.3.0)
 NeedsCompilation: yes
 SystemRequirements: C++17, GDAL (>= 3.1.0, built against GEOS)
 Encoding: UTF-8

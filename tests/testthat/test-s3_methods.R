@@ -1,4 +1,9 @@
 test_that("plot.OGRFeature / plot.OGRFeatureSet work", {
+    skip_if_not(capabilities("X11"))
+
+    # wk suggested package vctrs is required for wk::wk_plot()
+    skip_if(!requireNamespace("vctrs", quietly = TRUE))
+
     f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
     dsn <- file.path(tempfile(fileext = ".gpkg"))
     file.copy(f, dsn, overwrite = TRUE)

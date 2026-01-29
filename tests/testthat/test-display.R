@@ -1,4 +1,6 @@
 test_that("plot_raster works", {
+    skip_if_not(capabilities("X11"))
+
     # grayscale
     elev_file <- system.file("extdata/storml_elev_orig.tif", package="gdalraster")
     ds <- new(GDALRaster, elev_file)
@@ -61,7 +63,11 @@ test_that("plot_raster works", {
 })
 
 test_that("plot_geom works", {
-    set.seed(1)
+    skip_if_not(capabilities("X11"))
+
+    # wk suggested package vctrs is required for wk::wk_plot()
+    skip_if(!requireNamespace("vctrs", quietly = TRUE))
+
     x <- sample.int(100, 10)
     y <- sample.int(100, 10)
     g <- g_create("MULTIPOINT", cbind(x, y))
