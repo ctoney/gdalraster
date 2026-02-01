@@ -62,7 +62,7 @@ Imports:
     wk,
     xml2,
     yyjsonr
-LinkingTo: nanoarrow, Rcpp, RcppInt64
+LinkingTo: cli, nanoarrow, Rcpp, RcppInt64
 Suggests:
     gt,
     knitr,
