@@ -1,6 +1,6 @@
 #include <Rcpp.h>
 #include <cli/progress.h>
-#include "gdalraster.h"
+#include <cpl_port.h>
 
 static SEXP global_pb = R_NilValue;
 
