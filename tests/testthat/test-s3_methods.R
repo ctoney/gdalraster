@@ -1,5 +1,6 @@
 test_that("plot.OGRFeature / plot.OGRFeatureSet work", {
-    skip_if_not(capabilities("X11"))
+    if (!grepl("^darwin", R.version$os))
+        skip_if_not(capabilities("X11"))
 
     # wk suggested package vctrs is required for wk::wk_plot()
     skip_if(!requireNamespace("vctrs", quietly = TRUE))

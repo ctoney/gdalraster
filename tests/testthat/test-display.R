@@ -1,5 +1,6 @@
 test_that("plot_raster works", {
-    skip_if_not(capabilities("X11"))
+    if (!grepl("^darwin", R.version$os))
+        skip_if_not(capabilities("X11"))
 
     # grayscale
     elev_file <- system.file("extdata/storml_elev_orig.tif", package="gdalraster")
@@ -63,7 +64,8 @@ test_that("plot_raster works", {
 })
 
 test_that("plot_geom works", {
-    skip_if_not(capabilities("X11"))
+    if (!grepl("^darwin", R.version$os))
+        skip_if_not(capabilities("X11"))
 
     # wk suggested package vctrs is required for wk::wk_plot()
     skip_if(!requireNamespace("vctrs", quietly = TRUE))
