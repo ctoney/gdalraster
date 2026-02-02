@@ -128,6 +128,9 @@ print.OGRFeatureSet <- function(x, ...) {
 #' @export
 #' @method plot OGRFeature
 plot.OGRFeature <- function(x, xlab = "x", ylab = "y",  main = "", ...) {
+     if (!requireNamespace("vctrs", quietly = TRUE))
+        cat("wk::wk_plot() requires suggested package 'vctrs'\n")
+
     geom_column <- NULL
     if (length(attr(x, "gis")$geom_column) == 0)
         stop("no geometry column")
@@ -171,6 +174,9 @@ plot.OGRFeature <- function(x, xlab = "x", ylab = "y",  main = "", ...) {
 #' @export
 #' @method plot OGRFeatureSet
 plot.OGRFeatureSet <- function(x, xlab = "x", ylab = "y", main = "", ...) {
+     if (!requireNamespace("vctrs", quietly = TRUE))
+        cat("wk::wk_plot() requires suggested package 'vctrs'\n")
+
     if (length(attr(x, "gis")$geom_column) == 0)
         stop("no geometry column")
     else

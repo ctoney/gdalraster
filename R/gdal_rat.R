@@ -186,9 +186,12 @@
 #' ds$close()
 #' \dontshow{deleteDataset(f)}
 #'
-#' # Display
-#' evt_gt <- displayRAT(tbl2, title = "Storm Lake EVT Raster Attribute Table")
-#' class(evt_gt)  # an object of class "gt_tbl" from package gt
+#' ## Display
+#' # requires suggested package "gt"
+#' if (requireNamespace("gt", quietly = TRUE)) {
+#'   evt_gt <- displayRAT(tbl2, title = "Storm Lake EVT Raster Attribute Table")
+#'   class(evt_gt)  # an object of class "gt_tbl" from package gt
+#' }
 #' # To show the table:
 #' # evt_gt
 #' # or simply call `displayRAT()` as above but without assignment
@@ -326,10 +329,10 @@ buildRAT <- function(raster,
 displayRAT <- function(tbl, title = "Raster Attribute Table") {
 
     if (!requireNamespace("gt", quietly = TRUE))
-        stop("displayRAT() requires package 'gt'", call.=FALSE)
+        stop("displayRAT() requires package 'gt'", call. = FALSE)
 
     if (!is.data.frame(tbl))
-        stop("'tbl' must be a data frame", call.=FALSE)
+        stop("'tbl' must be a data frame", call. = FALSE)
 
     if (is.null(attr(tbl, "GDALRATTableType"))) {
         message("input data frame is missing attribute 'GDALRATTableType'")

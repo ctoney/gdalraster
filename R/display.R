@@ -616,6 +616,9 @@ plot_raster <- function(data, xsize=NULL, ysize=NULL, nbands=NULL,
 #' plot_geom(g2, add = TRUE)
 #' @export
 plot_geom <- function(x, xlab = "x", ylab = "y",  main = "", ...) {
+     if (!requireNamespace("vctrs", quietly = TRUE))
+        cat("wk::wk_plot() requires suggested package 'vctrs'\n")
+
     geom_in <- NULL
     if (is.raw(x)) {
         geom_in <- list(x)

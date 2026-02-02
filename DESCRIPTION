@@ -69,7 +69,8 @@ Suggests:
     knitr,
     rmarkdown,
     scales,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    vctrs (>= 0.3.0)
 NeedsCompilation: yes
 SystemRequirements: C++17, GDAL (>= 3.1.0, built against GEOS)
 Encoding: UTF-8

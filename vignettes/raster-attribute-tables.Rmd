@@ -99,7 +99,7 @@ plot_raster(data = ds,
 
 The function `displayRAT()` generates a nicely formatted table for display. Colors are shown if the RAT contains RGB columns:
 
-```{r}
+```{r, eval = requireNamespace("gt")}
 displayRAT(tbl, title = "Raster Attribute Table for Storm Lake EVT")
 ```
 

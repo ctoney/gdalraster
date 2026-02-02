@@ -2,6 +2,8 @@
 
 * use package **cli** for enhanced progress reporting throughout, adding **cli** in `LinkingTo` (#889, thanks to @pepijn-devries) (2026-02-01)
 
+* add package **vctrs** in Suggests since it is suggested in **wk** but `wk::wk_plot()` requires it, and various conditionals in examples/tests/vignettes for suggested packages (#886) (2026-01-28)
+
 * class `VSIFile`: fix crash when using file open options due to incorrectly sized buffer, and add const correctness (#883, thanks to @pepijn-devries) (2026-01-27)
 
 * `g_intersects()`: performance improvements and use prepared geometry in 1:many batch mode (2026-01-24)

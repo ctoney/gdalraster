@@ -11,14 +11,18 @@ test_that("buildRAT/displayRAT work", {
     expect_equal(attr(rat$VALUE, "GFU"), "MinMax")
     expect_equal(attr(rat$COUNT, "GFU"), "PixelCount")
     expect_equal(sum(rat$COUNT), 15301)
-    tbl <- displayRAT(rat)
-    expect_true(is(tbl, "gt_tbl"))
+    if (requireNamespace("gt", quietly = TRUE)) {
+        tbl <- displayRAT(rat)
+        expect_true(is(tbl, "gt_tbl"))
+    }
 
     # with alpha
     rat$A <- 255
     attr(rat$A, "GFU") <- "Alpha"
-    tbl <- displayRAT(rat)
-    expect_true(is(tbl, "gt_tbl"))
+    if (requireNamespace("gt", quietly = TRUE)) {
+        tbl <- displayRAT(rat)
+        expect_true(is(tbl, "gt_tbl"))
+    }
 
     # pass as an object of class GDALRaster
     rat <- NULL
