@@ -163,27 +163,31 @@ SEXP VSIFile::read(Rcpp::NumericVector nbytes) {
     if (nbytes_in == 0)
         return R_NilValue;
 
-    GByte *buf = static_cast<GByte *>(CPLMalloc(nbytes_in));
+    Rcpp::RawVector raw = Rcpp::no_init(nbytes_in);
     size_t nRead = 0;
-    nRead = VSIFReadL(buf, 1, nbytes_in, m_fp);
+    nRead = VSIFReadL(raw.begin(), 1, nbytes_in, m_fp);
     if (nRead == 0) {
-        VSIFree(buf);
         return R_NilValue;
     }
 
-    Rcpp::RawVector raw = Rcpp::no_init(nRead);
-    std::memcpy(&raw[0], buf, nRead);
-    VSIFree(buf);
-    return raw;
+    if (nRead < nbytes_in) {
+        Rcpp::RawVector raw_resized = Rcpp::no_init(nRead);
+        std::memcpy(raw_resized.begin(), raw.begin(), nRead);
+        return raw_resized;
+    }
+    else {
+        return raw;
+    }
 }
 
-Rcpp::NumericVector VSIFile::write(const Rcpp::RawVector& object) {
+Rcpp::NumericVector VSIFile::write(const Rcpp::RawVector &object) {
     if (m_fp == nullptr)
         Rcpp::stop("the file is not open");
 
     std::vector<int64_t> ret(1);
     ret[0] = static_cast<int64_t>(
-        VSIFWriteL(&object[0], 1, static_cast<size_t>(object.size()), m_fp));
+        VSIFWriteL(
+            object.begin(), 1, static_cast<size_t>(object.size()), m_fp));
 
     return Rcpp::wrap(ret);
 }
@@ -261,7 +265,7 @@ SEXP VSIFile::ingest(Rcpp::NumericVector max_size) {
     }
 
     Rcpp::RawVector raw = Rcpp::no_init(nSize);
-    std::memcpy(&raw[0], paby, nSize);
+    std::memcpy(raw.begin(), paby, nSize);
     VSIFree(paby);
     return raw;
 }
