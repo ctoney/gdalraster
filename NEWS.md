@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9074 (dev)
+# gdalraster 2.4.0.9075 (dev)
+
+* use package **cli** for enhanced progress reporting throughout, adding **cli** in `LinkingTo` (#889, thanks to @pepijn-devries) (2026-02-01)
 
 * add package **vctrs** in Suggests since it is suggested in **wk** but `wk::wk_plot()` requires it, and various conditionals in examples/tests/vignettes for suggested packages (#886) (2026-01-28)
 
