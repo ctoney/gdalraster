@@ -261,7 +261,7 @@ read_ds <- function(ds, bands = NULL, xoff = 0, yoff = 0,
     if (!as_raw && ds$readByteAsRaw && dtype == "Byte") {
       as_raw <- TRUE
     }
-    
+
     if (as_list) {
         r <- list()
     } else {
@@ -1386,25 +1386,22 @@ calc <- function(expr,
             dst_ds$write(b, 0, row, ncols, 1, outrow[, i])
             i <- i + 1L
         }
-        if (!quiet)
-            setTxtProgressBar(pb, row + 1L)
 
         return()
     }
 
     # process by rows
-    if (!quiet) {
-        if (nrasters == 1)
-            message("calculating from 1 input raster...")
-        else
-            message("calculating from ", nrasters, " input rasters...")
-        pb <- txtProgressBar(min = 0, max = nrows)
+    if (!quiet)
+        cli::cli_progress_bar("Calculating", total = nrows)
+
+    for (i in seq.int(0L, (nrows - 1L), 1L)) {
+        process_row(i)
+        if (!quiet)
+            cli::cli_progress_update()
     }
 
-    lapply(seq.int(0L, (nrows - 1L), 1L), process_row)
-
     if (!quiet)
-        close(pb)
+        cli::cli_progress_done()
 
     dst_ds$flushCache()
     if (!quiet)
@@ -2755,12 +2752,12 @@ rasterize <- function(src_dsn,
 #' resolution.
 #'
 #' @details
-#' The dataset must have 1, 3, or 4 bands of Byte data type. For 1-band 
-#' (grayscale) data, the value is replicated across RGB channels. For 3-band 
-#' data, bands are interpreted as RGB. For 4-band data, bands are interpreted 
+#' The dataset must have 1, 3, or 4 bands of Byte data type. For 1-band
+#' (grayscale) data, the value is replicated across RGB channels. For 3-band
+#' data, bands are interpreted as RGB. For 4-band data, bands are interpreted
 #' as RGBA.
 #'
-#' @param ds An object of class `GDALRaster` in open state, with 1, 3, or 4 
+#' @param ds An object of class `GDALRaster` in open state, with 1, 3, or 4
 #' bands of Byte data type.
 #' @param xoff Integer. The pixel (column) offset to the top left corner of the
 #' raster region to be read (zero to start from the left side).
@@ -2779,7 +2776,7 @@ rasterize <- function(src_dsn,
 #' @note
 #' By default, this function will attempt to read the full raster into memory.
 #' It generally should not be called on large raster datasets using the default
-#' argument values. Use `out_xsize` and `out_ysize` for quick setting to smallish values, 
+#' argument values. Use `out_xsize` and `out_ysize` for quick setting to smallish values,
 #' such as 1024.
 #'
 #' @seealso
@@ -2801,7 +2798,7 @@ read_to_nativeRaster <- function(ds, xoff = 0, yoff = 0,
                                  xsize = ds$getRasterXSize(),
                                  ysize = ds$getRasterYSize(),
                                  out_xsize = xsize, out_ysize = ysize) {
-  
+
   if (!is(ds, "Rcpp_GDALRaster")) {
     stop("'ds' must be an object of class GDALRaster", call. = FALSE)
   }
@@ -2819,12 +2816,12 @@ read_to_nativeRaster <- function(ds, xoff = 0, yoff = 0,
   }
   if (is.null(out_xsize) ||
       !(is.numeric(out_xsize) && length(out_xsize) == 1)) {
-    
+
     stop("'out_xsize' must be a numeric value", call. = FALSE)
   }
   if (is.null(out_ysize) ||
       !(is.numeric(out_ysize) && length(out_ysize) == 1)) {
-    
+
     stop("'out_ysize' must be a numeric value", call. = FALSE)
   }
   r <- ds$readToNativeRaster(xoff, yoff, xsize, ysize, out_xsize, out_ysize)
