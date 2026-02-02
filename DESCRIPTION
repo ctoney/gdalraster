@@ -1,6 +1,6 @@
 Package: gdalraster
 Title: Bindings to 'GDAL'
-Version: 2.4.0.9077
+Version: 2.4.0.9078
 Authors@R: c(
     person("Chris", "Toney", email = "jctoney@gmail.com",
             role = c("aut", "cre"), comment = c(ORCID = "0000-0001-5734-6510")),
@@ -52,6 +52,7 @@ BugReports: https://github.com/firelab/gdalraster/issues
 Depends: R (>= 4.2.0)
 Imports:
     bit64,
+    cli,
     graphics,
     grDevices,
     methods,

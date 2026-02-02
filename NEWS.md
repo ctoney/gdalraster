@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9077 (dev)
+# gdalraster 2.4.0.9078 (dev)
+
+* `calc()`: use `cli::cli_progress_bar()` instead of `utils::txtProgressBar()` (2026-02-01)
 
 * (internal) `VSIFile::read()`: avoid a copy from temporary buffer most of the time (#888) (2026-02-01)
 
