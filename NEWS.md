@@ -1,6 +1,6 @@
 # gdalraster 2.4.0.9075 (dev)
 
-* use `cli` for enhanced progress reporting throughout (#889, thanks to @pepijn-devries) (2026-02-01)
+* use package **cli** for enhanced progress reporting throughout, adding **cli** in `LinkingTo` (#889, thanks to @pepijn-devries) (2026-02-01)
 
 * class `VSIFile`: fix crash when using file open options due to incorrectly sized buffer, and add const correctness (#883, thanks to @pepijn-devries) (2026-01-27)
 
