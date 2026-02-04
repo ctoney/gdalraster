@@ -10,10 +10,15 @@ int CPL_STDCALL GDALTermProgressR(double dfComplete,
                                  CPL_UNUSED void *pProgressArg)
 {
   if (dfComplete == 0 || Rf_isNull(global_pb)) {
-    std::string msg(pszMessage);
-    if (msg.length() > 23) {
-      msg = msg.substr(0, 10) + "..." +
-        msg.substr(msg.length() - 10, msg.length());
+    std::string msg;
+    if (pszMessage == NULL) {
+      msg = std::string("");
+    } else {
+      msg = std::string(pszMessage);
+      if (msg.length() > 23) {
+        msg = msg.substr(0, 10) + "..." +
+          msg.substr(msg.length() - 10, msg.length());
+      }
     }
     List args =
       List::create(Named("name", msg.c_str()),
