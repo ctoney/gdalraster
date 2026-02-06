@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9078 (dev)
+# gdalraster 2.4.0.9079 (dev)
+
+* class `VSIFile`: add a writable field `reportVSIFErrorAsEof`, and check the VSI error indicator in the `read()` and `eof()` methods if GDAL >= 3.10 (#901) (2026-02-06)
 
 * `calc()`: use `cli::cli_progress_bar()` instead of `utils::txtProgressBar()` (2026-02-01)
 
