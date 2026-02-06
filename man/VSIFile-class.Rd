@@ -28,8 +28,8 @@ filesystem-dependent options. These are the options provided by
 }
 \value{
 An object of class \code{VSIFile} which contains a pointer to a
-\code{VSIVirtualHandle}, and methods that operate on the file as described in
-Details.
+\code{VSIVirtualHandle}. Class methods are described in Details, along with a set
+of writable fields for per-object settings.
 }
 \description{
 \code{VSIFile} provides bindings to the GDAL VSIVirtualHandle API. Encapsulates a
@@ -42,7 +42,7 @@ virtualization of disk I/O so that non-file data sources can be made to
 appear as files.
 
 \code{VSIFile} is a C++ class exposed directly to \R (via \code{RCPP_EXPOSED_CLASS}).
-Methods of the class are accessed using the \code{$} operator.
+Fields and methods of the class are accessed using the \code{$} operator.
 }
 \note{
 File offsets are given as \R \code{numeric} (i.e., \code{double} type), optionally
@@ -74,6 +74,9 @@ vf <- new(VSIFile, filename)
 vf <- new(VSIFile, filename, access)
 # specifying access and options (both required):
 vf <- new(VSIFile, filename, access, options)
+
+## Read/write fields (per-object settings)
+vf$reportVSIFErrorAsEof
 
 ## Methods
 vf$seek(offset, origin)
@@ -147,6 +150,18 @@ Append blocks are limited to 195 GiB (however if the file size is below
 
 See the GDAL documentation for \code{VSIFOpenEx2L()} for the most current set of
 available options (\url{https://gdal.org/en/stable/api/cpl.html}).
+}
+
+\subsection{Read/write fields (per-object settings)}{
+
+\code{$reportVSIFErrorAsEof}\cr
+A logical value, \code{TRUE} (the default) to report a VSI error condition,
+as indicated by \code{VSIFErrorL()} in GDAL >= 3.10, as \code{TRUE} in a call to the
+\code{$eof()} method (see below). Since GDAL 3.10, some virtual file systems
+that used to report errors through \code{VSIFEofL} now do so through \code{VSIFErrorL}.
+Code testing \code{$eof()} to potentially end read loops should also test
+for an error condition, which this setting enables by default.
+Ignored if GDAL < 3.10.
 }
 
 \subsection{Methods}{

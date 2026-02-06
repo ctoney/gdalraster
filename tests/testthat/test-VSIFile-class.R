@@ -10,6 +10,9 @@ test_that("VSIFile constructors work", {
     expect_no_error(vf <- new(VSIFile, lcp_file))
     expect_true(is(vf, "Rcpp_VSIFile"))
     expect_equal(vf$close(), 0)
+    expect_true(vf$reportVSIFErrorAsEof)
+    expect_no_error(vf$reportVSIFErrorAsEof <- FALSE)
+    expect_false(vf$reportVSIFErrorAsEof)
     # filename, access
     expect_no_error(vf <- new(VSIFile, lcp_file, "r"))
     expect_true(is(vf, "Rcpp_VSIFile"))
