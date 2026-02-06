@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9079 (dev)
+# gdalraster 2.4.0.9080 (dev)
+
+* (internal) initialize the progress counter to zero in some cases where it was missing for a progress bar managed directly (#903) (2026-02-06)
 
 * class `VSIFile`: add a writable field `reportVSIFErrorAsEof`, and check the VSI error indicator in the `read()` and `eof()` methods if GDAL >= 3.10 (#901) (2026-02-06)
 
