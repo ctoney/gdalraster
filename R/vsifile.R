@@ -30,7 +30,7 @@ SEEK_END <- "SEEK_END"
 #' appear as files.
 #'
 #' `VSIFile` is a C++ class exposed directly to \R (via `RCPP_EXPOSED_CLASS`).
-#' Methods of the class are accessed using the `$` operator.
+#' Fields and methods of the class are accessed using the `$` operator.
 #'
 #' @param filename Character string containing the filename to open. It may be
 #' a file in a regular local filesystem, or a filename with a GDAL /vsiPREFIX/
@@ -49,8 +49,8 @@ SEEK_END <- "SEEK_END"
 #' filesystem-dependent options. These are the options provided by
 #' `VSIFOpenEx2L()` in the GDAL API (GDAL >= 3.3, see Details).
 #' @returns An object of class `VSIFile` which contains a pointer to a
-#' `VSIVirtualHandle`, and methods that operate on the file as described in
-#' Details.
+#' `VSIVirtualHandle`. Class methods are described in Details, along with a set
+#' of writable fields for per-object settings.
 #'
 #' @section Usage (see Details):
 #' ```
@@ -60,6 +60,9 @@ SEEK_END <- "SEEK_END"
 #' vf <- new(VSIFile, filename, access)
 #' # specifying access and options (both required):
 #' vf <- new(VSIFile, filename, access, options)
+#'
+#' ## Read/write fields (per-object settings)
+#' vf$reportVSIFErrorAsEof
 #'
 #' ## Methods
 #' vf$seek(offset, origin)
@@ -124,6 +127,17 @@ SEEK_END <- "SEEK_END"
 #'
 #' See the GDAL documentation for `VSIFOpenEx2L()` for the most current set of
 #' available options (\url{https://gdal.org/en/stable/api/cpl.html}).
+#'
+#' ## Read/write fields (per-object settings)
+#'
+#' \code{$reportVSIFErrorAsEof}\cr
+#' A logical value, `TRUE` (the default) to report a VSI error condition,
+#' as indicated by `VSIFErrorL()` in GDAL >= 3.10, as `TRUE` in a call to the
+#' \code{$eof()} method (see below). Since GDAL 3.10, some virtual file systems
+#' that used to report errors through `VSIFEofL` now do so through `VSIFErrorL`.
+#' Code testing \code{$eof()} to potentially end read loops should also test
+#' for an error condition, which this setting enables by default.
+#' Ignored if GDAL < 3.10.
 #'
 #' ## Methods
 #'

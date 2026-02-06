@@ -43,6 +43,9 @@ class VSIFile {
             const Rcpp::CharacterVector &options);
     ~VSIFile();
 
+    // exposed read/write fields
+    bool reportVSIFErrorAsEof {true};
+
     void open();
     int seek(Rcpp::NumericVector offset, std::string origin);
     Rcpp::NumericVector tell() const;

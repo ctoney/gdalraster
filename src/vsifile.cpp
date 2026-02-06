@@ -6,6 +6,7 @@
 
 #include "vsifile.h"
 
+#include <gdal.h>
 #include <cpl_port.h>
 #include <cpl_conv.h>
 
@@ -171,6 +172,10 @@ SEXP VSIFile::read(Rcpp::NumericVector nbytes) {
     }
 
     if (nRead < nbytes_in) {
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 10, 0)
+        if (VSIFErrorL(m_fp))
+            Rcpp::warning("short read and VSI error indicator is TRUE");
+#endif
         Rcpp::RawVector raw_resized = Rcpp::no_init(nRead);
         std::memcpy(raw_resized.begin(), raw.begin(), nRead);
         return raw_resized;
@@ -197,6 +202,15 @@ bool VSIFile::eof() const {
         Rcpp::stop("the file is not open");
 
     int eof = VSIFEofL(m_fp);
+
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 10, 0)
+    if (VSIFErrorL(m_fp) && this->reportVSIFErrorAsEof) {
+        Rcpp::warning(
+            "eof reported as TRUE due to VSI error indicator is TRUE");
+        return true;
+    }
+#endif
+
     if (eof == 0)
         return false;
     else
@@ -321,6 +335,9 @@ RCPP_MODULE(mod_VSIFile) {
         ("Usage: new(VSIFile, filename, access)")
     .constructor<Rcpp::CharacterVector, std::string, Rcpp::CharacterVector>
         ("Usage: new(VSIFile, filename, access, options)")
+
+    // read/write fields
+    .field("reportVSIFErrorAsEof", &VSIFile::reportVSIFErrorAsEof)
 
     // exposed member functions
     .method("open", &VSIFile::open,
