@@ -1604,6 +1604,7 @@ Rcpp::DataFrame combine(const Rcpp::CharacterVector &src_files,
     void *pProgressData = nullptr;
 
     if (!quiet) {
+        pfnProgress(0, nullptr, nullptr);
         if (nrasters == 1)
             Rcpp::Rcout << "scanning raster...\n";
         else
@@ -1655,8 +1656,10 @@ Rcpp::DataFrame value_count(const GDALRaster* const &src_ds, int band = 1,
 
     Rcpp::DataFrame df_out = Rcpp::DataFrame::create();
 
-    if (!quiet)
+    if (!quiet) {
+        pfnProgress(0, nullptr, nullptr);
         Rcpp::Rcout << "scanning raster...\n";
+    }
 
     // The counter in the unordered_map is a double since it will be returned
     // as R numeric type, for greater range than int32 and R lacks a native
@@ -3808,20 +3811,20 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
 
 
 // [[Rcpp::export(name = ".gt_from_dim_bbox")]]
-Rcpp::NumericVector gt_from_dim_bbox_(const Rcpp::NumericVector &dim, 
+Rcpp::NumericVector gt_from_dim_bbox_(const Rcpp::NumericVector &dim,
                                       const Rcpp::NumericVector &bbox) {
   if (bbox[2] <= bbox[0])
     Rcpp::stop("invalid bbox: xmax must be greater than xmin");
   if (bbox[3] <= bbox[1])
     Rcpp::stop("invalid bbox: ymax must be greater than ymin");
-  
+
   if (dim[0] < 1)
     Rcpp::stop("invalid dim (ncol,nrow): xsize (ncol) must be greater than 0");
   if (dim[1] < 1)
     Rcpp::stop("invalid dim (ncol,nrow): ysize (nrow) must be greater than 0");
-  
+
   // bbox: xmin, ymin, xmax, ymax
-  // dim: ncol, nrow 
+  // dim: ncol, nrow
   Rcpp::NumericVector gt(6);
   gt[0] = bbox[0];                              // xmin
   gt[1] = (bbox[2] - bbox[0]) / dim[0];         // pixel width

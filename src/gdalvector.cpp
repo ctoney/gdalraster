@@ -1926,8 +1926,10 @@ Rcpp::LogicalVector GDALVector::batchCreateFeature(
     Rcpp::LogicalVector out = Rcpp::no_init(num_rows);
 
     GDALProgressFunc pfnProgress = nullptr;
-    if (!quiet && num_rows > 1)
+    if (!quiet && num_rows > 1) {
         pfnProgress = GDALTermProgressR;
+        pfnProgress(0, nullptr, nullptr);
+    }
 
     for (R_xlen_t i = 0; i < num_rows; ++i) {
         OGRFeatureH hFeat = OGRFeatureFromList_(feature_set, i, fld_maps[0],
