@@ -3106,6 +3106,13 @@ std::string get_data_ptr(const Rcpp::RObject &x) {
         int n = CPLPrintPointer(buf, &v[0], sizeof(buf));
         buf[n] = 0;
     }
+    else if (Rcpp::is<Rcpp::ComplexVector>(x)) {
+        Rcpp::ComplexVector v = Rcpp::as<Rcpp::ComplexVector>(x);
+        if (v.size() == 0)
+            Rcpp::stop("'x' is empty");
+        int n = CPLPrintPointer(buf, &v[0], sizeof(buf));
+        buf[n] = 0;
+    }
     else {
         Rcpp::stop("'x' must be a vector of double, integer or raw");
     }
