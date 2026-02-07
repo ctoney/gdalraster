@@ -3114,7 +3114,7 @@ std::string get_data_ptr(const Rcpp::RObject &x) {
         buf[n] = 0;
     }
     else {
-        Rcpp::stop("'x' must be a vector of double, integer or raw");
+        Rcpp::stop("'x' must be a vector of double, integer, raw or complex");
     }
 
     return std::string(buf);
