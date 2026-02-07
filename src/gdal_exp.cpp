@@ -3074,11 +3074,11 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
 #endif
 }
 
-//' Get pointer address of R data as character string
+//' Get pointer address of R data as a character string
 //'
-//' @param x Object of type numeric, integer or raw.
-//' @returns Character string pointer address  with format suitable for use
-//' as DATAPOINTER for GDAL MEM.
+//' @param x Vector of type numeric, integer, raw or complex.
+//' @returns Character string pointer address with format suitable as
+//' DATAPOINTER for a GDAL MEM dataset.
 // [[Rcpp::export()]]
 std::string get_data_ptr(const Rcpp::RObject &x) {
     if (x.isNULL())
