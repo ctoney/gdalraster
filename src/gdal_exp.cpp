@@ -3082,7 +3082,7 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
 // [[Rcpp::export()]]
 std::string get_data_ptr(const Rcpp::RObject &x) {
     if (x.isNULL())
-        Rcpp::stop("'x' must be a vector of double, integer or raw");
+        Rcpp::stop("'x' must be a vector of double, integer, raw or complex");
 
     char buf[32] = {'\0'};
     if (Rcpp::is<Rcpp::IntegerVector>(x)) {
