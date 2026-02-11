@@ -650,7 +650,7 @@ YCbCr_Y    \tab Y Luminance\cr
 YCbCr_Cb   \tab Cb Chroma\cr
 YCbCr_Cr   \tab Cr Chroma\cr
 \strong{GDAL >= 3.10} \tab \cr
-PanBand    \tab Cr Panchromatic band [0.40 - 1.00 μm]\cr
+PanBand    \tab Panchromatic band [0.40 - 1.00 μm]\cr
 CoastalBand \tab Coastal band [0.40 - 0.45 μm]\cr
 RedEdgeBand \tab Red-edge band [0.69 - 0.79 μm]\cr
 NIRBand    \tab Near-InfraRed (NIR) band [0.75 - 1.40 μm]\cr
