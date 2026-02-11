@@ -90,7 +90,7 @@
 #' ds$res()
 #' ds$dim()
 #' ds$setBbox(bbox)
-#' 
+#'
 #' ds$apply_geotransform(col_row)
 #' ds$get_pixel_line(xy)
 #'
@@ -309,7 +309,7 @@
 #' \code{transform} is a numeric vector of length six.
 #' Returns logical \code{TRUE} on success or \code{FALSE} if the geotransform
 #' could not be set.
-#' 
+#'
 #' \code{$getProjection()}\cr
 #' Returns the coordinate reference system of the raster as an OGC WKT
 #' format string. Equivalent to \code{ds$getProjectionRef()}.
@@ -332,13 +332,13 @@
 #' \code{$bbox()}\cr
 #' Returns a numeric vector of length four containing the bounding box
 #' (xmin, ymin, xmax, ymax).
-#' 
+#'
 #' \code{$setBbox(bbox)}\cr
 #' Sets the bounding box on this dataset.
 #' \code{bbox} is a numeric vector of length four.
 #' Returns logical \code{TRUE} on success or \code{FALSE} if the bbox
-#' could not be set. 
-#' 
+#' could not be set.
+#'
 #' \code{$res()}\cr
 #' Returns a numeric vector of length two containing the resolution
 #' (pixel width, pixel height as positive values) for a non-rotated raster.
@@ -611,7 +611,25 @@
 #'  Black      \tab Black band of CMYK image\cr
 #'  YCbCr_Y    \tab Y Luminance\cr
 #'  YCbCr_Cb   \tab Cb Chroma\cr
-#'  YCbCr_Cr   \tab Cr Chroma
+#'  YCbCr_Cr   \tab Cr Chroma\cr
+#'  **GDAL >= 3.10** \tab \cr
+#'  PanBand    \tab Cr Panchromatic band \[0.40 - 1.00 μm\]\cr
+#'  CoastalBand \tab Coastal band \[0.40 - 0.45 μm\]\cr
+#'  RedEdgeBand \tab Red-edge band \[0.69 - 0.79 μm\]\cr
+#'  NIRBand    \tab Near-InfraRed (NIR) band \[0.75 - 1.40 μm\]\cr
+#'  SWIRBand   \tab Short-Wavelength InfraRed (SWIR) band \[1.40 - 3.00 μm\]\cr
+#'  MWIRBand   \tab Mid-Wavelength InfraRed (MWIR) band \[3.00 - 8.00 μm\]\cr
+#'  LWIRBand   \tab Long-Wavelength InfraRed (LWIR) band \[8.00 - 15 μm\]\cr
+#'  TIRBand    \tab Thermal InfraRed (TIR) band (MWIR or LWIR) \[3 - 15 μm\]\cr
+#'  OtherIRBand \tab Other infrared band \[0.75 - 1000 μm\]\cr
+#'  SAR_Ka_Band \tab SAR Ka band \[0.8 - 1.1 cm / 27 - 40 GHz\]\cr
+#'  SAR_K_Band  \tab SAR K band \[1.1 - 1.7 cm / 18 - 27 GHz\]\cr
+#'  SAR_Ku_Band \tab SAR Ku band \[1.7 - 2.4 cm / 12 - 18 GHz\]\cr
+#'  SAR_X_Band  \tab SAR X band \[2.4 - 3.8 cm / 8 - 12 GHz\]\cr
+#'  SAR_C_Band  \tab SAR C band \[3.8 - 7.5 cm / 4 - 8 GHz\]\cr
+#'  SAR_S_Band  \tab SAR S band \[7.5 - 15 cm / 2 - 4 GHz\]\cr
+#'  SAR_L_Band  \tab SAR L band \[15 - 30 cm / 1 - 2 GHz\]\cr
+#'  SAR_P_Band  \tab SAR P band \[30 - 100 cm / 0.3 - 1 GHz\]
 #' }
 #'
 #' \code{$setRasterColorInterp(band, col_interp)}\cr
