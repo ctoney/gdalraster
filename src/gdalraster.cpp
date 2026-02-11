@@ -125,6 +125,26 @@ static const std::map<std::string, GDALColorInterp> MAP_GCI = {
     {"YCbCr_Y", GCI_YCbCr_YBand},
     {"YCbCr_Cb", GCI_YCbCr_CbBand},
     {"YCbCr_Cr", GCI_YCbCr_CrBand}
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 10, 0)
+    ,
+    {"PanBand", GCI_PanBand},
+    {"CoastalBand", GCI_CoastalBand},
+    {"RedEdgeBand", GCI_RedEdgeBand},
+    {"NIRBand", GCI_NIRBand},
+    {"SWIRBand", GCI_SWIRBand},
+    {"MWIRBand", GCI_MWIRBand},
+    {"LWIRBand", GCI_LWIRBand},
+    {"TIRBand", GCI_TIRBand},
+    {"OtherIRBand", GCI_OtherIRBand},
+    {"SAR_Ka_Band", GCI_SAR_Ka_Band},
+    {"SAR_K_Band", GCI_SAR_K_Band},
+    {"SAR_Ku_Band", GCI_SAR_Ku_Band},
+    {"SAR_X_Band", GCI_SAR_X_Band},
+    {"SAR_C_Band", GCI_SAR_C_Band},
+    {"SAR_S_Band", GCI_SAR_S_Band},
+    {"SAR_L_Band", GCI_SAR_L_Band},
+    {"SAR_P_Band", GCI_SAR_P_Band}
+#endif  // GDAL >= 3.10
 };
 // GDALRATFieldUsage (GFU)
 static const std::map<std::string, GDALRATFieldUsage> MAP_GFU = {
@@ -504,7 +524,7 @@ bool GDALRaster::setBbox(const Rcpp::NumericVector &bbox) {
   checkAccess_(GA_Update);
   if (bbox.size() != 4)
     Rcpp::stop("setBbox() requires a numeric vector of length 4");
-  
+
   Rcpp::NumericVector dim = {getRasterXSize(), getRasterYSize()};
   return setGeoTransform(gt_from_dim_bbox_(dim, bbox));
 }
@@ -1902,16 +1922,16 @@ SEXP GDALRaster::readChunk(int band,
 
 SEXP GDALRaster::readToNativeRaster(int xoff, int yoff, int xsize, int ysize,
                                     int out_xsize, int out_ysize) const {
-  
+
   checkAccess_(GA_ReadOnly);
-  
+
   if (out_xsize < 1 || out_ysize < 1)
     Rcpp::stop("'out_xsize' and 'out_ysize' must be > 0");
-  
+
   const int nBands = GDALGetRasterCount(m_hDataset);
   if (nBands != 1 && nBands != 3 && nBands != 4)
     Rcpp::stop("readToNativeRaster requires 1, 3, or 4 bands");
-  
+
   // verify all bands are Byte
   for (int b = 1; b <= nBands; b++) {
     GDALRasterBandH hBand = GDALGetRasterBand(m_hDataset, b);
@@ -1920,9 +1940,9 @@ SEXP GDALRaster::readToNativeRaster(int xoff, int yoff, int xsize, int ysize,
     if (GDALGetRasterDataType(hBand) != GDT_Byte)
       Rcpp::stop("readToNativeRaster requires Byte data type");
   }
-  
+
   const R_xlen_t buf_size = static_cast<R_xlen_t>(out_xsize) * out_ysize;
-  
+
   // allocate band buffers
   std::vector<std::vector<uint8_t>> bands(nBands);
   for (int b = 0; b < nBands; b++) {
@@ -1934,11 +1954,11 @@ SEXP GDALRaster::readToNativeRaster(int xoff, int yoff, int xsize, int ysize,
     if (err == CE_Failure)
       Rcpp::stop("read raster failed on band %d", b + 1);
   }
-  
+
   // pack into nativeRaster
   Rcpp::IntegerVector res = Rcpp::no_init(buf_size);
   int *pres = res.begin();
-  
+
   if (nBands == 1) {
     const uint8_t *p0 = bands[0].data();
     for (R_xlen_t i = 0; i < buf_size; i++) {
@@ -1960,12 +1980,12 @@ SEXP GDALRaster::readToNativeRaster(int xoff, int yoff, int xsize, int ysize,
       pres[i] = static_cast<int>(R_RGBA(p0[i], p1[i], p2[i], p3[i]));
     }
   }
-  
+
   // set dim [height, width] - nativeRaster convention
   res.attr("dim") = Rcpp::IntegerVector::create(out_ysize, out_xsize);
   res.attr("class") = "nativeRaster";
   res.attr("channels") = (nBands == 4) ? 4 : 3;
-  
+
   return res;
 }
 
