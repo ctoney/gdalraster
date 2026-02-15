@@ -66,7 +66,7 @@ head(blocks)
 
 tail(blocks)
 
-## chunk as 16 consectutive blocks
+## chunk as 16 consecutive blocks
 chunks <- make_chunk_index(raster_xsize = 156335, raster_ysize = 101538,
                            block_xsize = 256, block_ysize = 256,
                            gt = c(-2362395, 30, 0, 3267405, 0, -30),
