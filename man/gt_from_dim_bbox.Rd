@@ -4,10 +4,10 @@
 \alias{gt_from_dim_bbox}
 \title{Geotransform from dimensions and bounding box}
 \usage{
-gt_from_dim_bbox(dim, bbox)
+gt_from_dim_bbox(dm, bbox)
 }
 \arguments{
-\item{dim}{Integer vector of length two containing the raster dimensions
+\item{dm}{Integer vector of length two containing the raster dimensions
 (xsize, ysize) in pixels.}
 
 \item{bbox}{Numeric vector of length four containing the bounding box
@@ -24,8 +24,7 @@ north-up (no rotation).
 }
 \examples{
 # 1-degree global grid
-gt <- gt_from_dim_bbox(c(360, 180), c(-180, -90, 180, 90))
-gt
+(gt <- gt_from_dim_bbox(c(360, 180), c(-180, -90, 180, 90)))
 
 # verify round-trip
 bbox_from_dim_gt(c(360, 180), gt)

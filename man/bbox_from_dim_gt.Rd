@@ -4,10 +4,10 @@
 \alias{bbox_from_dim_gt}
 \title{Bounding box from dimensions and geotransform}
 \usage{
-bbox_from_dim_gt(dim, gt)
+bbox_from_dim_gt(dm, gt)
 }
 \arguments{
-\item{dim}{Integer vector of length two containing the raster dimensions
+\item{dm}{Integer vector of length two containing the raster dimensions
 (xsize, ysize) in pixels.}
 
 \item{gt}{Numeric vector of length six containing the geotransform
@@ -26,10 +26,10 @@ envelope of the four corner coordinates.
 elev_file <- system.file("extdata/storml_elev.tif", package="gdalraster")
 ds <- new(GDALRaster, elev_file)
 gt <- ds$getGeoTransform()
-dim <- ds$dim()
+dm <- ds$dim()
 
 # should match ds$bbox()
-bbox_from_dim_gt(dim, gt)
+bbox_from_dim_gt(dm, gt)
 ds$bbox()
 
 ds$close()
