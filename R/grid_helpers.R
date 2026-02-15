@@ -4,7 +4,7 @@
 #' geotransform coefficients. For rotated rasters, returns the axis-aligned
 #' envelope of the four corner coordinates.
 #'
-#' @param dim Integer vector of length two containing the raster dimensions
+#' @param dm Integer vector of length two containing the raster dimensions
 #' (xsize, ysize) in pixels.
 #' @param gt Numeric vector of length six containing the geotransform
 #' coefficients.
@@ -17,25 +17,25 @@
 #' elev_file <- system.file("extdata/storml_elev.tif", package="gdalraster")
 #' ds <- new(GDALRaster, elev_file)
 #' gt <- ds$getGeoTransform()
-#' dim <- ds$dim()
+#' dm <- ds$dim()
 #'
 #' # should match ds$bbox()
-#' bbox_from_dim_gt(dim, gt)
+#' bbox_from_dim_gt(dm, gt)
 #' ds$bbox()
 #'
 #' ds$close()
 #' @export
-bbox_from_dim_gt <- function(dim, gt) {
-  .bbox_grid_to_geo(gt, 0, dim[1L], 0, dim[2L])
+bbox_from_dim_gt <- function(dm, gt) {
+    .bbox_grid_to_geo(gt, 0, dm[1L], 0, dm[2L])
 }
 
 #' Geotransform from dimensions and bounding box
 #'
 #' `gt_from_dim_bbox()` computes geotransform coefficients from raster
 #' dimensions and a bounding box. The resulting geotransform will always be
-#' north-up (no rotation). 
+#' north-up (no rotation).
 #'
-#' @param dim Integer vector of length two containing the raster dimensions
+#' @param dm Integer vector of length two containing the raster dimensions
 #' (xsize, ysize) in pixels.
 #' @param bbox Numeric vector of length four containing the bounding box
 #' (xmin, ymin, xmax, ymax) in georeferenced coordinates.
@@ -47,12 +47,11 @@ bbox_from_dim_gt <- function(dim, gt) {
 #' [inv_geotransform()]
 #' @examples
 #' # 1-degree global grid
-#' gt <- gt_from_dim_bbox(c(360, 180), c(-180, -90, 180, 90))
-#' gt
+#' (gt <- gt_from_dim_bbox(c(360, 180), c(-180, -90, 180, 90)))
 #'
 #' # verify round-trip
 #' bbox_from_dim_gt(c(360, 180), gt)
 #' @export
-gt_from_dim_bbox <- function(dim, bbox) {
- .gt_from_dim_bbox(dim, bbox) 
+gt_from_dim_bbox <- function(dm, bbox) {
+    .gt_from_dim_bbox(dm, bbox)
 }
