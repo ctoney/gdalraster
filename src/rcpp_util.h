@@ -13,7 +13,8 @@
 #include <cpl_port.h>
 #include <cpl_string.h>
 Rcpp::CharacterVector wrap_gdal_string_list_(const CPLStringList &string_list);
-#endif
+std::string get_data_ptr(const Rcpp::RObject &x);
+#endif  // GDALRASTER_TYPES_H_
 
 #include <algorithm>
 #include <cctype>

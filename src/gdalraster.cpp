@@ -275,6 +275,11 @@ GDALRaster::~GDALRaster() {
         else
             GDALReleaseDataset(m_hDataset);
     }
+
+    if (m_is_MEM && m_preserved_r_object) {
+        R_ReleaseObject(m_preserved_r_object);
+        m_preserved_r_object = nullptr;
+    }
 }
 
 std::string GDALRaster::getFilename() const {
@@ -343,6 +348,11 @@ void GDALRaster::open(bool read_only) {
 
     if (m_hDataset == nullptr)
         Rcpp::stop("open raster failed");
+
+    if (EQUAL(getDriverShortName().c_str(), "MEM"))
+        m_is_MEM = true;
+    else
+        m_is_MEM = false;
 }
 
 bool GDALRaster::isOpen() const {
@@ -2728,6 +2738,11 @@ void GDALRaster::close() {
 #endif
 
     m_hDataset = nullptr;
+
+    if (m_is_MEM && m_preserved_r_object) {
+        R_ReleaseObject(m_preserved_r_object);
+        m_preserved_r_object = nullptr;
+    }
 }
 
 void GDALRaster::show() const {
@@ -2759,6 +2774,29 @@ void GDALRaster::show() const {
                                    std::to_string(bbox()[1]) << ", " <<
                                    std::to_string(bbox()[2]) << ", " <<
                                    std::to_string(bbox()[3]) << "\n";
+}
+
+// ****************************************************************************
+// class methods for internal use that are exposed in R
+//        *** not documented for public use ***
+// ****************************************************************************
+
+bool GDALRaster::preserveRObject_(SEXP robj) {
+    checkAccess_(GA_ReadOnly);
+
+    if (!m_is_MEM) {
+        Rcpp::Rcout << "preserveRObject_() is only valid on MEM\n";
+        return false;
+    }
+
+    if (m_preserved_r_object) {
+        Rcpp::Rcout << "a preserved R object is already in use\n";
+        return false;
+    }
+
+    R_PreserveObject(robj);
+    m_preserved_r_object = robj;
+    return true;
 }
 
 // ****************************************************************************
@@ -3047,6 +3085,8 @@ RCPP_MODULE(mod_GDALRaster) {
         "Close the GDAL dataset for proper cleanup")
     .const_method("show", &GDALRaster::show,
         "S4 show()")
+    .method("preserveRObject_", &GDALRaster::preserveRObject_,
+        "For internal use only")
 
     ;
 }

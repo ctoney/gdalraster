@@ -51,7 +51,7 @@ class GDALRaster {
     bool quiet = false;
     bool readByteAsRaw = false;
 
-    // methods exported to R
+    // public methods exported to R
     std::string getFilename() const;
     void setFilename(const std::string &filename);
     void open(bool read_only);
@@ -152,7 +152,7 @@ class GDALRaster {
 
     SEXP readToNativeRaster(int xoff, int yoff, int xsize, int ysize,
                             int out_xsize, int out_ysize) const;
-    
+
     void write(int band, int xoff, int yoff, int xsize, int ysize,
                const Rcpp::RObject &rasterData);
 
@@ -181,6 +181,9 @@ class GDALRaster {
 
     void show() const;
 
+    // internal methods exported to R
+    bool preserveRObject_(SEXP robj);
+
     // methods for internal use not exported to R
     void checkAccess_(GDALAccess access_needed) const;
     GDALRasterBandH getBand_(int band) const;
@@ -197,6 +200,8 @@ class GDALRaster {
     Rcpp::CharacterVector m_allowed_drivers;
     GDALDatasetH m_hDataset {nullptr};
     GDALAccess m_eAccess {GA_ReadOnly};
+    bool m_is_MEM {false};
+    SEXP m_preserved_r_object {nullptr};
 };
 
 // cppcheck-suppress unknownMacro
@@ -294,8 +299,8 @@ Rcpp::NumericVector bbox_grid_to_geo_(const Rcpp::NumericVector &gt,
                                       double grid_xmin, double grid_xmax,
                                       double grid_ymin, double grid_ymax);
 
-Rcpp::NumericVector gt_from_dim_bbox_(const Rcpp::NumericVector &dim, 
-                                      const Rcpp::NumericVector &bbox); 
+Rcpp::NumericVector gt_from_dim_bbox_(const Rcpp::NumericVector &dim,
+                                      const Rcpp::NumericVector &bbox);
 
 Rcpp::NumericMatrix make_chunk_index_(int raster_xsize, int raster_ysize,
                                       int block_xsize, int block_ysize,

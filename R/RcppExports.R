@@ -3142,6 +3142,16 @@ bbox_to_wkt <- function(bbox, extend_x = 0, extend_y = 0) {
     invisible(.Call(`_gdalraster_ogr_execute_sql`, dsn, sql, spatial_filter, dialect))
 }
 
+#' Get pointer address of R data as a character string
+#'
+#' @param x Vector of type numeric, integer, raw or complex.
+#' @returns Character string pointer address with format suitable as
+#' DATAPOINTER for a GDAL MEM dataset.
+#' @noRd
+.get_data_ptr <- function(x) {
+    .Call(`_gdalraster_get_data_ptr`, x)
+}
+
 #' @noRd
 NULL
 

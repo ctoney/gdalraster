@@ -33,7 +33,8 @@
   \code{\link[=rasterFromRaster]{rasterFromRaster()}},
   \code{\link[=translate]{translate()}},
   \code{\link[=getCreationOptions]{getCreationOptions()}},
-  \code{\link[=validateCreationOptions]{validateCreationOptions()}}
+  \code{\link[=validateCreationOptions]{validateCreationOptions()}},
+  \code{\link[=vector_to_MEM]{vector_to_MEM()}}
 
   \item virtual raster:
   \code{\link[=autoCreateWarpedVRT]{autoCreateWarpedVRT()}},

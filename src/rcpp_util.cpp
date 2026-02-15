@@ -182,3 +182,50 @@ Rcpp::CharacterVector wrap_gdal_string_list_(const CPLStringList &string_list) {
     }
     return out;
 }
+
+//' Get pointer address of R data as a character string
+//'
+//' @param x Vector of type numeric, integer, raw or complex.
+//' @returns Character string pointer address with format suitable as
+//' DATAPOINTER for a GDAL MEM dataset.
+//' @noRd
+// [[Rcpp::export(name = ".get_data_ptr")]]
+std::string get_data_ptr(const Rcpp::RObject &x) {
+    if (x.isNULL())
+        Rcpp::stop("'x' must be a vector of numeric, integer, raw or complex");
+
+    char buf[32] = {'\0'};
+    if (Rcpp::is<Rcpp::IntegerVector>(x)) {
+        Rcpp::IntegerVector v = Rcpp::as<Rcpp::IntegerVector>(x);
+        if (v.size() == 0)
+            Rcpp::stop("'x' is empty");
+        int n = CPLPrintPointer(buf, v.begin(), sizeof(buf));
+        buf[n] = 0;
+    }
+    else if (Rcpp::is<Rcpp::NumericVector>(x)) {
+        Rcpp::NumericVector v = Rcpp::as<Rcpp::NumericVector>(x);
+        if (v.size() == 0)
+            Rcpp::stop("'x' is empty");
+        int n = CPLPrintPointer(buf, v.begin(), sizeof(buf));
+        buf[n] = 0;
+    }
+    else if (Rcpp::is<Rcpp::RawVector>(x)) {
+        Rcpp::RawVector v = Rcpp::as<Rcpp::RawVector>(x);
+        if (v.size() == 0)
+            Rcpp::stop("'x' is empty");
+        int n = CPLPrintPointer(buf, v.begin(), sizeof(buf));
+        buf[n] = 0;
+    }
+    else if (Rcpp::is<Rcpp::ComplexVector>(x)) {
+        Rcpp::ComplexVector v = Rcpp::as<Rcpp::ComplexVector>(x);
+        if (v.size() == 0)
+            Rcpp::stop("'x' is empty");
+        int n = CPLPrintPointer(buf, v.begin(), sizeof(buf));
+        buf[n] = 0;
+    }
+    else {
+        Rcpp::stop("'x' must be a vector of double, integer, raw or complex");
+    }
+
+    return std::string(buf);
+}
