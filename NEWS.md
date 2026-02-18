@@ -1,6 +1,6 @@
 # gdalraster 2.4.0.9083 (dev)
 
-* `GDALVector::open()`: remove warning if Spatialite is not available, fixes #908 (2026-02-18)
+* `GDALVector::open()`: remove warning if Spatialite is not available when opening with a SQL statement and SQLite dialect is specified, fixes #908 (2026-02-18)
 
 * progressbar: cleanup a previously interrupted one if it exists before creating a new one (#906) (2025-02-13)
 
