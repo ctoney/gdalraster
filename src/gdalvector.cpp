@@ -138,8 +138,8 @@ void GDALVector::open(bool read_only) {
     }
     else if (STARTS_WITH_CI(m_layer_name.c_str(), "SELECT ")) {
         m_is_sql = true;
-        if (EQUAL(pszDialect, "SQLite") && !has_spatialite())
-            Rcpp::warning("SpatiaLite is not available");
+        // if (EQUAL(pszDialect, "SQLite") && !has_spatialite())
+        //     Rcpp::warning("SpatiaLite is not available");
         m_hLayer = GDALDatasetExecuteSQL(m_hDataset, m_layer_name.c_str(),
                                          hGeom_filter, pszDialect);
     }
