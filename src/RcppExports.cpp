@@ -2159,6 +2159,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// get_data_ptr
+std::string get_data_ptr(const Rcpp::RObject& x);
+RcppExport SEXP _gdalraster_get_data_ptr(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_data_ptr(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 // epsg_to_wkt
 std::string epsg_to_wkt(int epsg, bool pretty);
 RcppExport SEXP _gdalraster_epsg_to_wkt(SEXP epsgSEXP, SEXP prettySEXP) {
@@ -2723,6 +2734,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_ogr_field_set_domain_name", (DL_FUNC) &_gdalraster_ogr_field_set_domain_name, 4},
     {"_gdalraster_ogr_field_delete", (DL_FUNC) &_gdalraster_ogr_field_delete, 3},
     {"_gdalraster_ogr_execute_sql", (DL_FUNC) &_gdalraster_ogr_execute_sql, 4},
+    {"_gdalraster_get_data_ptr", (DL_FUNC) &_gdalraster_get_data_ptr, 1},
     {"_gdalraster_epsg_to_wkt", (DL_FUNC) &_gdalraster_epsg_to_wkt, 2},
     {"_gdalraster_srs_to_wkt", (DL_FUNC) &_gdalraster_srs_to_wkt, 3},
     {"_gdalraster_srs_to_projjson", (DL_FUNC) &_gdalraster_srs_to_projjson, 4},
