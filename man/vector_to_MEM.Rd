@@ -77,6 +77,17 @@ The \verb{$close()} method should be called when the \code{GDALRaster} object is
 longer needed so that resources can be freed. MEM datasets cannot be
 re-opened once the object's \verb{$close()} method has been called.
 }
+\examples{
+v <- sample(0:255, 50, replace = TRUE)
+(ds_mem <- vector_to_MEM(v, xsize = 10, ysize = 5))
+
+all((ds_mem$read(1, 0, 0, 10, 5, 10, 5) == v))
+
+ds_mem$write(1, 0, 0, 10, 5, (v * -1))
+print(v)
+
+ds_mem$close()
+}
 \seealso{
 \code{\link[=GDALRaster]{GDALRaster-class}}
 }

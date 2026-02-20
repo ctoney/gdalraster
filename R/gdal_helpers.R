@@ -881,7 +881,15 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
 #' [`GDALRaster-class`][GDALRaster]
 #'
 #' @examples
+#' v <- sample(0:255, 50, replace = TRUE)
+#' (ds_mem <- vector_to_MEM(v, xsize = 10, ysize = 5))
 #'
+#' all((ds_mem$read(1, 0, 0, 10, 5, 10, 5) == v))
+#'
+#' ds_mem$write(1, 0, 0, 10, 5, (v * -1))
+#' print(v)
+#'
+#' ds_mem$close()
 #' @export
 vector_to_MEM <- function(data, xsize, ysize, nbands = 1L, gt = NULL,
                           bbox = NULL, srs = NULL) {
