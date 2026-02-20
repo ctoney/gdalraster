@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9083 (dev)
+# gdalraster 2.4.0.9090 (dev)
+
+* add `vector_to_MEM()`: create a GDAL in-memory dataset from R data without copying (#910) (2026-02-19)
 
 * `GDALVector::open()`: remove warning if Spatialite is not available when opening with a SQL statement and SQLite dialect is specified, fixes #908 (2026-02-18)
 
