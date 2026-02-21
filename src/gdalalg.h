@@ -81,6 +81,7 @@ class GDALAlg {
     Rcpp::CharacterVector m_cmd {};
     std::string m_cmd_str {""};
     Rcpp::CharacterVector m_args {};
+    Rcpp::CharacterVector m_args_no_leading_dash {};
 #if __has_include(<gdalalgorithm.h>)
     GDALAlgorithmH m_hAlg {nullptr};
     GDALAlgorithmH m_hActualAlg {nullptr};

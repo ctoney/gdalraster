@@ -45,7 +45,6 @@ Rcpp::CharacterVector path_expand_(const Rcpp::CharacterVector &path);
 
 Rcpp::CharacterVector normalize_path_(const Rcpp::CharacterVector &path,
                                       int must_work);
-
 Rcpp::CharacterVector normalize_path_(const Rcpp::CharacterVector &path,
                                       int must_work = NA_LOGICAL);
 
@@ -59,7 +58,13 @@ Rcpp::String paste_collapse_(const SEXP &x, const Rcpp::String &s);
 std::string str_toupper_(const std::string &s);
 std::string str_tolower_(const std::string &s);
 
-bool contains_str_(const Rcpp::CharacterVector &v, const Rcpp::String &s);
+Rcpp::CharacterVector remove_leading_dashes_(const Rcpp::CharacterVector &x);
+
+bool contains_str_(const Rcpp::CharacterVector &v, const Rcpp::String &s,
+                   bool match_if_substr);
+bool contains_str_(const Rcpp::CharacterVector &v, const Rcpp::String &s,
+                   bool match_if_substr = false);
+
 bool has_space_char_(const std::string &s);
 
 bool is_namespace_loaded_(const Rcpp::String &pkg);

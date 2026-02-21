@@ -131,13 +131,50 @@ std::string str_tolower_(const std::string &s) {
     return s_out;
 }
 
+// return a new character vector with leading "-" or "--" removed from each
+// element of the input vector
+// for handling character vectors of GDAL CLI arguments
+Rcpp::CharacterVector remove_leading_dashes_(const Rcpp::CharacterVector &x) {
+    Rcpp::CharacterVector out(x.size());
+    for (R_xlen_t i = 0; i < x.size(); ++i) {
+        Rcpp::String s(x[i]);
+        s.replace_first("--", "");
+        if (EQUALN(s.get_cstring(), "-", 1))
+            s.replace_first("-", "");
+        out[i] = s;
+    }
+    return out;
+}
+
 // does character vector contain string element
-bool contains_str_(const Rcpp::CharacterVector &v, const Rcpp::String &s) {
-    auto it = std::find(v.cbegin(), v.cend(), s);
-    if (it == v.cend())
-        return false;
-    else
-        return true;
+bool contains_str_(const Rcpp::CharacterVector &v, const Rcpp::String &s,
+                   bool match_if_substr) {
+
+    bool ret = false;
+
+    if (match_if_substr) {
+        auto has_substr = [&s](const Rcpp::String &vec_element) {
+            std::string vec_element_str(vec_element);
+            return vec_element_str.find(s) != std::string::npos;
+        };
+
+        auto it = std::find_if(v.cbegin(), v.cend(), has_substr);
+
+        if (it == v.cend())
+            ret = false;
+        else
+            ret = true;
+    }
+    else {
+        auto it = std::find(v.cbegin(), v.cend(), s);
+
+        if (it == v.cend())
+            ret = false;
+        else
+            ret = true;
+    }
+
+    return ret;
 }
 
 // does std::string contain a space character
