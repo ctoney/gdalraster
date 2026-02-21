@@ -24,9 +24,14 @@ test_that(".check_gdal_filename works", {
 
 test_that("get/set_config_option work", {
     co <- get_config_option("GDAL_CACHEMAX")
-    set_config_option("GDAL_CACHEMAX", "64")
-    expect_equal(get_config_option("GDAL_CACHEMAX"), "64")
+    set_config_option("GDAL_CACHEMAX", "10%")
+    expect_equal(get_config_option("GDAL_CACHEMAX"), "10%")
     set_config_option("GDAL_CACHEMAX", co)
+
+    set_config_option("CPL_LOG_ERRORS", "OFF")
+    expect_equal(get_config_option("CPL_LOG_ERRORS"), "OFF")
+    set_config_option("CPL_LOG_ERRORS", "")
+    expect_equal(get_config_option("CPL_LOG_ERRORS"), "")
 })
 
 test_that("get_cache_used returns integer64", {
