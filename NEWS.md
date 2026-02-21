@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9090 (dev)
+# gdalraster 2.4.0.9091 (dev)
+
+* `set_config_option()`: catch the `CPL_LOG_ERRORS` option and set the global error handler appropriately for that case (fixes #905) (2026-02-20)
 
 * add `vector_to_MEM()`: create a GDAL in-memory dataset from R data without copying (#910) (2026-02-19)
 
