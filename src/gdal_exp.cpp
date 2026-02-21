@@ -355,16 +355,23 @@ std::string get_config_option(const std::string &key) {
 //' `set_config_option()`.
 //' @returns No return value, called for side effects.
 //'
+//' @note
+//' The configuration option `"CPL_LOG_ERRORS"` can be set to `"OFF"` to disable
+//' printing error massages to the console by GDAL. This only affects messages
+//' printed by GDAL, and does not disable errors, warnings or other messages
+//' emitted by \pkg{gdalraster}. The latter can generally be configured using a
+//' function argument or object-level setting in most cases.
+//'
 //' @seealso
 //' [get_config_option()]
 //'
 //' `vignette("gdal-config-quick-ref")`
 //'
 //' @examples
-//' set_config_option("GDAL_CACHEMAX", "10%")
-//' get_config_option("GDAL_CACHEMAX")
-//' ## unset:
-//' set_config_option("GDAL_CACHEMAX", "")
+//' set_config_option("CPL_LOG_ERRORS", "OFF")
+//' get_config_option("CPL_LOG_ERRORS")
+//' ## unset to default:
+//' set_config_option("CPL_LOG_ERRORS", "")
 // [[Rcpp::export]]
 void set_config_option(const std::string &key, const std::string &value) {
     const char *value_in = nullptr;
@@ -372,6 +379,17 @@ void set_config_option(const std::string &key, const std::string &value) {
         value_in = value.c_str();
 
     CPLSetConfigOption(key.c_str(), value_in);
+
+    if (EQUAL(key.c_str(), "CPL_LOG_ERRORS")) {
+        if (value_in && (EQUAL(value_in, "OFF") || EQUAL(value_in, "FALSE") ||
+                         EQUAL(value_in, "NO"))) {
+
+            CPLSetErrorHandler((CPLErrorHandler) gdal_silent_errors_r);
+        }
+        else {
+            CPLSetErrorHandler((CPLErrorHandler) gdal_error_handler_r);
+        }
+    }
 }
 
 
@@ -569,13 +587,17 @@ int dump_open_datasets(const std::string &outfile) {
 //' handler specific to the R environment is in use by default.
 //'
 //' Setting `handler = "logging"` will use `CPLLoggingErrorHandler()`, error
-//' handler that logs into the file defined by the `CPL_LOG` configuration
+//' handler that logs into the file defined by the `"CPL_LOG"` configuration
 //' option. Be sure that option is set when using this error handler.
 //'
 //' This only affects error reporting from GDAL.
 //'
+//' Also note that the configuration option `"CPL_LOG_ERRORS"` can be set to
+//' `"OFF"` to disable globally the printing of error massages to the console
+//' by GDAL.
+//'
 //' @seealso
-//' [pop_error_handler()]
+//' [pop_error_handler()], [set_config_option()]
 //'
 //' @examples
 //' push_error_handler("quiet")

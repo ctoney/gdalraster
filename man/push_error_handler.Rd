@@ -29,10 +29,14 @@ This function is for advanced use cases. It is intended for setting a
 handler specific to the R environment is in use by default.
 
 Setting \code{handler = "logging"} will use \code{CPLLoggingErrorHandler()}, error
-handler that logs into the file defined by the \code{CPL_LOG} configuration
+handler that logs into the file defined by the \code{"CPL_LOG"} configuration
 option. Be sure that option is set when using this error handler.
 
 This only affects error reporting from GDAL.
+
+Also note that the configuration option \code{"CPL_LOG_ERRORS"} can be set to
+\code{"OFF"} to disable globally the printing of error massages to the console
+by GDAL.
 }
 \examples{
 push_error_handler("quiet")
@@ -40,5 +44,5 @@ push_error_handler("quiet")
 pop_error_handler()
 }
 \seealso{
-\code{\link[=pop_error_handler]{pop_error_handler()}}
+\code{\link[=pop_error_handler]{pop_error_handler()}}, \code{\link[=set_config_option]{set_config_option()}}
 }

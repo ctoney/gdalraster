@@ -24,11 +24,18 @@ drivers, and in some cases the GDAL core. For a full description and
 listing of available options see
 \url{https://gdal.org/en/stable/user/configoptions.html}.
 }
+\note{
+The configuration option \code{"CPL_LOG_ERRORS"} can be set to \code{"OFF"} to disable
+printing error massages to the console by GDAL. This only affects messages
+printed by GDAL, and does not disable errors, warnings or other messages
+emitted by \pkg{gdalraster}. The latter can generally be configured using a
+function argument or object-level setting in most cases.
+}
 \examples{
-set_config_option("GDAL_CACHEMAX", "10\%")
-get_config_option("GDAL_CACHEMAX")
-## unset:
-set_config_option("GDAL_CACHEMAX", "")
+set_config_option("CPL_LOG_ERRORS", "OFF")
+get_config_option("CPL_LOG_ERRORS")
+## unset to default:
+set_config_option("CPL_LOG_ERRORS", "")
 }
 \seealso{
 \code{\link[=get_config_option]{get_config_option()}}
