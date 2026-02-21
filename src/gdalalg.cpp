@@ -279,6 +279,8 @@ GDALAlg::GDALAlg(const Rcpp::CharacterVector &cmd, const Rcpp::RObject &args) {
         m_args = Rcpp::CharacterVector::create();
     }
 
+    m_args_no_leading_dash = remove_leading_dashes_(m_args);
+
     instantiateAlg_();
 #endif  // GDALALG_MIN_GDAL_
 }
@@ -1045,8 +1047,8 @@ bool GDALAlg::parseCommandLineArgs() {
         for (auto it = m_map_input_hDS.begin(); it != m_map_input_hDS.end();
              ++it) {
 
-            GDALAlgorithmArgH hArg = GDALAlgorithmGetArg(m_hAlg,
-                                                         it->first.c_str());
+            GDALAlgorithmArgH hArg =
+                GDALAlgorithmGetArg(m_hAlg, it->first.c_str());
 
             if (hArg) {
                 if (GDALAlgorithmArgGetType(hArg) == GAAT_DATASET) {
@@ -1092,7 +1094,7 @@ bool GDALAlg::parseCommandLineArgs() {
             else if (GDALAlgorithmArgGetType(hArg) != GAAT_DATASET) {
                 GDALAlgorithmArgRelease(hArg);
                 Rcpp::stop("setting args from GDALVector incompatible with "
-                           "the algorithm argument type of \"input\"");
+                           "the algorithm argument type of \"input\" arg");
             }
             GDALAlgorithmArgRelease(hArg);
         }
@@ -1100,140 +1102,99 @@ bool GDALAlg::parseCommandLineArgs() {
         const Rcpp::List &alg_info = info();
         const Rcpp::CharacterVector &arg_names = alg_info["arg_names"];
         constexpr char override_warning_msg[] =
-            "value given in 'args' overrides setting from input object";
+            "the value given in 'args' overrides setting from an input object";
 
+        // check for potential args to auto-set
+        // some also have aliases to check for
         for (Rcpp::String arg_name : arg_names) {
             const char *pszArgName = arg_name.get_cstring();
+            const Rcpp::List &arg_info = argInfo(pszArgName);
+            const Rcpp::CharacterVector &aliases = arg_info["aliases"];
+            const Rcpp::CharacterVector &aliases_in_args =
+                Rcpp::intersect(aliases, m_args_no_leading_dash);
 
-            // FIXME: arg aliases are currently hard coded, look up instead
+            if (contains_str_(m_args, pszArgName) ||
+                aliases_in_args.size() > 0) {
 
-            if (m_in_vector_props.is_set && EQUAL(pszArgName, "input-format")) {
-                if (contains_str_(m_args, "--input-format") ||
-                    contains_str_(m_args, "--if")) {
-
-                    if (!quiet) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning(override_warning_msg);
-                    }
+                if (!quiet) {
+                    Rcpp::Rcout << "argument: " << pszArgName << "\n";
+                    Rcpp::warning(override_warning_msg);
                 }
-                else {
-                    // this one can fail silently since it is optional anyway
-                    res = setArg(
-                        arg_name,
-                        Rcpp::wrap(m_in_vector_props.driver_short_name));
-                }
-                continue;
             }
+            // input-format
+            else if (m_in_vector_props.is_set &&
+                     EQUAL(pszArgName, "input-format")) {
+
+                // this one can fail silently since it is optional anyway
+                res = setArg(arg_name,
+                             Rcpp::wrap(m_in_vector_props.driver_short_name));
+            }
+            // input-layer
             else if (m_in_vector_props.is_set && !m_in_vector_props.is_sql &&
                      EQUAL(pszArgName, "input-layer")) {
 
-                if (contains_str_(m_args, "--input-layer") ||
-                    contains_str_(m_args, "--layer") ||
-                    contains_str_(m_args, "-l")) {
+                res = setArg(arg_name,
+                             Rcpp::wrap(m_in_vector_props.layer_name));
 
-                    if (!quiet) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning(override_warning_msg);
-                    }
+                if (!res) {
+                    Rcpp::Rcout << "argument: " << pszArgName << "\n";
+                    Rcpp::warning("failed to set from object");
+                    break;
                 }
-                else {
-                    res = setArg(
-                        arg_name, Rcpp::wrap(m_in_vector_props.layer_name));
-
-                    if (!res) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning("failed to set from object");
-                        break;
-                    }
-                }
-                continue;
             }
+            // sql
             else if (m_in_vector_props.is_set && m_in_vector_props.is_sql &&
                      EQUAL(pszArgName, "sql")) {
 
-                if (contains_str_(m_args, "--sql")) {
-                    if (!quiet) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning(override_warning_msg);
-                    }
-                }
-                else {
-                    res = setArg(
-                        arg_name, Rcpp::wrap(m_in_vector_props.layer_sql));
+                res = setArg(arg_name,
+                             Rcpp::wrap(m_in_vector_props.layer_sql));
 
-                    if (!res) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning("failed to set from object");
-                        break;
-                    }
+                if (!res) {
+                    Rcpp::Rcout << "argument: " << pszArgName << "\n";
+                    Rcpp::warning("failed to set from object");
+                    break;
                 }
-                continue;
             }
+            // dialect
             else if (m_in_vector_props.is_set && m_in_vector_props.is_sql &&
                      EQUAL(pszArgName, "dialect")) {
 
-                if (contains_str_(m_args, "--dialect")) {
-                    if (!quiet) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning(override_warning_msg);
-                    }
+                if (!m_in_vector_props.sql_dialect.empty()) {
+                    res = setArg(arg_name,
+                                 Rcpp::wrap(m_in_vector_props.sql_dialect));
                 }
-                else {
-                    if (!m_in_vector_props.sql_dialect.empty()) {
-                        res = setArg(
-                            arg_name,
-                            Rcpp::wrap(m_in_vector_props.sql_dialect));
-                    }
 
-                    if (!res) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning("failed to set from object");
-                        break;
-                    }
+                if (!res) {
+                    Rcpp::Rcout << "argument: " << pszArgName << "\n";
+                    Rcpp::warning("failed to set from object");
+                    break;
                 }
-                continue;
             }
+            // like-sql
             else if (m_like_vector_props.is_set && m_like_vector_props.is_sql &&
                      EQUAL(pszArgName, "like-sql")) {
 
-                if (contains_str_(m_args, "--like-sql")) {
-                    if (!quiet) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning(override_warning_msg);
-                    }
-                }
-                else {
-                    res = setArg(
-                        arg_name, Rcpp::wrap(m_like_vector_props.layer_sql));
+                res = setArg(arg_name,
+                             Rcpp::wrap(m_like_vector_props.layer_sql));
 
-                    if (!res) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning("failed to set from object");
-                        break;
-                    }
+                if (!res) {
+                    Rcpp::Rcout << "argument: " << pszArgName << "\n";
+                    Rcpp::warning("failed to set from object");
+                    break;
                 }
-                continue;
             }
+            // like-layer
             else if (m_like_vector_props.is_set && !m_like_vector_props.is_sql
                      && EQUAL(pszArgName, "like-layer")) {
 
-                if (contains_str_(m_args, "--like-layer")) {
-                    if (!quiet) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning(override_warning_msg);
-                    }
-                }
-                else {
-                    res = setArg(
-                        arg_name, Rcpp::wrap(m_like_vector_props.layer_name));
+                res = setArg(arg_name,
+                             Rcpp::wrap(m_like_vector_props.layer_name));
 
-                    if (!res) {
-                        Rcpp::Rcout << "argument: " << pszArgName << "\n";
-                        Rcpp::warning("failed to set from object");
-                        break;
-                    }
+                if (!res) {
+                    Rcpp::Rcout << "argument: " << pszArgName << "\n";
+                    Rcpp::warning("failed to set from object");
+                    break;
                 }
-                continue;
             }
         }
     }
