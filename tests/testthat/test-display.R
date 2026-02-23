@@ -1,5 +1,5 @@
 test_that("plot_raster works", {
-    if (!grepl("^darwin", R.version$os))
+    if (.Platform$OS.type == "unix" && !grepl("^darwin", R.version$os))
         skip_if_not(capabilities("X11"))
 
     # grayscale
@@ -64,7 +64,7 @@ test_that("plot_raster works", {
 })
 
 test_that("plot_geom works", {
-    if (!grepl("^darwin", R.version$os))
+    if (.Platform$OS.type == "unix" && !grepl("^darwin", R.version$os))
         skip_if_not(capabilities("X11"))
 
     # wk suggested package vctrs is required for wk::wk_plot()

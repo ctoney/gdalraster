@@ -390,20 +390,22 @@ test_that("OGR management utilities work", {
 
 })
 
-test_that("create Memory format works", {
+test_that("create MEM format works", {
+    skip_if(gdal_version_num() < gdal_compute_version(3, 11, 0))
+
     defn <- ogr_def_layer("Point", srs = epsg_to_wkt(4269))
     defn$int_field <- ogr_def_field("OFTInteger")
     defn$str_field <- ogr_def_field("OFTString")
     defn$real_field <- ogr_def_field("OFTReal")
     defn$dt_field <- ogr_def_field("OFTDateTime")
 
-    expect_no_error(lyr <- ogr_ds_create("Memory", "", "mem_layer",
+    expect_no_error(lyr <- ogr_ds_create("MEM", "", "mem_layer",
                                          layer_defn = defn,
-                                         lco = "WRITE_BBOX=YES",
+                                         lco = "FID=custom_fid",
                                          overwrite = TRUE,
                                          return_obj = TRUE))
 
-    expect_equal(lyr$getDriverShortName(), "Memory")
+    expect_equal(lyr$getDriverShortName(), "MEM")
     expect_equal(lyr$getFieldNames() |> length(), 5)
 
     lyr$close()
