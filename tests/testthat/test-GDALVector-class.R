@@ -330,11 +330,11 @@ test_that("set ignored/selected fields works", {
     dsn_json <- system.file("extdata/test.geojson", package="gdalraster")
     lyr <- new(GDALVector, dsn_json)
     expect_true(("int2" %in% lyr$getFieldNames()))
-    expect_output(lyr$setIgnoredFields("int2"),
-                  "layer does not have IgnoreFields capability")
+    expect_error(lyr$setIgnoredFields("int2"),
+                 "layer does not have IgnoreFields capability")
     expect_length(lyr$getIgnoredFields(), 0)
-    expect_output(lyr$setSelectedFields("int2"),
-                  "layer does not have IgnoreFields capability")
+    expect_error(lyr$setSelectedFields("int2"),
+                 "layer does not have IgnoreFields capability")
     expect_length(lyr$getIgnoredFields(), 0)
     lyr$close()
 
