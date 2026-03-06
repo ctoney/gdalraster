@@ -1,6 +1,9 @@
 # Changelog
 
-## gdalraster 2.4.0.9093 (dev)
+## gdalraster 2.4.0.9094 (dev)
+
+- class `GDALVector`: honor the `quiet` field setting in several places
+  it was not checked before printing a console message (2026-03-05)
 
 - (internal) tests fixes: use vector MEM format instead of Memory (GDAL
   \>= 3.11); make plotting tests check X11 capability only if unix OS
