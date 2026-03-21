@@ -220,44 +220,48 @@ static std::string getGFU_string_(GDALRATFieldUsage gfu) {
 //  Documented in R/gdalraster.R.
 // ****************************************************************************
 
-GDALRaster::GDALRaster()
-        : m_fname(""), m_open_options(Rcpp::CharacterVector::create()),
-          m_shared(false), m_allowed_drivers(Rcpp::CharacterVector::create()) {}
+GDALRaster::GDALRaster() : m_fname(""), m_shared(false) {
+    m_open_options = Rcpp::CharacterVector::create();
+    m_allowed_drivers = Rcpp::CharacterVector::create();
+}
 
 GDALRaster::GDALRaster(const Rcpp::CharacterVector &filename)
-        : GDALRaster(filename, true, R_NilValue, true,
-                     Rcpp::CharacterVector::create()) {}
+        : GDALRaster(filename, true, R_NilValue, true, R_NilValue) {}
 
 GDALRaster::GDALRaster(const Rcpp::CharacterVector &filename,
                        bool read_only)
-        : GDALRaster(filename, read_only, R_NilValue, true,
-                     Rcpp::CharacterVector::create()) {}
+        : GDALRaster(filename, read_only, R_NilValue, true, R_NilValue) {}
 
 GDALRaster::GDALRaster(const Rcpp::CharacterVector &filename, bool read_only,
                        const Rcpp::CharacterVector &open_options)
-        : GDALRaster(filename, read_only, open_options, true,
-                     Rcpp::CharacterVector::create()) {}
+        : GDALRaster(filename, read_only, open_options, true, R_NilValue) {}
 
 GDALRaster::GDALRaster(const Rcpp::CharacterVector &filename, bool read_only,
                        const Rcpp::Nullable<Rcpp::CharacterVector>
                            &open_options,
                        bool shared)
-        : GDALRaster(filename, read_only, open_options, shared,
-                     Rcpp::CharacterVector::create()) {}
+        : GDALRaster(filename, read_only, open_options, shared, R_NilValue) {}
 
 GDALRaster::GDALRaster(const Rcpp::CharacterVector &filename, bool read_only,
                        const Rcpp::Nullable<Rcpp::CharacterVector>
                            &open_options,
                        bool shared,
-                       const Rcpp::CharacterVector &allowed_drivers)
-        : m_shared(shared), m_allowed_drivers(allowed_drivers) {
+                       const Rcpp::Nullable<Rcpp::CharacterVector>
+                           &allowed_drivers) {
 
     m_fname = Rcpp::as<std::string>(check_gdal_filename(filename));
+
+    m_shared = shared;
 
     if (open_options.isNotNull())
         m_open_options = open_options;
     else
         m_open_options = Rcpp::CharacterVector::create();
+
+    if (allowed_drivers.isNotNull())
+        m_allowed_drivers = allowed_drivers;
+    else
+        m_allowed_drivers = Rcpp::CharacterVector::create();
 
     open(read_only);
 
@@ -2897,7 +2901,8 @@ RCPP_MODULE(mod_GDALRaster) {
         Rcpp::Nullable<Rcpp::CharacterVector>, bool>
         ("Usage: new(GDALRaster, filename, read_only, open_options, shared)")
     .constructor<Rcpp::CharacterVector, bool,
-        Rcpp::Nullable<Rcpp::CharacterVector>, bool, Rcpp::CharacterVector>
+        Rcpp::Nullable<Rcpp::CharacterVector>, bool,
+        Rcpp::Nullable<Rcpp::CharacterVector>>
         ("Usage: new(GDALRaster, filename, read_only, open_options, shared, "
          "allowed_drivers)")
 
