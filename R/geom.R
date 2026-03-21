@@ -2844,7 +2844,7 @@ g_geodesic_length <- function(geom, srs, traditional_gis_order = TRUE,
 #' concaveness, determined by a numeric target parameter. The concave hull is
 #' constructed by removing the longest outer edges of the Delaunay Triangulation
 #' of the space between the polygons, until the target criterion parameter is
-#' reached. This can be expressed as a ratio between the lengths of the longes
+#' reached. This can be expressed as a ratio between the lengths of the longest
 #' and shortest edges. `1` produces the convex hull; `0` produces a hull with
 #' maximum concaveness.
 #'
