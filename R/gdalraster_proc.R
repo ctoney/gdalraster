@@ -1761,7 +1761,6 @@ is_los_visible <- function(dem, ptsA, ptsB, band = 1L,
         stop("is_los_visible() requires GDAL >= 3.9", call. = FALSE)
 
     ds <- NULL
-    close_ds <- FALSE
     if (is(dem, "Rcpp_GDALRaster")) {
         ds <- dem
         if (!ds$isOpen()) {
@@ -1769,7 +1768,7 @@ is_los_visible <- function(dem, ptsA, ptsB, band = 1L,
         }
     } else if (is.character(dem) && length(dem) == 1) {
         ds <- new(GDALRaster, dem)
-        close_ds <- TRUE
+        on.exit(ds$close(), add = TRUE)
     } else {
         stop("'dem' must be a character string or GDALRaster object",
              call. = FALSE)
@@ -1875,9 +1874,6 @@ is_los_visible <- function(dem, ptsA, ptsB, band = 1L,
 
     ret <- .isLineOfSightVisible(ds, band, ptsA_in, srsA, ZinterpA,
                                  ptsB_in, srsB, ZinterpB, quiet)
-
-    if (close_ds)
-        ds$close()
 
     return(ret)
 }
