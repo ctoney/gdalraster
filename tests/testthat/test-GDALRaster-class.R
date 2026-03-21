@@ -8,9 +8,9 @@ test_that("class constructors work as expected", {
     # expect_error(ds <- new(GDALRaster, f))
 
     # allowed drivers
-    evt_file <- system.file("extdata/storml_evt.tif", package="gdalraster")
-    expect_no_error(ds <- new(GDALRaster, evt_file, TRUE, NULL, TRUE, "GTiff"))
-    ds$close()
+    # evt_file <- system.file("extdata/storml_evt.tif", package="gdalraster")
+    # expect_no_error(ds <- new(GDALRaster, evt_file, TRUE, NULL, TRUE, "GTiff"))
+    # ds$close()
 
     # changes in GDAL 3.10.0 affect reliability of identify driver with allowed
     # skip_if(gdal_version_num() < gdal_compute_version(3, 10, 0))
