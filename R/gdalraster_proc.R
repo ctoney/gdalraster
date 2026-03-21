@@ -1690,7 +1690,7 @@ dem_proc <- function(mode,
 #' surface of the DEM is never visible with `GDALIsLineOfSightVisible()`, even
 #' if viewed from a point directly above. For a detailed description, see
 #' \url{https://github.com/OSGeo/gdal/issues/12458}. A workaround for that case
-#' could be to set a small but negligible postive Z value (if using
+#' could be to set a small but negligible positive Z value (if using
 #' `"RELATIVE_TO_DEM"`) for points that are intended to be on the DEM surface,
 #' if appropriate for the use case.
 #'
