@@ -1165,7 +1165,7 @@ std::string srs_get_celestial_body_name(const std::string &srs) {
 //' iau <- srs_info_from_db("IAU_2015")
 //' str(iau)
 // [[Rcpp::export]]
-Rcpp::DataFrame srs_info_from_db(std::string auth_name = "") {
+Rcpp::DataFrame srs_info_from_db(const std::string &auth_name = "") {
     const char *pszAuthName = nullptr;
     if (auth_name != "")
         pszAuthName = auth_name.c_str();

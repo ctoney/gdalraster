@@ -43,6 +43,6 @@ bool srs_epsg_treats_as_lat_long(const std::string &srs);
 bool srs_epsg_treats_as_northing_easting(const std::string &srs);
 std::string srs_get_celestial_body_name(const std::string &srs);
 
-Rcpp::DataFrame srs_info_from_db(std::string auth_name);
+Rcpp::DataFrame srs_info_from_db(const std::string &auth_name);
 
 #endif  // SRS_API_H_
