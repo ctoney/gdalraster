@@ -2458,12 +2458,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // srs_info_from_db
-Rcpp::DataFrame srs_info_from_db(std::string auth_name);
+Rcpp::DataFrame srs_info_from_db(const std::string& auth_name);
 RcppExport SEXP _gdalraster_srs_info_from_db(SEXP auth_nameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< std::string >::type auth_name(auth_nameSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type auth_name(auth_nameSEXP);
     rcpp_result_gen = Rcpp::wrap(srs_info_from_db(auth_name));
     return rcpp_result_gen;
 END_RCPP
