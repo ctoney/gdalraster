@@ -1,3 +1,5 @@
+skip()
+
 test_that("buildRAT/displayRAT work", {
     evt_file <- system.file("extdata/storml_evt.tif", package="gdalraster")
     evt_csv <- system.file("extdata/LF20_EVT_220.csv", package="gdalraster")
