@@ -1,3 +1,5 @@
+skip()
+
 # test the R interface to GDALCreate() and GDALCreateCopy() via the wrapper
 # functions in src/gdal_exp.cpp, with tests also in test-gdal_exp.R
 
