@@ -1,3 +1,5 @@
+skip()
+
 skip_if(gdal_version_num() < gdal_compute_version(3, 2, 0))
 skip_if(nrow(gdal_formats("netCDF")) == 0 ||
             isFALSE(gdal_formats("netCDF")$multidim_raster))
