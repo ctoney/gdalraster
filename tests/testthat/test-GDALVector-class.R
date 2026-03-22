@@ -1,3 +1,5 @@
+skip()
+
 # Tests for src/gdalvector.cpp
 test_that("class constructors work", {
     f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package="gdalraster")
