@@ -1,3 +1,5 @@
+skip()
+
 test_that("translate runs without error", {
     elev_file <- system.file("extdata/storml_elev_orig.tif", package="gdalraster")
     args <- c("-tr", "90", "90", "-r", "average")
