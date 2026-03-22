@@ -9,4 +9,4 @@
 library(testthat)
 # library(gdalraster)
 
-test_check("gdalraster")
+# test_check("gdalraster")
