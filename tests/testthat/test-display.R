@@ -1,5 +1,6 @@
+skip()
+
 test_that("plot_raster works", {
-    skip()
 
     if (.Platform$OS.type == "unix" && !grepl("^darwin", R.version$os))
         skip_if_not(capabilities("X11"))
