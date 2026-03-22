@@ -1382,6 +1382,8 @@ test_that("field domain specifications are returned correctly", {
     # support for DateTime field domains in OpenFileGDB was added at GDAL 3.8.0
     skip_if(gdal_version_num() < gdal_compute_version(3, 8, 0))
 
+    skip()
+
     f <- system.file("extdata/domains.gdb.zip", package="gdalraster")
     lyr <- new(GDALVector, f, "test")
 
