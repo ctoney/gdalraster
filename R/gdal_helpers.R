@@ -708,8 +708,10 @@ inspectDataset <- function(filename, ...) {
         push_error_handler("quiet")
         ds <- try(new(GDALRaster, filename_in), silent = TRUE)
         pop_error_handler()
-        if (is(ds, "Rcpp_GDALRaster"))
+        if (is(ds, "Rcpp_GDALRaster")) {
+            on.exit(ds$close(), add = TRUE)
             out$contains_raster <- TRUE
+        }
     }
 
     out$supports_subdatasets <- fmt_info$subdatasets
@@ -727,10 +729,6 @@ inspectDataset <- function(filename, ...) {
                 }
             }
         }
-    }
-
-    if (out$supports_raster && is(ds, "Rcpp_GDALRaster")) {
-        ds$close()
     }
 
     out$supports_vector <- fmt_info$vector
