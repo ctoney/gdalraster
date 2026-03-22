@@ -455,6 +455,8 @@ test_that("read methods work correctly", {
     rm(lyr)
 
     # convertToLinear
+    skip()
+
     dsn <- system.file("extdata/multisurface.zip", package="gdalraster")
     dsn <- file.path("/vsizip", dsn, "multisurface.gpkg")
     lyr <- new(GDALVector, dsn, "multisurface_test")

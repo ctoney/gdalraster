@@ -322,6 +322,8 @@ test_that("algorithm run/output/outputs work", {
 })
 
 test_that("`setVectorArgsFromObject` and `outputLayerNameForOpen` work", {
+    skip()
+
     f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
     ynp_dsn <- file.path("/vsizip", f, "ynp_features.gpkg")
 

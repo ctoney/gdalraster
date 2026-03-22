@@ -659,11 +659,6 @@ dump_open_datasets <- function() {
 #' @seealso
 #' [gdal_formats()], [identifyDriver()]
 #'
-#' @examples
-#' f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
-#' ynp_dsn <- file.path("/vsizip", f, "ynp_features.gpkg")
-#'
-#' inspectDataset(ynp_dsn)
 #' @export
 inspectDataset <- function(filename, ...) {
     if (!is.character(filename))

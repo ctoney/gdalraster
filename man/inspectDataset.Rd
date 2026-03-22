@@ -48,12 +48,6 @@ PostgreSQL / PostGISRaster are handled as a special case. If additional
 arguments \code{raster} or \code{vector} are not given for \code{identifyDriver()}, then
 \code{raster = FALSE} is assumed.
 }
-\examples{
-f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
-ynp_dsn <- file.path("/vsizip", f, "ynp_features.gpkg")
-
-inspectDataset(ynp_dsn)
-}
 \seealso{
 \code{\link[=gdal_formats]{gdal_formats()}}, \code{\link[=identifyDriver]{identifyDriver()}}
 }
