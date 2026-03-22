@@ -95,26 +95,26 @@ SOZip can be validated with:
 where \code{zip_file} uses the /vsizip/ prefix.
 }
 \examples{
-lcp_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
-zip_file <- file.path(tempdir(), "storml_lcp.zip")
+f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
+zip_file <- file.path(tempdir(), "ynp_fires.zip")
 
 # Requires GDAL >= 3.7
 if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
-  addFilesInZip(zip_file, lcp_file, full_paths = FALSE,
-                sozip_enabled = "YES", num_threads = 1)
+  addFilesInZip(zip_file, f, full_paths = FALSE, sozip_enabled = "YES",
+                num_threads = 1)
 
   print("Files in zip archive:")
   print(unzip(zip_file, list = TRUE))
 
   # Open with GDAL using Virtual File System handler '/vsizip/'
-  # see: https://gdal.org/en/stable/user/virtual_file_systems.html#vsizip-zip-archives
-  lcp_in_zip <- file.path("/vsizip", zip_file, "storm_lake.lcp")
+  # https://gdal.org/en/stable/user/virtual_file_systems.html#vsizip-zip-archives
+  vsi_f <- file.path("/vsizip", zip_file, "ynp_fires_1984_2022.gpkg")
   print("SOZip metadata:")
-  print(vsi_get_file_metadata(lcp_in_zip, domain = "ZIP"))
+  print(vsi_get_file_metadata(vsi_f, domain = "ZIP"))
 
-  ds <- new(GDALRaster, lcp_in_zip)
-  ds$info()
-  ds$close()
+  lyr <- new(GDALVector, vsi_f)
+  lyr$info()
+  lyr$close()
   \dontshow{vsi_unlink(zip_file)}
 }
 }

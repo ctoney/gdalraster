@@ -134,26 +134,26 @@ gdal_compute_version <- function(maj, min, rev) {
 #' [vsi_get_file_metadata()]
 #'
 #' @examples
-#' lcp_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
-#' zip_file <- file.path(tempdir(), "storml_lcp.zip")
+#' f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
+#' zip_file <- file.path(tempdir(), "ynp_fires.zip")
 #'
 #' # Requires GDAL >= 3.7
 #' if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
-#'   addFilesInZip(zip_file, lcp_file, full_paths = FALSE,
-#'                 sozip_enabled = "YES", num_threads = 1)
+#'   addFilesInZip(zip_file, f, full_paths = FALSE, sozip_enabled = "YES",
+#'                 num_threads = 1)
 #'
 #'   print("Files in zip archive:")
 #'   print(unzip(zip_file, list = TRUE))
 #'
 #'   # Open with GDAL using Virtual File System handler '/vsizip/'
-#'   # see: https://gdal.org/en/stable/user/virtual_file_systems.html#vsizip-zip-archives
-#'   lcp_in_zip <- file.path("/vsizip", zip_file, "storm_lake.lcp")
+#'   # https://gdal.org/en/stable/user/virtual_file_systems.html#vsizip-zip-archives
+#'   vsi_f <- file.path("/vsizip", zip_file, "ynp_fires_1984_2022.gpkg")
 #'   print("SOZip metadata:")
-#'   print(vsi_get_file_metadata(lcp_in_zip, domain = "ZIP"))
+#'   print(vsi_get_file_metadata(vsi_f, domain = "ZIP"))
 #'
-#'   ds <- new(GDALRaster, lcp_in_zip)
-#'   ds$info()
-#'   ds$close()
+#'   lyr <- new(GDALVector, vsi_f)
+#'   lyr$info()
+#'   lyr$close()
 #'   \dontshow{vsi_unlink(zip_file)}
 #' }
 #' @export
@@ -173,7 +173,7 @@ addFilesInZip <- function(
         stop("addFilesInZip() requires GDAL >= 3.7", call. = FALSE)
 
     if (!is.character(zip_file) || length(zip_file) > 1)
-        stop("'zip_file' must be a character string", call. = FALSE)
+        stop("'zip_file' must be a single character string", call. = FALSE)
     else
         zip_file <- .check_gdal_filename(zip_file)
 
@@ -204,51 +204,58 @@ addFilesInZip <- function(
 
     opt <- NULL
     if (!is.null(sozip_enabled)) {
-        if (!is.character(sozip_enabled) || length(sozip_enabled) > 1)
-            stop("'sozip_enabled' must be a character string", call. = FALSE)
+        if (!is.character(sozip_enabled) || length(sozip_enabled) > 1) {
+            stop("'sozip_enabled' must be a single character string",
+                 call. = FALSE)
+        }
         sozip_enabled <- toupper(sozip_enabled)
-        if (!(sozip_enabled %in% c("AUTO", "YES", "NO")))
+        if (!(sozip_enabled %in% c("AUTO", "YES", "NO"))) {
             stop("'sozip_enabled' must be one of \"AUTO\", \"YES\" or \"NO\"",
                  call. = FALSE)
-        else
+        } else {
             opt <- c(opt, paste0("SOZIP_ENABLED=", sozip_enabled))
+        }
     }
     if (!is.null(sozip_chunk_size)) {
         if (length(sozip_chunk_size) > 1)
-            stop("'sozip_chunk_size' must be length-1", call. = FALSE)
+            stop("'sozip_chunk_size' must be a single value", call. = FALSE)
         opt <- c(opt, paste0("SOZIP_CHUNK_SIZE=", sozip_chunk_size))
     }
     if (!is.null(sozip_min_file_size)) {
         if (length(sozip_min_file_size) > 1)
-            stop("'sozip_min_file_size' must be length-1", call. = FALSE)
+            stop("'sozip_min_file_size' must be a single value", call. = FALSE)
         opt <- c(opt, paste0("SOZIP_MIN_FILE_SIZE=", sozip_min_file_size))
     }
     if (!is.null(num_threads)) {
         if (length(num_threads) > 1)
-            stop("'num_threads' must be length-1", call. = FALSE)
+            stop("'num_threads' must be a single value", call. = FALSE)
         opt <- c(opt, paste0("NUM_THREADS=", num_threads))
     }
     if (!is.null(content_type)) {
-        if (!is.character(content_type) || length(content_type) > 1)
-            stop("'content_type' must be a character string", call. = FALSE)
+        if (!is.character(content_type) || length(content_type) > 1) {
+            stop("'content_type' must be a single character string",
+                 call. = FALSE)
+        }
         opt <- c(opt, paste0("CONTENT_TYPE=", content_type))
     }
 
-    if (overwrite)
-        unlink(zip_file)
+    if (overwrite) {
+        if (vsi_stat_exists(zip_file) && vsi_unlink(zip_file) != 0)
+            stop("cannot overwrite: ", zip_file, call. = FALSE)
+    }
 
     ret <- FALSE
     for (f in add_files) {
-        if (!(utils::file_test("-f", f)))
+        if (!(vsi_stat_exists(f) && vsi_stat_type(f) == "file"))
             stop("file not found: ", f, call. = FALSE)
 
         archive_fname <- f
-        if (!full_paths) {
-            archive_fname <- basename(f)
+        if (!full_paths || substr(f, 1, 4) == "/vsi") {
+            archive_fname <- .cpl_get_filename(f)
         } else if (substr(f, 1, 1) == "/") {
             archive_fname <- substring(f, 2)
         } else if (nchar(f) > 3 && substr(f, 2, 2) == ":" &&
-                       (substr(f, 3, 3) == "/" || substr(f, 3, 3) == "\\")) {
+                   (substr(f, 3, 3) == "/" || substr(f, 3, 3) == "\\")) {
             archive_fname <- substring(f, 4)
         }
         archive_fname <- .check_gdal_filename(archive_fname)
