@@ -137,8 +137,8 @@ gdal_compute_version <- function(maj, min, rev) {
 #' lcp_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
 #' zip_file <- file.path(tempdir(), "storml_lcp.zip")
 #'
-#' # Requires GDAL >= 3.7
-#' if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
+#' # Requires GDAL >= 3.7 (temporarily 3.11.2 for test)
+#' if (gdal_version_num() >= gdal_compute_version(3, 11, 2)) {
 #'   addFilesInZip(zip_file, lcp_file, full_paths = FALSE,
 #'                 sozip_enabled = "YES", num_threads = 1)
 #'
@@ -169,8 +169,8 @@ addFilesInZip <- function(
         content_type = NULL,
         quiet = FALSE) {
 
-    if (gdal_version_num() < gdal_compute_version(3, 7, 0))
-        stop("addFilesInZip() requires GDAL >= 3.7", call. = FALSE)
+    if (gdal_version_num() < gdal_compute_version(3, 11, 2))
+        stop("addFilesInZip() requires GDAL >= 3.11.2", call. = FALSE)
 
     if (!is.character(zip_file) || length(zip_file) > 1)
         stop("'zip_file' must be a character string", call. = FALSE)

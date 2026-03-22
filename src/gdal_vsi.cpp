@@ -280,7 +280,7 @@ Rcpp::CharacterVector vsi_read_dir(const Rcpp::CharacterVector &path,
 //'   * `one.tif`
 //'   * `my_subdir/two.tif`
 //'   * `my_subdir/subsubdir/three.tif`
-//' 
+//'
 //' ```
 //' vsi_glob("one.tif")
 //'   # returns ("one.tif")
@@ -336,7 +336,7 @@ Rcpp::CharacterVector vsi_glob(const Rcpp::CharacterVector &pattern,
 #else
     const std::string pattern_in =
         Rcpp::as<std::string>(check_gdal_filename(pattern));
-    
+
     const CPLStringList aosNames(
         VSIGlob(pattern_in.c_str(),
                 nullptr,
@@ -1184,7 +1184,7 @@ void vsi_clear_path_options(const Rcpp::CharacterVector &path_prefix) {
 //' @seealso
 //' [vsi_stat()], [addFilesInZip()]
 //'
-//' @examplesIf gdal_version_num() >= gdal_compute_version(3, 7, 0)
+//' @examplesIf gdal_version_num() >= gdal_compute_version(3, 11, 2)
 //' # validate an SOZip-enabled file
 //' # Requires GDAL >= 3.7
 //' f <- system.file("extdata/ynp_features.zip", package = "gdalraster")

@@ -1,5 +1,3 @@
-skip()
-
 # Tests for src/gdal_exp.cpp - Exported stand-alone functions for gdalraster
 # Some functions in gdal_exp.cpp are called by gdalraster_proc.R and
 # tested there.

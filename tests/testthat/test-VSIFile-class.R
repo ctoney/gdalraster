@@ -212,7 +212,7 @@ test_that("VSIFile methods work", {
     expect_error(vf <- new(VSIFile, mem_file, "r"))
 
     # test /vsizip/ SOZip for read access only
-    skip_if(as.integer(gdal_version()[2]) < 3070000)
+    skip_if(gdal_version_num() < gdal_compute_version(3, 11, 2))
 
     zip_file <- file.path(tempdir(), "storml_lcp.zip")
     addFilesInZip(zip_file, lcp_file, overwrite = TRUE, full_paths = FALSE,

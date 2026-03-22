@@ -179,7 +179,7 @@ test_that("vsi_get_file_metadata works", {
     f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package="gdalraster")
     expect_no_error(vsi_get_file_metadata(f, domain=""))
 
-    skip_if(as.integer(gdal_version()[2]) < 3070000)
+    skip_if(gdal_version_num() < gdal_compute_version(3, 11, 2))
 
     zip_file <- tempfile(fileext=".zip")
     addFilesInZip(zip_file, f, full_paths=FALSE, sozip_enabled="YES")

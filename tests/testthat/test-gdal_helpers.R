@@ -8,8 +8,8 @@ test_that("gdal_compute_version works", {
 })
 
 test_that("addFilesInZip works", {
-    # requires GDAL >= 3.7
-    skip_if(as.integer(gdal_version()[2]) < 3070000)
+    # requires GDAL >= 3.7 (temp 3.11.2 for mem leak test)
+    skip_if(gdal_version_num() < gdal_compute_version(3, 11, 2))
 
     evt_file <- system.file("extdata/storml_evt.tif", package="gdalraster")
     evc_file <- system.file("extdata/storml_evc.tif", package="gdalraster")

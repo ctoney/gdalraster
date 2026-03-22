@@ -3768,7 +3768,7 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
                   const Rcpp::Nullable<Rcpp::CharacterVector> &options,
                   bool quiet) {
 
-#if GDAL_VERSION_NUM < 3070000
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 2)
     Rcpp::stop("addFileInZip() requires GDAL >= 3.7");
 
 #else
@@ -3796,8 +3796,9 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
     }
 
     std::unique_ptr<void, decltype(&CPLCloseZip)> hZIP(
-        CPLCreateZip(zip_filename_in.c_str(),
-        opt_zip_create.empty() ? nullptr : opt_zip_create.data()),
+        CPLCreateZip(
+            zip_filename_in.c_str(),
+            opt_zip_create.empty() ? nullptr : opt_zip_create.data()),
         CPLCloseZip);
 
     if (!hZIP)
@@ -3817,12 +3818,10 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
         GDALTermProgressR(0, nullptr, nullptr);
     }
 
-    CPLErr err = CPLAddFileInZip(hZIP.get(), archive_filename_in.c_str(),
-                                 in_filename_in.c_str(),
-                                 nullptr,
-                                 opt_list.empty() ? nullptr : opt_list.data(),
-                                 quiet ? nullptr : GDALTermProgressR,
-                                 nullptr);
+    CPLErr err = CPLAddFileInZip(
+        hZIP.get(), archive_filename_in.c_str(), in_filename_in.c_str(),
+        nullptr, opt_list.empty() ? nullptr : opt_list.data(),
+        quiet ? nullptr : GDALTermProgressR, nullptr);
 
     if (err == CE_None)
         return true;

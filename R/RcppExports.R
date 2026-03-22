@@ -1923,7 +1923,7 @@ vsi_read_dir <- function(path, max_files = 0L, recursive = FALSE, all_files = FA
 #'   * `one.tif`
 #'   * `my_subdir/two.tif`
 #'   * `my_subdir/subsubdir/three.tif`
-#' 
+#'
 #' ```
 #' vsi_glob("one.tif")
 #'   # returns ("one.tif")
@@ -2542,7 +2542,7 @@ vsi_clear_path_options <- function(path_prefix) {
 #' @seealso
 #' [vsi_stat()], [addFilesInZip()]
 #'
-#' @examplesIf gdal_version_num() >= gdal_compute_version(3, 7, 0)
+#' @examplesIf gdal_version_num() >= gdal_compute_version(3, 11, 2)
 #' # validate an SOZip-enabled file
 #' # Requires GDAL >= 3.7
 #' f <- system.file("extdata/ynp_features.zip", package = "gdalraster")

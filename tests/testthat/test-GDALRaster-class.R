@@ -1,5 +1,3 @@
-skip()
-
 # Tests for src/gdalraster.cpp
 test_that("class constructors work as expected", {
     # TODO: constructors are tested throughout, but add systematic tests here
