@@ -8,8 +8,6 @@ test_that("gdal_compute_version works", {
 })
 
 test_that("addFilesInZip works", {
-    skip()
-
     # requires GDAL >= 3.7
     skip_if(as.integer(gdal_version()[2]) < 3070000)
 

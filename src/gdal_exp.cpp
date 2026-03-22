@@ -3781,32 +3781,35 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
     const std::string in_filename_in =
         Rcpp::as<std::string>(check_gdal_filename(in_filename));
 
-    bool ret = false;
-    VSIStatBufL buf;
-
-    std::vector<char *> opt_zip_create;
+    std::vector<char *> opt_zip_create = {};
     if (overwrite) {
         VSIUnlink(zip_filename_in.c_str());
     } else {
-        if (VSIStatExL(zip_filename_in.c_str(), &buf, VSI_STAT_EXISTS_FLAG)
-                == 0) {
+        VSIStatBufL buf;
+        int nStatRet =
+            VSIStatExL(zip_filename_in.c_str(), &buf, VSI_STAT_EXISTS_FLAG);
+
+        if (nStatRet == 0) {
             opt_zip_create.push_back(const_cast<char *>("APPEND=TRUE"));
+            opt_zip_create.push_back(nullptr);
         }
     }
-    opt_zip_create.push_back(nullptr);
 
-    void *hZIP = CPLCreateZip(zip_filename_in.c_str(), opt_zip_create.data());
-    if (hZIP == nullptr)
-        Rcpp::stop("failed to obtain file handle for zip file");
+    std::unique_ptr<void, decltype(&CPLCloseZip)> hZIP(
+        CPLCreateZip(zip_filename_in.c_str(),
+        opt_zip_create.empty() ? nullptr : opt_zip_create.data()),
+        CPLCloseZip);
 
-    std::vector<char *> opt_list = {nullptr};
+    if (!hZIP)
+        Rcpp::stop("failed to obtain file handle for the zip file");
+
+    std::vector<char *> opt_list = {};
     if (options.isNotNull()) {
         Rcpp::CharacterVector options_in(options);
-        opt_list.resize(options_in.size() + 1);
         for (R_xlen_t i = 0; i < options_in.size(); ++i) {
-            opt_list[i] = (char *) options_in[i];
+            opt_list.push_back((char *) options_in[i]);
         }
-        opt_list[options_in.size()] = nullptr;
+        opt_list.push_back(nullptr);
     }
 
     if (!quiet) {
@@ -3814,20 +3817,17 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
         GDALTermProgressR(0, nullptr, nullptr);
     }
 
-    CPLErr err = CPLAddFileInZip(hZIP, archive_filename_in.c_str(),
+    CPLErr err = CPLAddFileInZip(hZIP.get(), archive_filename_in.c_str(),
                                  in_filename_in.c_str(),
-                                 nullptr, opt_list.data(),
+                                 nullptr,
+                                 opt_list.empty() ? nullptr : opt_list.data(),
                                  quiet ? nullptr : GDALTermProgressR,
                                  nullptr);
 
     if (err == CE_None)
-        ret = true;
+        return true;
     else
-        ret = false;
-
-    CPLCloseZip(hZIP);
-    return ret;
-
+        return false;
 #endif
 }
 
