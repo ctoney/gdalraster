@@ -295,6 +295,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpl_get_path
+std::string cpl_get_path(const Rcpp::CharacterVector& full_filename);
+RcppExport SEXP _gdalraster_cpl_get_path(SEXP full_filenameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type full_filename(full_filenameSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpl_get_path(full_filename));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpl_get_dirname
+std::string cpl_get_dirname(const Rcpp::CharacterVector& full_filename);
+RcppExport SEXP _gdalraster_cpl_get_dirname(SEXP full_filenameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type full_filename(full_filenameSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpl_get_dirname(full_filename));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpl_get_basename
 std::string cpl_get_basename(const Rcpp::CharacterVector& full_filename);
 RcppExport SEXP _gdalraster_cpl_get_basename(SEXP full_filenameSEXP) {
@@ -314,6 +336,17 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type full_filename(full_filenameSEXP);
     rcpp_result_gen = Rcpp::wrap(cpl_get_extension(full_filename));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpl_launder_for_filename
+std::string cpl_launder_for_filename(const std::string& full_filename);
+RcppExport SEXP _gdalraster_cpl_launder_for_filename(SEXP full_filenameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type full_filename(full_filenameSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpl_launder_for_filename(full_filename));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2594,8 +2627,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_has_spatialite", (DL_FUNC) &_gdalraster_has_spatialite, 0},
     {"_gdalraster_http_enabled", (DL_FUNC) &_gdalraster_http_enabled, 0},
     {"_gdalraster_cpl_get_filename", (DL_FUNC) &_gdalraster_cpl_get_filename, 1},
+    {"_gdalraster_cpl_get_path", (DL_FUNC) &_gdalraster_cpl_get_path, 1},
+    {"_gdalraster_cpl_get_dirname", (DL_FUNC) &_gdalraster_cpl_get_dirname, 1},
     {"_gdalraster_cpl_get_basename", (DL_FUNC) &_gdalraster_cpl_get_basename, 1},
     {"_gdalraster_cpl_get_extension", (DL_FUNC) &_gdalraster_cpl_get_extension, 1},
+    {"_gdalraster_cpl_launder_for_filename", (DL_FUNC) &_gdalraster_cpl_launder_for_filename, 1},
     {"_gdalraster_cpl_http_cleanup", (DL_FUNC) &_gdalraster_cpl_http_cleanup, 0},
     {"_gdalraster_apply_geotransform_", (DL_FUNC) &_gdalraster_apply_geotransform_, 3},
     {"_gdalraster_apply_geotransform_gt", (DL_FUNC) &_gdalraster_apply_geotransform_gt, 2},

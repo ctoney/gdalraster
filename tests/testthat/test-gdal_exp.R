@@ -81,6 +81,30 @@ test_that(".cpl_http_cleanup runs without error", {
     expect_no_error(.cpl_http_cleanup())
 })
 
+test_that("wrappers for CPL path manipulation functions work", {
+    f <- "/vsizip//vsicurl/https://raw.githubusercontent.com/OSGeo/gdal/master/autotest/ogr/data/shp/poly.zip"
+
+    expect_equal(.cpl_get_filename(f),  "poly.zip")
+
+    expect_equal(.cpl_get_path(f),
+                 "/vsizip//vsicurl/https://raw.githubusercontent.com/OSGeo/gdal/master/autotest/ogr/data/shp")
+
+    expect_equal(.cpl_get_filename(f) |> .cpl_get_path(),  "")
+
+    expect_equal(.cpl_get_dirname(f),
+                 "/vsizip//vsicurl/https://raw.githubusercontent.com/OSGeo/gdal/master/autotest/ogr/data/shp")
+
+    expect_equal(.cpl_get_filename(f) |> .cpl_get_dirname(),  ".")
+
+    expect_equal(.cpl_get_basename(f), "poly")
+    expect_equal(.cpl_get_extension(f), "zip")
+
+    expect_true(.cpl_get_filename(f) |> .cpl_launder_for_filename() ==
+                .cpl_get_filename(f))
+
+    expect_false(.cpl_launder_for_filename(f) == f)
+})
+
 test_that("createCopy writes correct output", {
     lcp_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
     tif_file <- paste0(tempdir(), "/", "storml_lndscp.tif")

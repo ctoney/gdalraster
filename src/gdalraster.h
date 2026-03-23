@@ -224,8 +224,11 @@ bool has_spatialite();
 bool http_enabled();
 void cpl_http_cleanup();
 std::string cpl_get_filename(const Rcpp::CharacterVector &full_filename);
+std::string cpl_get_path(const Rcpp::CharacterVector &full_filename);
+std::string cpl_get_dirname(const Rcpp::CharacterVector &full_filename);
 std::string cpl_get_basename(const Rcpp::CharacterVector &full_filename);
 std::string cpl_get_extension(const Rcpp::CharacterVector &full_filename);
+std::string cpl_launder_for_filename(const std::string &full_filename);
 
 Rcpp::CharacterVector check_gdal_filename(
     const Rcpp::CharacterVector &filename);
