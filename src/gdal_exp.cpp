@@ -778,6 +778,10 @@ bool http_enabled() {
 }
 
 
+// Extract non-directory portion of filename.
+// Returns a string containing the bare filename portion of the passed filename.
+// If there is no filename (passed value ends in trailing directory separator)
+// an empty string is returned.
 //' @noRd
 // [[Rcpp::export(name = ".cpl_get_filename")]]
 std::string cpl_get_filename(const Rcpp::CharacterVector &full_filename) {
@@ -788,23 +792,88 @@ std::string cpl_get_filename(const Rcpp::CharacterVector &full_filename) {
 }
 
 
+// Extract directory path portion of filename.
+// Returns a string containing the directory path portion of the passed
+// filename. If there is no path in the passed filename an empty string
+// will be returned (not NULL).
+//' @noRd
+// [[Rcpp::export(name = ".cpl_get_path")]]
+std::string cpl_get_path(const Rcpp::CharacterVector &full_filename) {
+    const std::string filename_in =
+        Rcpp::as<std::string>(check_gdal_filename(full_filename));
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    return std::string(CPLGetPath(filename_in.c_str()));
+#else
+    return CPLGetPathSafe(filename_in.c_str());
+#endif
+}
+
+
+// Extract directory path portion of filename.
+// Returns a string containing the directory path portion of the passed
+// filename. If there is no path in the passed filename the dot will be
+// returned. It is the only difference from CPLGetPath().
+//' @noRd
+// [[Rcpp::export(name = ".cpl_get_dirname")]]
+std::string cpl_get_dirname(const Rcpp::CharacterVector &full_filename) {
+    const std::string filename_in =
+        Rcpp::as<std::string>(check_gdal_filename(full_filename));
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    return std::string(CPLGetDirname(filename_in.c_str()));
+#else
+    return CPLGetDirnameSafe(filename_in.c_str());
+#endif
+}
+
+
+// Extract basename (non-directory, non-extension) portion of filename.
+// Returns a string containing the file basename portion of the passed name. If
+// there is no basename (passed value ends in trailing directory separator, or
+// filename starts with a dot) an empty string is returned.
 //' @noRd
 // [[Rcpp::export(name = ".cpl_get_basename")]]
 std::string cpl_get_basename(const Rcpp::CharacterVector &full_filename) {
     const std::string filename_in =
         Rcpp::as<std::string>(check_gdal_filename(full_filename));
 
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
     return std::string(CPLGetBasename(filename_in.c_str()));
+#else
+    return CPLGetBasenameSafe(filename_in.c_str());
+#endif
 }
 
 
+// Extract filename extension from full filename.
+// Returns a string containing the extension portion of the passed name. If
+// there is no extension (the filename has no dot) an empty string is returned.
+// The returned extension will not include the period.
 //' @noRd
 // [[Rcpp::export(name = ".cpl_get_extension")]]
 std::string cpl_get_extension(const Rcpp::CharacterVector &full_filename) {
     const std::string filename_in =
         Rcpp::as<std::string>(check_gdal_filename(full_filename));
 
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
     return std::string(CPLGetExtension(filename_in.c_str()));
+#else
+    return CPLGetExtensionSafe(filename_in.c_str());
+#endif
+}
+
+
+// Launder a string to be compatible of a filename.
+// (for the non-directory portion of a filename)
+//' @noRd
+// [[Rcpp::export(name = ".cpl_launder_for_filename")]]
+std::string cpl_launder_for_filename(const std::string &full_filename) {
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 11, 0)
+    return std::string(CPLLaunderForFilename(full_filename.c_str(), nullptr));
+#else
+    return CPLLaunderForFilenameSafe(full_filename.c_str(), nullptr);
+#endif
 }
 
 
