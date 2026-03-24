@@ -1,9 +1,8 @@
-/* GEOS wrapper functions operating on WKT geometries
-   Called via GDAL ogr headers, requires GDAL built against GEOS.
+/* GEOS wrapper functions operating on WKB geometries via GDAL ogr headers
    For spatial predicate definitions: https://en.wikipedia.org/wiki/DE-9IM
 
    Chris Toney <chris.toney at usda.gov>
-   Copyright (c) 2023-2025 gdalraster authors
+   Copyright (c) 2023-2026 gdalraster authors
 */
 
 #ifndef GEOM_API_H_
