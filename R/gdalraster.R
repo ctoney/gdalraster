@@ -181,7 +181,8 @@
 #' Alternate constructor for specifying the driver(s) allowed for dataset
 #' opening as a character vector of driver short names.
 #' All arguments are required with this form of the constructor, but
-#' `open_options` can be `NULL`. Returns an object of class `GDALRaster`.
+#' `open_options` and/or `allowed_drivers` can be `NULL`. Returns an object of class
+#' `GDALRaster`.
 #'
 #' ## Read/write fields
 #'

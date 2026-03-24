@@ -215,7 +215,8 @@ All arguments are required with this form of the constructor, but
 Alternate constructor for specifying the driver(s) allowed for dataset
 opening as a character vector of driver short names.
 All arguments are required with this form of the constructor, but
-\code{open_options} can be \code{NULL}. Returns an object of class \code{GDALRaster}.
+\code{open_options} and/or \code{allowed_drivers} can be \code{NULL}. Returns an object of class
+\code{GDALRaster}.
 }
 
 \subsection{Read/write fields}{
