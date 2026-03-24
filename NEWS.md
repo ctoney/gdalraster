@@ -1,4 +1,6 @@
-# gdalraster 2.4.0.9101 (dev)
+# gdalraster 2.4.0.9110 (dev)
+
+* (internal) code lining and small refactor of constructors in class `GDALRaster` (#928, #929) (2026-03-24)
 
 * use "safe" versions of GDAL path manipulation functions in the internal wrappers if GDAL >= 3.11, and add `.cpl_get_path()`, `.cpl_get_dirname()` and `.cpl_launder_for_filename()` (2026-03-22)
 
