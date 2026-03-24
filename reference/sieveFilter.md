@@ -120,7 +120,7 @@ expr <- "ifelse(EVT == 7292, 0, EVT)"
 mask_file <- calc(expr = expr,
                   rasterfiles = evt_file,
                   var.names = "EVT")
-#> output written to /tmp/RtmpisUu4W/rastcalc2331485f9a61.tif
+#> output written to /tmp/RtmpicK3xN/rastcalc230344076fd.tif
 
 # create a version of EVT with two-pixel minimum mapping unit
 sieveFilter(src_filename = evt_file,
