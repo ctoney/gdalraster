@@ -1,8 +1,7 @@
-/* GEOS wrapper functions operating on WKT geometries
-   Called via GDAL ogr headers, requires GDAL built against GEOS.
+/* GEOS wrapper functions operating on WKB geometries via GDAL ogr headers
 
    Chris Toney <chris.toney at usda.gov>
-   Copyright (c) 2023-2025 gdalraster authors
+   Copyright (c) 2023-2026 gdalraster authors
 */
 
 #include <cpl_port.h>
@@ -163,7 +162,7 @@ Rcpp::String g_wkb2wkt(const Rcpp::RObject &geom, bool as_iso = false) {
 
     std::string wkt_out = "";
     if (pszWKT_out != nullptr) {
-        wkt_out = pszWKT_out;
+        wkt_out = std::string(pszWKT_out);
         CPLFree(pszWKT_out);
     }
 
@@ -900,7 +899,7 @@ SEXP g_make_valid(const Rcpp::RObject &geom,
     }
 
     // begin options
-    std::vector<const char *> opt{};
+    std::vector<const char *> opt = {};
 
     // method
     if (EQUAL(method.c_str(), "LINEWORK")) {
@@ -2479,7 +2478,9 @@ SEXP g_simplify(const Rcpp::RObject &geom, double tolerance,
     }
 
     Rcpp::RawVector wkb = Rcpp::no_init(nWKBSize);
-    bool result = exportGeomToWkb_(hSimplifiedGeom, &wkb[0], as_iso, byte_order);
+    bool result = exportGeomToWkb_(hSimplifiedGeom, &wkb[0], as_iso,
+                                   byte_order);
+
     OGR_G_DestroyGeometry(hGeom);
     OGR_G_DestroyGeometry(hSimplifiedGeom);
     if (!result) {
