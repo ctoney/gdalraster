@@ -1686,7 +1686,7 @@ dem_proc <- function(mode,
 #' example, datasets referenced against geographic coordinates at high latitudes
 #' may have issues.
 #'
-#' At the time of writing (GDAL 3.9 through 3.12.1), a point exactly on the
+#' At the time of writing (GDAL 3.9 through 3.12.2), a point exactly on the
 #' surface of the DEM is never visible with `GDALIsLineOfSightVisible()`, even
 #' if viewed from a point directly above. For a detailed description, see
 #' \url{https://github.com/OSGeo/gdal/issues/12458}. A workaround for that case
@@ -1695,7 +1695,7 @@ dem_proc <- function(mode,
 #' if appropriate for the use case.
 #'
 #' @seealso
-#' \url{https://www.researchgate.net/publication/2411280_Efficient_Line-of-Sight_Algorithms_for_Real_Terrain_Data}
+#' \href{https://www.researchgate.net/publication/2411280_Efficient_Line-of-Sight_Algorithms_for_Real_Terrain_Data}{Efficient Line-of-Sight Algorithms for Real Terrain Data}
 #'
 #' @examplesIf gdal_version_num() >= gdal_compute_version(3, 9, 0)
 #' dem <- system.file("extdata/storml_elev.tif", package="gdalraster")
