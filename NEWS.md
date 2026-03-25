@@ -1,74 +1,52 @@
-# gdalraster 2.4.0.9110 (dev)
+# gdalraster 2.5.0
 
-* (internal) code lining and small refactor of constructors in class `GDALRaster` (#928, #929) (2026-03-24)
+## Dependencies
 
-* use "safe" versions of GDAL path manipulation functions in the internal wrappers if GDAL >= 3.11, and add `.cpl_get_path()`, `.cpl_get_dirname()` and `.cpl_launder_for_filename()` (2026-03-22)
+* package **cli** has been added to `Imports` and `LinkingTo`
+* package **vctrs** has been added to `Suggests`
 
-* (code linting) `addFilesInZip()`: use `unique_ptr` in the internal `addFileInZip()`, and use `vsi_*()` functions for validating input files (#924) (2026-03-22)
+## Features
 
-* (code linting) `srs_info_from_db()`: pass input by const ref (#923) (2026-03-21)
+* use package **cli** for enhanced progress reporting throughout (#889, thanks to @pepijn-devries)
+* add `gt_from_dim_bbox()` and `bbox_from_dim_gt()`: standalone functions for converting between geotransform coefficients and bounding boxes (#878, thanks to @mdsumner)
+* add class method `GDALRaster$setBbox()`: convenience wrapper for setting the geotransform from a bounding box (#878, thanks to @mdsumner)
+* add `read_to_nativeRaster()`: read raster data directly as an R object of class `nativeRaster` for fast rendering, also added as the class method `GDALRaster$readToNativeRaster()` (#875, thanks to @mdsumner)
+* add `is_los_visible()`: check line of sight between pairs of point locations using `GDALIsLineOfSightVisible()` (#869)
+* add `vector_to_MEM()`: use pixel data in an existing R vector to create a GDAL in-memory raster with zero copy (#910)
+* add `vsi_glob()`: get file and directory names matching a pattern that may contain wildcards, wrapper of `VSIGlob()` in GDAL >= 3.11 (#864)
+* add `vsi_uri_to_vsi_path()`: return VSI compatible paths from URIs / URLs, wrapper of `VSIURIToVSIPath()` in GDAL >= 3.12 (#865)
+* class `VSIFile`: add a writable field `reportVSIFErrorAsEof`, and check the VSI error indicator in the `read()` and `eof()` methods if GDAL >= 3.10 (#901)
+* add `g_build_polygon_from_edges()`: build a polygon from a set of arcs, wrapper of `OGRBuildPolygonFromEdges()` (#863)
+* add `g_build_collection()`: build a collection-type geometry from a set of input geometries given as a list of WKB `raw` vectors or a `character` vector of WKT strings (#867)
+* `g_intersects()`: performance improvements and use prepared geometry in 1:many batch mode
+* class `GDALVector`: add method `isReadOnly()`
+* raster attribute table: support new field types `GFT_Boolean`, `GFT_DateTime` and `GFT_WKBGeometry` with GDAL >= 3.12 (#860)
+* class `GDALRaster`: recognize the new color interpretation (`GCI_xxxx`) items added to the `GDALColorInterp` enumeration in GDAL 3.10 (#900)
+* `calc()`: add support for input and output rasters as dataset objects, instead of only as file names (#870)
+* `set_config_option()`: if the `CPL_LOG_ERRORS` option is set, then set the global error handler appropriately for that case (addresses #905)
 
-* class `GDALVector`: honor the `quiet` field setting in several places it was not checked before printing a console message (2026-03-05)
+## Fixes
 
-* (internal) tests fixes: use vector MEM format instead of Memory (GDAL >= 3.11); make plotting tests check X11 capability only if unix OS type but not macos (2026-02-22)
+* class `VSIFile`: fix crash when passing open options in the constructor (#883, thanks to @pepijn-devries)
+* fix `read_ds()`: the argument `as_wkb` and raster dataset property `readByteAsRaw` were not synchronized (#873, thanks to @mdsumner)
+* `GDALVector::open()`: remove warning if Spatialite is not available when opening with a SQL statement and the SQLite dialect is specified (fixes #908)
+* class `GDALVector`: honor the `quiet` object setting in several places it was not checked before printing a console message
+* test fixes: use the `MEM` vector dataset format instead of `Memory` if GDAL >= 3.11
+* fix test for `identifyDriver()`: make conditional on PostGISRaster / PostgreSQL driver presence (#880)
 
-* `GDALAlg::parseCommandLineArgs()`: look up argument aliases in a couple of places they were hard coded, and refactor (2026-02-21)
+## Internal
 
-* `set_config_option()`: catch the `CPL_LOG_ERRORS` option and set the global error handler appropriately for that case (fixes #905) (2026-02-20)
+* use `CSLConstList` with `GDALGetMetadata()` and `GDALSetMetadata()` for as per <https://gdal.org/en/latest/user/migration_guide.html> (#868, thanks to @mdsumner)
+* use "safe" versions of the GDAL path manipulation functions in the internal wrappers if GDAL >= 3.11, and add `.cpl_get_path()`, `.cpl_get_dirname()` and `.cpl_launder_for_filename()`
+* `VSIFile::read()`: avoid a copy from temporary buffer most of the time (#888)
+* class `GDALAlg`: use `GDALAlgorithmRegistryInstantiateAlgFromPath()` if GDAL >= 3.12 (#859)
+* `GDALAlg::parseCommandLineArgs()`: look up argument aliases in a couple of places they were hard coded, and refactor
+* code linting
 
-* add `vector_to_MEM()`: create a GDAL in-memory dataset from R data without copying (#910) (2026-02-19)
+## Authors
 
-* `GDALVector::open()`: remove warning if Spatialite is not available when opening with a SQL statement and SQLite dialect is specified, fixes #908 (2026-02-18)
-
-* progressbar: cleanup a previously interrupted one if it exists before creating a new one (#906) (2025-02-13)
-
-* recognize new color interpretation (`GCI_xxxx`) items added to the `GDALColorInterp` enumeration in GDAL 3.10 (#900) (2026-02-10)
-
-* (internal) initialize the progress counter to zero in some cases where it was missing for a progress bar managed directly (#903) (2026-02-06)
-
-* class `VSIFile`: add a writable field `reportVSIFErrorAsEof`, and check the VSI error indicator in the `read()` and `eof()` methods if GDAL >= 3.10 (#901) (2026-02-06)
-
-* `calc()`: use `cli::cli_progress_bar()` instead of `utils::txtProgressBar()` (2026-02-01)
-
-* (internal) `VSIFile::read()`: avoid a copy from temporary buffer most of the time (#888) (2026-02-01)
-
-* use package **cli** for enhanced progress reporting throughout, adding **cli** in `LinkingTo` (#889, thanks to @pepijn-devries) (2026-02-01)
-
-* add package **vctrs** in Suggests since it is suggested in **wk** but `wk::wk_plot()` requires it, and various conditionals in examples/tests/vignettes for suggested packages (#886) (2026-01-28)
-
-* class `VSIFile`: fix crash when using file open options due to incorrectly sized buffer, and add const correctness (#883, thanks to @pepijn-devries) (2026-01-27)
-
-* `g_intersects()`: performance improvements and use prepared geometry in 1:many batch mode (2026-01-24)
-
-* add `gt_from_dim_bbox()` and `bbox_from_dim_gt()`:  standalone functions for converting between geotransform coefficients and bounding boxes. Also a new class method `GDALRaster$setBbox()` as a convenience wrapper for setting geotransform from a bounding box. (#878, thanks to @mdsumner) (2026-01-23)
-
-* fix test for `identifyDriver()` conditional on PostGISRaster / PostgreSQL driver presence (#880) (2026-01-23)
-
-* add `read_to_nativeRaster()`: reads raster data directly as a `nativeRaster` object for fast rendering. Supports datasets with 1, 3, or 4 bands of Byte data type. Grayscale (1-band) data is replicated across RGB channels. Also available as class method `GDALRaster$readToNativeRaster()`. (#875, thanks to @mdsumner) (2026-01-22)
-
-* fix `read_ds()`: the argument `as_wkb` and dataset property `readByteAsRaw` were not synchronized (#873, thanks to @mdsumner) (2026-01-21)
-
-* add `GDALVector::isReadOnly()` (2026-01-20)
-
-* `calc()`: add support for input and output rasters as dataset objects, instead of only as file names (#870) (2026-01-19)
-
-* add `is_los_visible()`: check line of sight between pairs of point locations using `GDALIsLineOfSightVisible()` (#869) (2026-01-18)
-
-* (internal) use `CSLConstList` with `GDALGetMetadata()`, `GDALSetMetadata()`, <https://gdal.org/en/latest/user/migration_guide.html> (#868, thanks to @mdsumner) (2026-01-17)
-
-* add `g_build_collection()`: build a collection-type geometry from a set of input geometries given as a list of WKB `raw` vectors or a `character` vector of WKT strings (#867) (2026-01-16)
-
-* add `vsi_uri_to_vsi_path()`: return VSI compatible paths from URIs / URLs, wrapper of `VSIURIToVSIPath()` in GDAL >= 3.12 (#865) (2026-01-14)
-
-* add `vsi_glob()`: get file and directory names matching a pattern that may contain wildcards, wrapper of `VSIGlob()` in GDAL >= 3.11 (#864) (2026-01-14)
-
-* add `g_build_polygon_from_edges()`: build a polygon from a set of arcs, wrapper of `OGRBuildPolygonFromEdges()` (#863) (2026-01-13)
-
-* (internal) C++ code linting: use `CPLStringList` for `char **` (#862) (2026-01-12)
-
-* raster attribute table: support new field types `GFT_Boolean`, `GFT_DateTime` and `GFT_WKBGeometry` with GDAL >= 3.12 (#860) (2025-12-27)
-
-* (internal) class `GDALAlg`: use `GDALAlgorithmRegistryInstantiateAlgFromPath()` if GDAL >= 3.12 (#859) (2025-12-26)
+* add Michael D. Sumner as author (`"aut"`, previously `"ctb"`)
+* add Pepijn de Vries as contributor (`"ctb"`)
 
 # gdalraster 2.4.0
 
