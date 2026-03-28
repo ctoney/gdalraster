@@ -7,6 +7,8 @@ test_that("data type convenience functions work", {
     expect_false(dt_is_floating(dt))
     expect_false(dt_is_signed(dt))
 
+    # GDT_UInt8 in GDAL >= 3.13 tested below (skip if GDAL < 3.13)
+
     dt <- "int16"  # case-insensitive
     expect_equal(dt_size(dt), 2)
     expect_equal(dt_size(dt, FALSE), 16)
@@ -62,4 +64,18 @@ test_that("data type convenience functions work", {
     expect_equal(dt_find_for_value(0.5), "Float32")
     expect_equal(dt_find_for_value(-99999.9876), "Float64")
     expect_equal(dt_find_for_value(-99999.9876, is_complex = TRUE), "CFloat64")
+
+    skip_if(gdal_version_num() < gdal_compute_version(3, 13, 0))
+    # GDT_UInt8 in GDAL >= 3.13
+    dt <- "UInt8"
+    expect_equal(dt_size(dt), 1)
+    expect_equal(dt_size(dt, FALSE), 8)
+    expect_false(dt_is_complex(dt))
+    expect_true(dt_is_integer(dt))
+    expect_false(dt_is_floating(dt))
+    expect_false(dt_is_signed(dt))
+
+    expect_equal(dt_union("UInt8", "Int16"), "Int16")
+    expect_equal(dt_union_with_value("UInt8", -1), "Int16")
+    expect_equal(dt_union_with_value("UInt8", 256), "UInt16")
 })

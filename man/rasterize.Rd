@@ -80,8 +80,8 @@ xmin / resx, ymin / resy, xmax / resx and ymax / resy are integer values.}
 pixels (xsize, ysize). Note that \code{ts} cannot be used with \code{tr}.}
 
 \item{dtName}{Character name of output raster data type, e.g., \code{Byte},
-\code{Int16}, \code{UInt16}, \code{Int32}, \code{UInt32}, \code{Float32}, \code{Float64}.
-Defaults to \code{Float64}.}
+\code{UInt8} (GDAL >= 3.13), \code{Int16}, \code{UInt16}, \code{Int32}, \code{UInt32}, \code{Float32},
+\code{Float64}. Defaults to \code{Float64}.}
 
 \item{dstnodata}{Numeric scalar. Assign a nodata value to output bands.}
 

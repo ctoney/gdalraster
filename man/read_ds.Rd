@@ -45,11 +45,12 @@ overview).}
 If \code{FALSE} (the default), output is a vector of pixel data interleaved by
 band.}
 
-\item{as_raw}{Logical. If \code{TRUE} and the underlying data type is Byte,
-return output as \R \code{raw} vector type. This maps to the setting
-\code{$readByteAsRaw} on the \code{GDALRaster} object, which will be temporarily
-updated in this function. To control this behavior in a persistent way on
-a dataset see \code{$readByteAsRaw} in \code{\link[=GDALRaster]{GDALRaster-class}}.}
+\item{as_raw}{Logical. If \code{TRUE} and the underlying data type is Byte (or
+UInt8 in GDAL >= 3.13), return output as \R \code{raw} vector type. This maps to
+the setting \code{$readByteAsRaw} on the \code{GDALRaster} object, which will be
+temporarily updated in this function. To control this behavior in a
+persistent way on a dataset object see \code{$readByteAsRaw} in
+\code{\link[=GDALRaster]{GDALRaster-class}}.}
 }
 \value{
 If \code{as_list = FALSE} (the default), a vector of \code{raw}, \code{integer},
@@ -70,7 +71,7 @@ read an entire raster into memory (see Note).
 \details{
 \code{NA} will be returned in place of the nodata value if the raster dataset has
 a nodata value defined for the band. Data are read as R \code{integer} type when
-possible for the raster data type (Byte, Int8, Int16, UInt16, Int32),
+possible for the raster data type (Byte/UInt8, Int8, Int16, UInt16, Int32),
 otherwise as type \code{double} (UInt32, Float32, Float64).
 
 The output object has attribute \code{gis}, a list containing:

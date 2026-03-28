@@ -126,13 +126,14 @@
 #' @details
 #' By default, contrast enhancement by stretch to min/max is applied when
 #' the input data are single-band grayscale with any raster data type, or
-#' three-band RGB with raster data type larger than Byte. The minimum/maximum
-#' of the input data are used by default (i.e., no outlier removal). No stretch
-#' is applied by default when the input is an RGB byte raster. These defaults
-#' can be overridden by specifying either the `minmax_def` argument
-#' (user-defined min/max per band), or the `minmax_pct_cut` argument (ignore
-#' outlier pixels based on a percentile range per band). These settings (and
-#' the `normalize` argument) are ignored if a color table is used.
+#' three-band RGB with raster data type larger than Byte (=UInt8 in
+#' GDAL >= 3.13). The minimum/maximum of the input data are used by default
+#' (i.e., no outlier removal). No stretch is applied by default when the input
+#' is an RGB byte raster. These defaults can be overridden by specifying either
+#' the `minmax_def` argument (user-defined min/max per band), or the
+#' `minmax_pct_cut` argument (ignore outlier pixels based on a percentile range
+#' per band). These settings (and the `normalize` argument) are ignored if a
+#' color table is used.
 #'
 #' @param data Either a `GDALRaster` object from which data will be read, or
 #' a numeric vector of pixel values arranged in left to right, top to
@@ -378,6 +379,8 @@ plot_raster <- function(data, xsize=NULL, ysize=NULL, nbands=NULL,
         }
 
         for (b in 1:nbands) {
+            # GDALGetDataTypeName() still returns "Byte" for GDT_UInt8, not
+            # changing to "UInt8" until GDAL 4 possibly
             if (data$getDataTypeName(b) != "Byte")
                 is_byte_raster <- FALSE
         }
@@ -442,7 +445,8 @@ plot_raster <- function(data, xsize=NULL, ysize=NULL, nbands=NULL,
         }
 
         for (b in 1:nbands) {
-            if (gis$datatype[b] != "Byte")
+            # in case we get "UInt8" possibly in the gis attributes GDAL >= 3.13
+            if (gis$datatype[b] != "Byte" && gis$datatype[b] != "UInt8")
                 is_byte_raster <- FALSE
         }
 

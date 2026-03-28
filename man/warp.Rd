@@ -75,9 +75,10 @@ Set a warp option as described in the GDAL documentation for
 Multiple \code{-wo} may be given. See also \code{-multi} below.
 \item \verb{-ot <type>}\cr
 Force the output raster bands to have a specific data type supported by
-the format, which may be one of the following: \code{Byte}, \code{Int8}, \code{UInt16},
-\code{Int16}, \code{UInt32}, \code{Int32}, \code{UInt64}, \code{Int64}, \code{Float32}, \code{Float64},
-\code{CInt16}, \code{CInt32}, \code{CFloat32} or \code{CFloat64}.
+the format, which may be one of the following: \code{Byte}, \code{UInt8}
+(GDAL >= 3.13), \code{Int8}, \code{UInt16}, \code{Int16}, \code{UInt32}, \code{Int32}, \code{UInt64},
+\code{Int64}, \code{Float32}, \code{Float64}, \code{CInt16}, \code{CInt32}, \code{CFloat32} or
+\code{CFloat64}.
 \item \verb{-r <resampling_method>}\cr
 Resampling method to use. Available methods are: \code{near} (nearest
 neighbour, the default), \code{bilinear}, \code{cubic}, \code{cubicspline}, \code{lanczos},

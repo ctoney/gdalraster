@@ -12,7 +12,8 @@
 #' @param ysize Integer height of raster in pixels.
 #' @param nbands Integer number of bands.
 #' @param dataType Character string containing the data type name.
-#' (e.g., common data types include Byte, Int16, UInt16, Int32, Float32).
+#' (e.g., common data types include Byte (or UInt8 in GDAL >=3.13), Int16,
+#' UInt16, Int32, Float32).
 #' @param options Optional list of format-specific creation options in a
 #' character vector of `"NAME=VALUE"` pairs
 #' (e.g., \code{options = c("COMPRESS=LZW")} to set LZW
