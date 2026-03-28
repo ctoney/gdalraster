@@ -122,7 +122,7 @@ DEFAULT_DEM_PROC <- list(
 #' @details
 #' `NA` will be returned in place of the nodata value if the raster dataset has
 #' a nodata value defined for the band. Data are read as R `integer` type when
-#' possible for the raster data type (Byte, Int8, Int16, UInt16, Int32),
+#' possible for the raster data type (Byte/UInt8, Int8, Int16, UInt16, Int32),
 #' otherwise as type `double` (UInt32, Float32, Float64).
 #'
 #' The output object has attribute `gis`, a list containing:
@@ -155,11 +155,12 @@ DEFAULT_DEM_PROC <- list(
 #' @param as_list Logical. If `TRUE`, return output as a list of band vectors.
 #' If `FALSE` (the default), output is a vector of pixel data interleaved by
 #' band.
-#' @param as_raw Logical. If `TRUE` and the underlying data type is Byte,
-#' return output as \R `raw` vector type. This maps to the setting
-#' \code{$readByteAsRaw} on the `GDALRaster` object, which will be temporarily
-#' updated in this function. To control this behavior in a persistent way on
-#' a dataset see \code{$readByteAsRaw} in [`GDALRaster-class`][GDALRaster].
+#' @param as_raw Logical. If `TRUE` and the underlying data type is Byte (or
+#' UInt8 in GDAL >= 3.13), return output as \R `raw` vector type. This maps to
+#' the setting \code{$readByteAsRaw} on the `GDALRaster` object, which will be
+#' temporarily updated in this function. To control this behavior in a
+#' persistent way on a dataset object see \code{$readByteAsRaw} in
+#' [`GDALRaster-class`][GDALRaster].
 #' @returns If `as_list = FALSE` (the default), a vector of `raw`, `integer`,
 #' `double` or `complex` containing the values that were read. It is organized
 #' in left to right, top to bottom pixel order, interleaved by band.
@@ -346,7 +347,8 @@ read_ds <- function(ds, bands = NULL, xoff = 0, yoff = 0,
 #' to guess from the output filename if \code{fmt} is not specified.
 #' @param nbands Number of output bands.
 #' @param dtName Output raster data type name. Commonly used types include
-#' `"Byte"`, `"Int16"`, `"UInt16"`, `"Int32"` and `"Float32"`.
+#' `"Byte"` (or `"UInt8"` in GDAL >= 3.13), `"Int16"`, `"UInt16"`, `"Int32"`
+#' and `"Float32"`.
 #' @param options Optional list of format-specific creation options in a
 #' vector of "NAME=VALUE" pairs
 #' (e.g., \code{options = c("COMPRESS=LZW")} to set LZW compression
@@ -966,8 +968,8 @@ rasterToVRT <- function(srcfile,
 #' writing with an existing dataset object.
 #' @param fmt Output raster format name (e.g., "GTiff" or "HFA"). Will attempt
 #' to guess from the output filename if not specified.
-#' @param dtName Character name of output data type (e.g., Byte, Int16,
-#' UInt16, Int32, UInt32, Float32).
+#' @param dtName Character name of output data type (e.g., Byte, UInt8
+#' (GDAL >= 3.13), Int16, UInt16, Int32, UInt32, Float32).
 #' @param out_band Integer band number(s) in `dstfile` for writing output.
 #' Defaults to `1L`. Multi-band output is supported as of gdalraster 1.11.0,
 #' in which case `out_band` would be a vector of band numbers.
@@ -2501,8 +2503,8 @@ polygonize <- function(raster_file,
 #' @param ts Numeric vector of length two. Sets the output raster size in
 #' pixels (xsize, ysize). Note that `ts` cannot be used with `tr`.
 #' @param dtName Character name of output raster data type, e.g., `Byte`,
-#' `Int16`, `UInt16`, `Int32`, `UInt32`, `Float32`, `Float64`.
-#' Defaults to `Float64`.
+#' `UInt8` (GDAL >= 3.13), `Int16`, `UInt16`, `Int32`, `UInt32`, `Float32`,
+#' `Float64`. Defaults to `Float64`.
 #' @param dstnodata	Numeric scalar. Assign a nodata value to output bands.
 #' @param init Numeric vector. Pre-initialize the output raster band(s) with
 #' these value(s). However, it is not marked as the nodata value in the output
@@ -2752,13 +2754,13 @@ rasterize <- function(src_dsn,
 #' resolution.
 #'
 #' @details
-#' The dataset must have 1, 3, or 4 bands of Byte data type. For 1-band
+#' The dataset must have 1, 3, or 4 bands of Byte/UInt8 data type. For 1-band
 #' (grayscale) data, the value is replicated across RGB channels. For 3-band
 #' data, bands are interpreted as RGB. For 4-band data, bands are interpreted
 #' as RGBA.
 #'
 #' @param ds An object of class `GDALRaster` in open state, with 1, 3, or 4
-#' bands of Byte data type.
+#' bands of Byte/UInt8 data type.
 #' @param xoff Integer. The pixel (column) offset to the top left corner of the
 #' raster region to be read (zero to start from the left side).
 #' @param yoff Integer. The line (row) offset to the top left corner of the

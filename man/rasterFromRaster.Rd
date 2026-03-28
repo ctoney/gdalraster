@@ -26,7 +26,8 @@ to guess from the output filename if \code{fmt} is not specified.}
 \item{nbands}{Number of output bands.}
 
 \item{dtName}{Output raster data type name. Commonly used types include
-\code{"Byte"}, \code{"Int16"}, \code{"UInt16"}, \code{"Int32"} and \code{"Float32"}.}
+\code{"Byte"} (or \code{"UInt8"} in GDAL >= 3.13), \code{"Int16"}, \code{"UInt16"}, \code{"Int32"}
+and \code{"Float32"}.}
 
 \item{options}{Optional list of format-specific creation options in a
 vector of "NAME=VALUE" pairs

@@ -1939,7 +1939,7 @@ SEXP GDALRaster::readToNativeRaster(int xoff, int yoff, int xsize, int ysize,
         if (hBand == nullptr)
             Rcpp::stop("failed to access band %d", b);
         if (GDALGetRasterDataType(hBand) != GDT_Byte)
-            Rcpp::stop("readToNativeRaster requires Byte data type");
+            Rcpp::stop("readToNativeRaster requires Byte/UInt8 data type");
     }
 
     const R_xlen_t buf_size = static_cast<R_xlen_t>(out_xsize) * out_ysize;

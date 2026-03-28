@@ -44,8 +44,8 @@ writing with an existing dataset object.}
 \item{fmt}{Output raster format name (e.g., "GTiff" or "HFA"). Will attempt
 to guess from the output filename if not specified.}
 
-\item{dtName}{Character name of output data type (e.g., Byte, Int16,
-UInt16, Int32, UInt32, Float32).}
+\item{dtName}{Character name of output data type (e.g., Byte, UInt8
+(GDAL >= 3.13), Int16, UInt16, Int32, UInt32, Float32).}
 
 \item{out_band}{Integer band number(s) in \code{dstfile} for writing output.
 Defaults to \code{1L}. Multi-band output is supported as of gdalraster 1.11.0,

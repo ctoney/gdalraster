@@ -32,7 +32,7 @@
 //' imaginary component.
 //'
 //' `dt_is_integer()` returns `TRUE` if the passed type is integer (one of
-//' Byte, Int16, UInt16, Int32, UInt32, CInt16, CInt32).
+//' Byte, UInt8 (GDAL >= 3.13), Int16, UInt16, Int32, UInt32, CInt16, CInt32).
 //'
 //' `dt_is_floating()` returns `TRUE` if the passed type is floating (one of
 //' Float32, Float16, Float64, CFloat16, CFloat32, CFloat64).
@@ -52,8 +52,8 @@
 //' given `value` (returns a data type name as character string).
 //'
 //' @param dt Character string containing a GDAL data type name (e.g.,
-//' `"Byte"`, `"Int16"`, `"UInt16"`, `"Int32"`, `"UInt32"`, `"Float32"`,
-//' `"Float64"`, etc.)
+//' `"Byte"`, `"UInt8"` (GDAL >= 3.13), `"Int16"`, `"UInt16"`, `"Int32"`,
+//' `"UInt32"`, `"Float32"`, `"Float64"`, etc.)
 //' @param as_bytes Logical value, `TRUE` to return data type size in bytes
 //' (the default), `FALSE` to return the size in bits.
 //' @param dt_other Character string containing a GDAL data type name.

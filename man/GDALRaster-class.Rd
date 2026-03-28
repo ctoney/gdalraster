@@ -238,11 +238,11 @@ statistics and histograms.
 \code{$readByteAsRaw}\cr
 A logical value, \code{FALSE} by default. This field can be set to \code{TRUE} which
 will affect the data type returned by the \code{$read()} method and the
-\code{\link[=read_ds]{read_ds()}} convenience function. When the underlying band data type is Byte
-and \code{readByteAsRaw} is \code{TRUE} the output type will be raw rather than
-integer. See also the \code{as_raw} argument to \code{\link[=read_ds]{read_ds()}} to control this in a
-non-persistent setting. If the underlying band data type is not Byte this
-setting has no effect.
+\code{\link[=read_ds]{read_ds()}} convenience function. When the underlying band data type is
+Byte/UInt8 and \code{readByteAsRaw} is \code{TRUE} the output type will be raw rather
+than integer. See also the \code{as_raw} argument to \code{\link[=read_ds]{read_ds()}} to control this
+in a non-persistent setting. If the underlying band data type is not
+Byte/UInt8 setting has no effect. (Note Byte = UInt8 in GDAL >= 3.13.)
 }
 
 \subsection{Methods}{
@@ -318,7 +318,8 @@ Adds a band to a dataset if the underlying format supports this action.
 Most formats do not, but \code{"MEM"} and \code{"VRT"} are notable exceptions
 that support adding bands. The added band will always be the last band.
 \code{dataType} is a character string containing the data type name
-(e.g., \code{"Byte"}, \code{"Int16"}, \code{"UInt16"}, \code{"Int32"}, \code{"Float32"}, etc).
+(e.g., \code{"Byte"}, \code{"UInt8"} (GDAL >= 3.13), \code{"Int16"}, \code{"UInt16"}, \code{"Int32"},
+\code{"Float32"}, etc).
 The \code{options} argument is a character vector of NAME=VALUE option strings.
 Supported options are format specific. Note that the \code{options} argument is
 required but may be given as \code{NULL}. Returns logical \code{TRUE} on success

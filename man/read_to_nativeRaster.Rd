@@ -16,7 +16,7 @@ read_to_nativeRaster(
 }
 \arguments{
 \item{ds}{An object of class \code{GDALRaster} in open state, with 1, 3, or 4
-bands of Byte data type.}
+bands of Byte/UInt8 data type.}
 
 \item{xoff}{Integer. The pixel (column) offset to the top left corner of the
 raster region to be read (zero to start from the left side).}
@@ -46,7 +46,7 @@ rendering. By default, it attempts to read the full raster extent at full
 resolution.
 }
 \details{
-The dataset must have 1, 3, or 4 bands of Byte data type. For 1-band
+The dataset must have 1, 3, or 4 bands of Byte/UInt8 data type. For 1-band
 (grayscale) data, the value is replicated across RGB channels. For 3-band
 data, bands are interpreted as RGB. For 4-band data, bands are interpreted
 as RGBA.
