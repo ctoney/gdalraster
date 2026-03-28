@@ -1029,11 +1029,12 @@ g_geom_count <- function(geom, quiet = FALSE) {
 #'
 #' `g_make_valid()` attempts to make an invalid geometry valid without losing
 #' vertices. Already-valid geometries are cloned without further intervention.
-#' Wrapper of `OGR_G_MakeValid()`/`OGR_G_MakeValidEx()` in the GDAL API.
-#' Requires the GEOS >= 3.8 library, check it for the definition of the
-#' geometry operation. If GDAL is built without GEOS >= 3.8, this function
-#' will return a clone of the input geometry if it is valid, or `NULL`
-#' (`as_wkb = TRUE`) / `NA` (`as_wkb = FALSE`) if it is invalid.
+#' Wrapper of `OGR_G_MakeValidEx()` in the GDAL API.
+#' Requires GEOS >= 3.8 library. If GDAL is built without GEOS >= 3.8, this
+#' function will return a clone of the input geometry if it is valid, or `NULL`
+#' (`as_wkb = TRUE`) / `NA` (`as_wkb = FALSE`) if it is invalid. For detailed
+#' explanations of geometry validity checking and repair, see
+#' \url{https://gdal.org/en/latest/user/geometry_validity.html}.
 #'
 #' * `"LINEWORK"` is the default method, which combines all rings into a set
 #' of noded lines and then extracts valid polygons from that linework
@@ -1096,7 +1097,10 @@ g_geom_count <- function(geom, quiet = FALSE) {
 #' or if an error occurs in the call to the underlying OGR API.
 #'
 #' @seealso
-#' [g_is_valid()], [g_is_3D()], [g_is_measured()]
+#' [g_is_valid()], [g_is_3D()], [g_is_measured()]\cr\cr
+#'
+#' GDAL documentation on geometry validity and repair:
+#' \url{https://gdal.org/en/latest/user/geometry_validity.html}
 #'
 #' @examples
 #' ## g_make_valid() requires GEOS >= 3.8, otherwise is only a validity test
