@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9000 (dev)
+# gdalraster 2.5.0.9001 (dev)
+
+* `g_make_valid()`: condition tests for changes to `MakeValid()` in GDAL 3.13 and update documentation to describe the new behavior (#934) (2026-03-28)
 
 * update (primarily documentation) for the `"UInt8"` pixel data type in GDAL >= 3.13 (#933) (2026-03-28)
 
