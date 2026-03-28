@@ -95,11 +95,12 @@ These functions use the GEOS library via GDAL headers.
 
 \code{g_make_valid()} attempts to make an invalid geometry valid without losing
 vertices. Already-valid geometries are cloned without further intervention.
-Wrapper of \code{OGR_G_MakeValid()}/\code{OGR_G_MakeValidEx()} in the GDAL API.
-Requires the GEOS >= 3.8 library, check it for the definition of the
-geometry operation. If GDAL is built without GEOS >= 3.8, this function
-will return a clone of the input geometry if it is valid, or \code{NULL}
-(\code{as_wkb = TRUE}) / \code{NA} (\code{as_wkb = FALSE}) if it is invalid.
+Wrapper of \code{OGR_G_MakeValidEx()} in the GDAL API.
+Requires GEOS >= 3.8 library. If GDAL is built without GEOS >= 3.8, this
+function will return a clone of the input geometry if it is valid, or \code{NULL}
+(\code{as_wkb = TRUE}) / \code{NA} (\code{as_wkb = FALSE}) if it is invalid. For detailed
+explanations of geometry validity checking and repair, see
+\url{https://gdal.org/en/latest/user/geometry_validity.html}.
 \itemize{
 \item \code{"LINEWORK"} is the default method, which combines all rings into a set
 of noded lines and then extracts valid polygons from that linework
@@ -180,5 +181,8 @@ g <- "GEOMETRYCOLLECTION(POINT(1 2),
 g_swap_xy(g, as_wkb = FALSE)
 }
 \seealso{
-\code{\link[=g_is_valid]{g_is_valid()}}, \code{\link[=g_is_3D]{g_is_3D()}}, \code{\link[=g_is_measured]{g_is_measured()}}
+\code{\link[=g_is_valid]{g_is_valid()}}, \code{\link[=g_is_3D]{g_is_3D()}}, \code{\link[=g_is_measured]{g_is_measured()}}\cr\cr
+
+GDAL documentation on geometry validity and repair:
+\url{https://gdal.org/en/latest/user/geometry_validity.html}
 }
