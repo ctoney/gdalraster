@@ -1404,10 +1404,20 @@ test_that("make_valid works", {
                                          quiet = NULL))
     expect_true(g_equals(g_wk2wk(wkb1), wkt1))
 
-    # invalid - error
+    # invalid - error if GDAL < 3.13
+    # GDAL >= 3.13:
+    # Certain geometries cannot be read using GEOS, for example if Polygon
+    # rings are not closed or do not contain enough vertices. If a geometry
+    # cannot be read by GEOS, NULL will be returned. Starting with GDAL 3.13,
+    # GDAL will attempt to modify these geometries such that they can be read
+    # and repaired by GEOS.
     wkt2 <- "LINESTRING (0 0)"
-    expect_warning(wkb2 <- g_make_valid(wkt2))
-    expect_true(is.null(wkb2))
+    if (gdal_version_num() < gdal_compute_version(3, 13, 0)) {
+        expect_warning(wkb2 <- g_make_valid(wkt2))
+        expect_true(is.null(wkb2))
+    } else {
+        expect_equal(g_make_valid(wkt2, as_wkb = FALSE), "POINT (0 0)")
+    }
 
     # invalid to valid
     wkt3 <- "POLYGON ((0 0,10 10,0 10,10 0,0 0))"
@@ -1428,7 +1438,11 @@ test_that("make_valid works", {
     expect_warning(wkb_list <- g_make_valid(wkt_vec, method = "STRUCTURE",
                                             quiet = TRUE))
     expect_equal(length(wkb_list), length(wkt_vec))
-    expect_true(is.null(wkb_list[[2]]))
+    if (gdal_version_num() < gdal_compute_version(3, 13, 0)) {
+        expect_true(is.null(wkb_list[[2]]))
+    } else {
+        expect_false(is.null(wkb_list[[2]]))
+    }
     expect_true(is.null(wkb_list[[5]]))
     expect_true(g_equals(g_wk2wk(wkb_list[[4]]), expected_wkt4))
 
@@ -1438,7 +1452,11 @@ test_that("make_valid works", {
                                             method = "STRUCTURE",
                                             quiet = TRUE))
     expect_equal(length(wkb_list), length(wkt_vec))
-    expect_true(is.null(wkb_list[[2]]))
+    if (gdal_version_num() < gdal_compute_version(3, 13, 0)) {
+        expect_true(is.null(wkb_list[[2]]))
+    } else {
+        expect_false(is.null(wkb_list[[2]]))
+    }
     expect_true(is.null(wkb_list[[5]]))
     expect_true(g_equals(g_wk2wk(wkb_list[[4]]), expected_wkt4))
 })
@@ -1449,7 +1467,7 @@ test_that("normalize works", {
     g <- "POLYGON ((0 1,1 1,1 0,0 0,0 1))"
     expect_no_error(g_normalize(g))
     expect_no_error(g_normalize(g, as_wkb = NULL, as_iso = NULL,
-                              byte_order = NULL, quiet = NULL))
+                                byte_order = NULL, quiet = NULL))
     g_norm <- g_normalize(g, as_wkb = FALSE)
     g_expect <- "POLYGON ((0 0,0 1,1 1,1 0,0 0))"
     expect_equal(g_norm, g_expect)

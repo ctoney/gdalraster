@@ -1094,13 +1094,20 @@ g_geom_count <- function(geom, quiet = FALSE) {
 #' A geometry as WKB raw vector or WKT string, or a list/character vector of
 #' geometries as WKB/WKT with length equal to `length(geom)`. `NULL` is returned
 #' with a warning if WKB input cannot be converted into an OGR geometry object,
-#' or if an error occurs in the call to the underlying OGR API.
+#' or if an error occurs in the call to the underlying OGR API (see Note).
 #'
 #' @seealso
 #' [g_is_valid()], [g_is_3D()], [g_is_measured()]\cr\cr
 #'
 #' GDAL documentation on geometry validity and repair:
 #' \url{https://gdal.org/en/latest/user/geometry_validity.html}
+#'
+#' @note
+#' `MakeValid()` in GDAL >= 3.13: Certain geometries cannot be read using GEOS,
+#' e.g., if Polygon rings are not closed or do not contain enough vertices. If
+#' a geometry cannot be read by GEOS, `NULL` will be returned. Starting with
+#' GDAL 3.13, GDAL will attempt to modify these geometries such that they can
+#' be read and repaired by GEOS.
 #'
 #' @examples
 #' ## g_make_valid() requires GEOS >= 3.8, otherwise is only a validity test
@@ -1114,9 +1121,10 @@ g_geom_count <- function(geom, quiet = FALSE) {
 #' wkt <- "POLYGON ((0 0,10 10,0 10,10 0,0 0))"
 #' g_make_valid(wkt, as_wkb = FALSE)
 #'
-#' # invalid - error
+#' # invalid, note that GDAL >= 3.13 will modify to valid in this case
 #' wkt <- "LINESTRING (0 0)"
-#' g_make_valid(wkt)  # NULL
+#' # NULL if GDAL < 3.13, or "POINT (0 0)" with GDAL >= 3.13:
+#' g_make_valid(wkt)
 #'
 #' ## g_normalize() requires GDAL >= 3.3
 #' if (gdal_version_num() >= gdal_compute_version(3, 3, 0)) {
