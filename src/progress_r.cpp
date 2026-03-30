@@ -4,6 +4,12 @@
 
 static SEXP global_pb = R_NilValue;
 
+static const Rcpp::List pb_config =
+    Rcpp::List::create(
+        Rcpp::Named("format_done") = "{cli::col_green(cli::symbol$tick)} "
+            "Done ({cli::pb_elapsed})",
+        Rcpp::Named("clear") = false);
+
 int CPL_STDCALL GDALTermProgressR(double dfComplete,
                                   CPL_UNUSED const char *pszMessage,
                                   CPL_UNUSED void *pProgressArg)
@@ -13,7 +19,7 @@ int CPL_STDCALL GDALTermProgressR(double dfComplete,
             cli_progress_done(global_pb);
 
         R_ReleaseObject(global_pb);
-        global_pb = cli_progress_bar(1, NULL);
+        global_pb = cli_progress_bar(1, pb_config);
         R_PreserveObject(global_pb);
     }
     else if (dfComplete < 1) {
