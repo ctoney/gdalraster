@@ -1266,13 +1266,14 @@ calc <- function(expr,
                 ds <- new(GDALRaster, rasterfiles[[i]])
 
             dm <- ds$dim()
+            fname <- ds$getDescription(0)
 
             if (!in_raster_is_object[i])
                 ds$close()
 
             if (dm[1] != ncols || dm[2] != nrows) {
-                message("rasterfiles[", i, "] has incompatible dimension")
-                stop("all input rasters must have the same X size/Y size",
+                cli::cli_alert_danger("incompatible dimension: {.val {fname}}")
+                stop("all input rasters must have the same X size, Y size",
                      call. = FALSE)
             }
         }
@@ -1393,8 +1394,14 @@ calc <- function(expr,
     }
 
     # process by rows
-    if (!quiet)
-        cli::cli_progress_bar("Calculating", total = nrows)
+    if (!quiet) {
+        cli::cli_progress_bar(
+            "Calculating...",
+            format_done =
+                "{cli::col_green(cli::symbol$tick)} Done ({cli::pb_elapsed})",
+            total = nrows,
+            clear = FALSE)
+    }
 
     for (i in seq.int(0L, (nrows - 1L), 1L)) {
         process_row(i)
@@ -1407,7 +1414,7 @@ calc <- function(expr,
 
     dst_ds$flushCache()
     if (!quiet)
-        message("output written to ", output_name)
+        cli::cli_alert_info("output written to: {.val {output_name}}")
 
     for (i in seq_len(nrasters)) {
         if (!in_raster_is_object[i])
