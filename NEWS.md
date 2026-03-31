@@ -1,6 +1,6 @@
 # gdalraster 2.5.0.9003 (dev)
 
-* configure the default progress bar to show elapsed time upon completion (#935, #936) (2026-03-30)
+* configure the default progress bar to show elapsed time upon completion (adding **glue** in `Suggests` for **cli**, #935, #936) (2026-03-30)
 
 * `g_make_valid()`: condition tests for changes to `MakeValid()` in GDAL 3.13 and update documentation to describe the new behavior (#934) (2026-03-28)
 
