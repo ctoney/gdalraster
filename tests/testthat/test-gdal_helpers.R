@@ -40,6 +40,8 @@ test_that("getCreationOptions works", {
     expect_true(is.list(all_opt))
     expect_true(length(names(all_opt)) > 10)
     expect_true(is.list(all_opt$TILED))
+    expect_message(getCreationOptions("USGSDEM"), "no creation options")
+    expect_true(is.null(getCreationOptions("USGSDEM")))
     expect_error(getCreationOptions("invalid format name"))
     expect_error(getCreationOptions(NA))
 

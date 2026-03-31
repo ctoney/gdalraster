@@ -818,7 +818,7 @@ test_that("pixel_extract wrapper returns correct data", {
 
     # force to use /vsimem/ instead
     expect_message(extr <- pixel_extract(f, pts, max_ram = 1),
-                   "copy completed")
+                   "copying remote file")
     colnames(extr) <- NULL
     dim(extr) <- NULL
     expected_values <- c(99, 188, 185, 185, 185, 185, 185, 185, 162, 165, 162,

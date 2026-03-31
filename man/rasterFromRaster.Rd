@@ -12,7 +12,8 @@ rasterFromRaster(
   dtName = NULL,
   options = NULL,
   init = NULL,
-  dstnodata = init
+  dstnodata = init,
+  quiet = FALSE
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ during creation of a GTiff file).}
 \item{init}{Numeric value to initialize all pixels in the output raster.}
 
 \item{dstnodata}{Numeric nodata value for the output raster.}
+
+\item{quiet}{Logical value, \code{TRUE} to suppress informational messages.}
 }
 \value{
 Returns the destination filename invisibly.

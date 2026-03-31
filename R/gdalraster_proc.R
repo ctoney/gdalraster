@@ -355,6 +355,7 @@ read_ds <- function(ds, bands = NULL, xoff = 0, yoff = 0,
 #' during creation of a GTiff file).
 #' @param init Numeric value to initialize all pixels in the output raster.
 #' @param dstnodata Numeric nodata value for the output raster.
+#' @param quiet Logical value, `TRUE` to suppress informational messages.
 #' @returns Returns the destination filename invisibly.
 #'
 #' @seealso
@@ -413,7 +414,7 @@ read_ds <- function(ds, bands = NULL, xoff = 0, yoff = 0,
 #' @export
 rasterFromRaster <- function(srcfile, dstfile, fmt=NULL, nbands=NULL,
                              dtName=NULL, options=NULL, init=NULL,
-                             dstnodata=init) {
+                             dstnodata=init, quiet=FALSE) {
 
     if (is.null(fmt)) {
         fmt <- .getGDALformat(dstfile)
@@ -421,6 +422,11 @@ rasterFromRaster <- function(srcfile, dstfile, fmt=NULL, nbands=NULL,
             stop("use 'fmt' to specify a GDAL raster format name",
                  call. = FALSE)
         }
+    }
+
+    if (!is.null(init)) {
+        if (!(is.numeric(init) && length(init) == 1))
+            stop("'init' must be a single numeric value", call. = FALSE)
     }
 
     src_ds <- new(GDALRaster, srcfile, read.only=TRUE)
@@ -446,11 +452,14 @@ rasterFromRaster <- function(srcfile, dstfile, fmt=NULL, nbands=NULL,
     }
 
     if (!is.null(init)) {
-        message("initializing destination raster...")
+        if (!quiet) {
+            cli::cli_progress_step(
+                "initializing destination raster...",
+                msg_done = "done")
+        }
         for (b in 1:nbands) {
             dst_ds$fillRaster(b, init, 0)
         }
-        message("done")
     }
 
     dst_ds$close()
@@ -2108,15 +2117,18 @@ pixel_extract <- function(raster, xy, bands = NULL, interp = NULL,
         raw_size <- num_pixels * bytes_per_pixel
         if ((raw_size / 1e6) < max_ram) {
             if (!ds$quiet) {
-                message("copying to MEM dataset...")
+                cli::cli_alert_info("copying to MEM dataset...")
             }
             ds_mem <- try(createCopy("MEM", "", f_in, return_obj = TRUE),
                           silent = ds$quiet)
             if (!is(ds_mem, "Rcpp_GDALRaster")) {
                 if (!ds$quiet) {
-                    message("copy to MEM failed")
+                    cli::cli_alert_warning("copy to MEM failed")
                 }
             } else {
+                if (!ds$quiet) {
+                    cli::cli_alert_success("using in-memory raster")
+                }
                 use_mem <- TRUE
                 on.exit(ds_mem$close(), add = TRUE)
             }
@@ -2129,7 +2141,7 @@ pixel_extract <- function(raster, xy, bands = NULL, interp = NULL,
                 if (this_f_size == -1) {
                     f_size <- -1
                     if (!ds$quiet) {
-                        message("failed to get file size")
+                        cli::cli_alert_warning("failed to get file size")
                     }
                     break
                 }
@@ -2137,40 +2149,48 @@ pixel_extract <- function(raster, xy, bands = NULL, interp = NULL,
             }
             if (f_size > 0 && (f_size / 1e6) < max_ram) {
                 f_nopath <- .cpl_get_filename(f_in)
-                mem_dir <- file.path("/vsimem", tempdir() |> .cpl_get_basename())
+                mem_dir <- file.path("/vsimem", tempdir() |>
+                    .cpl_get_basename())
+
                 f_mem <- file.path(mem_dir, f_nopath)
                 if (!ds$quiet) {
-                    message("copying remote file(s) to /vsimem for processing...")
+                    cli::cli_alert_info(
+                        "copying remote file(s) to /vsimem/...")
                 }
 
-                res <- copyDatasetFiles(new_filename = f_mem, old_filename = f_in)
+                res <- copyDatasetFiles(new_filename = f_mem,
+                                        old_filename = f_in)
 
                 if (!res) {
-                    if (!ds$quiet) {
-                        message("copy to /vsimem failed")
-                    }
                     vsi_rmdir(mem_dir, recursive = TRUE)
+                    if (!ds$quiet) {
+                        cli::cli_alert_warning("copy to {.val {f_mem}} failed")
+                    }
                 } else {
                     ds_mem <- try(new(GDALRaster, f_mem), silent = TRUE)
                     if (!is(ds_mem, "Rcpp_GDALRaster")) {
-                        if (!ds$quiet) {
-                            message("open /vsimem failed")
-                        }
                         vsi_rmdir(mem_dir, recursive = TRUE)
+                        if (!ds$quiet) {
+                            cli::cli_alert_warning("open {.val {f_mem}} failed")
+                        }
                     } else {
-                        message("copy completed")
                         use_mem <- TRUE
                         on.exit(ds_mem$close(), add = TRUE)
                         on.exit(res <- deleteDataset(f_mem), add = TRUE)
                         on.exit(res <- vsi_rmdir(mem_dir, recursive = TRUE),
                                 add = TRUE)
+
+                        if (!ds$quiet) {
+                            cli::cli_alert_success("using in-memory raster")
+                        }
                     }
                 }
             }
         }
 
         if (!ds$quiet && !use_mem) {
-            message("not using in-memory raster, processing remote file...")
+            cli::cli_alert_info(
+                "not using in-memory raster, processing remote file...")
         }
     }
 
@@ -2268,7 +2288,8 @@ pixel_extract <- function(raster, xy, bands = NULL, interp = NULL,
 #' exist, otherwise it will try to append to an existing one.
 #' This function is a wrapper of `GDALPolygonize` in the GDAL Algorithms API.
 #' It provides essentially the same functionality as the `gdal_polygonize.py`
-#' command-line program (\url{https://gdal.org/en/stable/programs/gdal_polygonize.html}).
+#' command-line program
+#' (\url{https://gdal.org/en/stable/programs/gdal_polygonize.html}).
 #'
 #' @details
 #' Polygon features will be created on the output layer, with polygon
@@ -2433,7 +2454,8 @@ polygonize <- function(raster_file,
         if (is.null(out_fmt))
             out_fmt <- .getOGRformat(out_dsn)
         if (is.null(out_fmt)) {
-            message("format driver cannot be determined for: ", out_dsn)
+            cli::cli_alert_danger(
+                "format driver cannot be determined for: {.val {out_dsn}}")
             stop("specify 'out_fmt' to create a new dataset", call. = FALSE)
         }
         if (!ogr_ds_create(out_fmt, out_dsn, out_layer, geom_type = "POLYGON",
@@ -2833,6 +2855,6 @@ read_to_nativeRaster <- function(ds, xoff = 0, yoff = 0,
 
     stop("'out_ysize' must be a numeric value", call. = FALSE)
   }
-  r <- ds$readToNativeRaster(xoff, yoff, xsize, ysize, out_xsize, out_ysize)
-  r
+
+  ds$readToNativeRaster(xoff, yoff, xsize, ysize, out_xsize, out_ysize)
 }

@@ -450,7 +450,8 @@ gdal_global_reg_names <- function() {
         }
     }
 
-    cat("\nUsage:", cmd)
+    cli::cat_line()
+    cat(cli::format_inline("{.strong Usage}: "), cmd, sep = "")
 
     if (alginfo$has_subalgorithms) {
         cat(" <SUBCOMMAND>")
@@ -577,8 +578,10 @@ gdal_global_reg_names <- function() {
             }
         }
 
-        if (this_arg$is_required)
-            cat("    [required]\n")
+        if (this_arg$is_required) {
+            cat("    [", cli::format_inline("{.emph required}"), "]\n",
+                sep = "")
+        }
 
         if (nzchar(this_arg$mutual_exclusion_group)) {
             other_args <- character()
@@ -718,8 +721,10 @@ gdal_global_reg_names <- function() {
         cat("\n")
     }
 
-    if (alginfo$URL != "")
-        cat("For more details: ", alginfo$URL, "\n", sep = "")
+    if (alginfo$URL != "") {
+        cat("For more details: ", cli::format_inline("{.url {alginfo$URL}}"),
+            "\n", sep = "")
+    }
 
     alg$release()
 }

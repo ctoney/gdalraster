@@ -349,7 +349,7 @@ getCreationOptions <- function(format, filter = NULL) {
     }
 
     if (.getCreationOptions(format) == "") {
-        message("no creation options found for ", format)
+        cli::cli_alert_warning("no creation options found for {.val {format}}")
         return(NULL)
     }
 
