@@ -66,6 +66,7 @@ Imports:
     yyjsonr
 LinkingTo: cli, nanoarrow, Rcpp, RcppInt64
 Suggests:
+    glue (>= 1.6.0),
     gt,
     knitr,
     rmarkdown,
