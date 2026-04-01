@@ -71,6 +71,13 @@ bool is_namespace_loaded_(const Rcpp::String &pkg);
 
 bool is_gdalraster_obj_(const Rcpp::RObject &x);
 
+// cli::cli_alert wrappers for use from C++
+void cli_alert_(const std::string &text);
+void cli_alert_info_(const std::string &text);
+void cli_alert_warning_(const std::string &text);
+void cli_alert_danger_(const std::string &text);
+void cli_alert_success_(const std::string &text);
+
 // case-insensitive comparator for std::map
 // https://stackoverflow.com/questions/1801892/how-can-i-make-the-mapfind-operation-case-insensitive
 struct _ci_less {

@@ -24,6 +24,8 @@
 #include "gdalraster.h"
 #include "rcpp_util.h"
 
+using namespace std::string_literals;
+
 #define GDALALG_MIN_GDAL_ GDAL_COMPUTE_VERSION(3, 11, 3)
 
 constexpr char GDALALG_MIN_GDAL_MSG_[] =
@@ -62,8 +64,7 @@ void append_subalg_names_desc_(const GDALAlgorithmH alg,
         GDALAlgorithmH subalg = nullptr;
         subalg = GDALAlgorithmInstantiateSubAlgorithm(alg, subnames[i]);
         if (!subalg) {
-            Rcpp::Rcout << "failed to instantiate alg name: " << subnames[i] <<
-                "\n";
+            cli_alert_danger_("failed to instantiate alg name: "s + subnames[i]);
             continue;
         }
 
@@ -81,10 +82,12 @@ void append_subalg_names_desc_(const GDALAlgorithmH alg,
         }
 
         if (console_out && console_out_this) {
-            Rcpp::Rcout << this_cmd_str.c_str() << ":\n";
-            Rcpp::Rcout << GDALAlgorithmGetDescription(subalg) << "\n";
-            if (!EQUAL(GDALAlgorithmGetHelpFullURL(subalg), ""))
-                Rcpp::Rcout << GDALAlgorithmGetHelpFullURL(subalg) << "\n";
+            cli_alert_("{.str "s + this_cmd_str + "}");
+            cli_alert_info_(GDALAlgorithmGetDescription(subalg));
+            if (!EQUAL(GDALAlgorithmGetHelpFullURL(subalg), "")) {
+                cli_alert_info_(
+                    "{.url "s + GDALAlgorithmGetHelpFullURL(subalg) + "}");
+            }
             Rcpp::Rcout << "\n";
         }
 
@@ -157,10 +160,12 @@ Rcpp::DataFrame gdal_commands(const std::string &contains, bool recurse,
         }
 
         if (console_out && console_out_this) {
-            Rcpp::Rcout << names[i] << ":\n";
-            Rcpp::Rcout << GDALAlgorithmGetDescription(alg) << "\n";
-            if (!EQUAL(GDALAlgorithmGetHelpFullURL(alg), ""))
-                Rcpp::Rcout << GDALAlgorithmGetHelpFullURL(alg) << "\n";
+            cli_alert_("{.str "s + names[i] + "}");
+            cli_alert_info_(GDALAlgorithmGetDescription(alg));
+            if (!EQUAL(GDALAlgorithmGetHelpFullURL(alg), "")) {
+                cli_alert_info_(
+                    "{.url "s + GDALAlgorithmGetHelpFullURL(alg) + "}");
+            }
             Rcpp::Rcout << "\n";
         }
 
@@ -1708,7 +1713,7 @@ void GDALAlg::instantiateAlg_() {
 
         if (!m_hAlg) {
             GDALAlgorithmRegistryRelease(reg);
-            Rcpp::Rcout << "top-level command: " << cmd.get_cstring() << "\n";
+            cli_alert_danger_("top-level command: "s + cmd.get_cstring());
             Rcpp::stop("failed to instantiate CLI algorithm");
         }
     }
@@ -1721,7 +1726,7 @@ void GDALAlg::instantiateAlg_() {
 
         if (!alg_tmp[0]) {
             GDALAlgorithmRegistryRelease(reg);
-            Rcpp::Rcout << "top-level command: " << cmd.get_cstring() << "\n";
+            cli_alert_danger_("top-level command: "s + cmd.get_cstring());
             Rcpp::stop("failed to instantiate CLI algorithm");
         }
         for (R_xlen_t i = 1; i < m_cmd.size(); ++i) {
@@ -1739,8 +1744,7 @@ void GDALAlg::instantiateAlg_() {
                             GDALAlgorithmRelease(alg);
                     }
                     GDALAlgorithmRegistryRelease(reg);
-                    Rcpp::Rcout << "subcommand: " << sub_cmd.get_cstring() <<
-                        "\n";
+                    cli_alert_danger_("subcommand: "s + sub_cmd.get_cstring());
                     Rcpp::stop("failed to instantiate CLI algorithm");
                 }
             }
@@ -1757,8 +1761,7 @@ void GDALAlg::instantiateAlg_() {
                             GDALAlgorithmRelease(alg);
                     }
                     GDALAlgorithmRegistryRelease(reg);
-                    Rcpp::Rcout << "subcommand: " << sub_cmd.get_cstring() <<
-                        "\n";
+                    cli_alert_danger_("subcommand: "s + sub_cmd.get_cstring());
                     Rcpp::stop("failed to instantiate CLI algorithm");
                 }
             }

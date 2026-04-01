@@ -266,3 +266,39 @@ std::string get_data_ptr(const Rcpp::RObject &x) {
 
     return std::string(buf);
 }
+
+// wrapper for cli::cli_alert()
+void cli_alert_(const std::string &text) {
+    Rcpp::Environment pkg = Rcpp::Environment::namespace_env("cli");
+    Rcpp::Function fn = pkg["cli_alert"];
+    fn(text);
+}
+
+// wrapper for cli::cli_alert_info()
+void cli_alert_info_(const std::string &text) {
+    Rcpp::Environment pkg = Rcpp::Environment::namespace_env("cli");
+    Rcpp::Function fn = pkg["cli_alert_info"];
+    fn(text);
+}
+
+// wrapper for cli::cli_alert_warning()
+void cli_alert_warning_(const std::string &text) {
+    Rcpp::Environment pkg = Rcpp::Environment::namespace_env("cli");
+    Rcpp::Function fn = pkg["cli_alert_warning"];
+    fn(text);
+}
+
+// wrapper for cli::cli_alert_danger()
+void cli_alert_danger_(const std::string &text) {
+    Rcpp::Environment pkg = Rcpp::Environment::namespace_env("cli");
+    Rcpp::Function fn = pkg["cli_alert_danger"];
+    fn(text);
+}
+
+// wrapper for cli::cli_alert_success()
+void cli_alert_success_(const std::string &text) {
+    Rcpp::Environment pkg = Rcpp::Environment::namespace_env("cli");
+    Rcpp::Function fn = pkg["cli_alert_success"];
+    fn(text);
+}
+

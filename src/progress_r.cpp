@@ -38,3 +38,12 @@ int CPL_STDCALL GDALTermProgressR(double dfComplete,
 
     return TRUE;
 }
+
+// terminate the global C++ progress bar if it is active
+//' @noRd
+// [[Rcpp::export(name = ".progress_bar_cleanup")]]
+void progress_bar_cleanup() {
+    R_ReleaseObject(global_pb);
+    global_pb = R_NilValue;
+    R_PreserveObject(global_pb);
+}

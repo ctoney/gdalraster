@@ -1742,14 +1742,13 @@ Rcpp::DataFrame value_count(const GDALRaster* const &src_ds, int band = 1,
     const int ncols = static_cast<int>(src_ds->getRasterXSize());
     GDALProgressFunc pfnProgress = nullptr;
     void *pProgressData = nullptr;
-    if (!quiet)
-        pfnProgress = GDALTermProgressR;
 
     Rcpp::DataFrame df_out = Rcpp::DataFrame::create();
 
     if (!quiet) {
-        pfnProgress(0, nullptr, nullptr);
-        Rcpp::Rcout << "scanning raster...\n";
+        pfnProgress = GDALTermProgressR;
+        pfnProgress(0.0, nullptr, nullptr);
+        cli_alert_info_("scanning raster...");
     }
 
     // The counter in the unordered_map is a double since it will be returned
@@ -1770,7 +1769,7 @@ Rcpp::DataFrame value_count(const GDALRaster* const &src_ds, int band = 1,
             if (!quiet)
                 pfnProgress(y / (nrows-1.0), nullptr, pProgressData);
 
-            if (y % 10000 == 0)
+            if (y % 100 == 0)
                 Rcpp::checkUserInterrupt();
         }
         Rcpp::IntegerVector value = Rcpp::no_init(tbl.size());
@@ -1801,7 +1800,7 @@ Rcpp::DataFrame value_count(const GDALRaster* const &src_ds, int band = 1,
             if (!quiet)
                 pfnProgress(y / (nrows-1.0), nullptr, pProgressData);
 
-            if (y % 10000 == 0)
+            if (y % 100 == 0)
                 Rcpp::checkUserInterrupt();
         }
         Rcpp::NumericVector value = Rcpp::no_init(tbl.size());
@@ -3882,10 +3881,8 @@ bool addFileInZip(const std::string &zip_filename, bool overwrite,
         opt_list.push_back(nullptr);
     }
 
-    if (!quiet) {
-        Rcpp::Rcout << "adding " << in_filename_in.c_str() << " ...\n";
+    if (!quiet)
         GDALTermProgressR(0, nullptr, nullptr);
-    }
 
     CPLErr err = CPLAddFileInZip(
         hZIP.get(), archive_filename_in.c_str(), in_filename_in.c_str(),

@@ -260,17 +260,27 @@ addFilesInZip <- function(
         }
         archive_fname <- .check_gdal_filename(archive_fname)
 
+        if (!quiet) {
+            cli::cli_progress_step(
+                "Adding {.val {archive_fname}}",
+                msg_failed = "Failed to add {.val {archive_fname}}")
+        }
+
         if (!.addFileInZip(zip_file,
                            overwrite = FALSE,
                            archive_fname,
                            f,
                            opt,
-                           quiet)) {
+                           quiet = TRUE)) {
             ret <- FALSE
+            if (!quiet)
+                cli::cli_progress_done("failed")
             break
         } else {
             ret <- TRUE
         }
+        if (!quiet)
+            cli::cli_progress_done()
     }
 
     if (!ret)
