@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9003 (dev)
+# gdalraster 2.5.0.9010 (dev)
+
+* progress bar improvements and format console messages with **cli** [WIP] (#939) (2026-04-01)
 
 * configure the default progress bar to show elapsed time upon completion (adding **glue** in `Suggests` for **cli**, #935, #936) (2026-03-30)
 
