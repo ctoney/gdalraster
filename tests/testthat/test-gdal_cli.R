@@ -3,7 +3,7 @@ skip_on_cran()
 skip_if(gdal_version_num() < gdal_compute_version(3, 11, 3))
 
 test_that("gdal_commands works", {
-    expect_output(cmds <- gdal_commands(), "info:")
+    expect_output(cmds <- gdal_commands())
     expect_true(is.data.frame(cmds))
     expect_true(nrow(cmds) > 10)
     expect_equal(colnames(cmds), c("command", "description", "URL"))

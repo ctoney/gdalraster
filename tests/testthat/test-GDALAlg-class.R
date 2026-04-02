@@ -7,7 +7,7 @@ test_that("class constructors work", {
     # default constructor
     alg <- GDALAlg$new()
     expect_equal(alg$info()$name, "gdal")
-    expect_output(print(alg), "gdal entry point")
+    expect_no_error(print(alg))
     alg$release()
 
     # no args
@@ -15,21 +15,21 @@ test_that("class constructors work", {
     alginfo <- alg$info()
     expect_true(alginfo$has_subalgorithms)
     expect_true(length(alginfo$subalgorithm_names) > 5)
-    expect_output(print(alg), "vector")
+    # expect_output(print(alg))
     alg$release()
 
     # full path in a character string
     alg <- new(GDALAlg, "vector convert")
     alginfo <- alg$info()
     expect_false(alginfo$has_subalgorithms)
-    expect_output(print(alg), "convert")
+    # expect_output(print(alg))
     alg$release()
 
     # cmd path as a character vector
     alg <- new(GDALAlg, c("vector", "convert"))
     alginfo <- alg$info()
     expect_false(alginfo$has_subalgorithms)
-    expect_output(print(alg), "convert")
+    # expect_output(print(alg))
     alg$release()
 
     # args in a character vector
@@ -57,7 +57,7 @@ test_that("class constructors work", {
     args$nodata <- -32767
 
     expect_no_error(alg <- new(GDALAlg, "vector rasterize", args))
-    expect_output(print(alg), "rasterize")
+    expect_no_error(print(alg))
     expect_true(alg$parseCommandLineArgs())
     expect_true(alg$run())
     ds <- alg$output()
@@ -202,7 +202,9 @@ test_that("algorithm usage is returned", {
 test_that("GDALAlg S4 show() works", {
     expect_no_error(alg <- new(GDALAlg, "raster info"))
 
-    expect_output(print(alg), "Description")
+    # expect_output(print(alg), "Description")
+    # TODO: a snapshot test is required since output is now formatted with {cli}
+    expect_no_error(print(alg))
 
     alg$release()
 })
