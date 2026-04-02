@@ -69,6 +69,14 @@
 #' Defaults to `"gdal"`, the main entry point to CLI commands.
 #' @param args Either a character vector or a named list containing input
 #' arguments of the algorithm (see section `Algorithm Argument Syntax` below).
+#' @param close Logical value, `FALSE` by default. Set to `TRUE` to finalize
+#' the algorithm immediately after it is run, which completes any pending
+#' actions such as closing output datasets. This is useful if you do not need to
+#' access the output as objects, e.g., when only generating file output for
+#' later use. See `GDALAlg$close()`.
+#' @param quiet Logical value, `FALSE` by default. Set to `TRUE` to suppress
+#' progress reporting along with various messages and warnings. Sets the value
+#' of `GDALAlg$quiet`.
 #' @param setVectorArgsFromObject Logical value, `TRUE` to set algorithm
 #' arguments automatically when the `"input"` argument or the `"like"` argument
 #' is an object of class `GDALVector` (the default). Can be set to `FALSE` to
@@ -189,8 +197,13 @@
 #'
 #' f_tif <- system.file("extdata/storml_elev.tif", package="gdalraster")
 #' f_gpkg <- file.path(tempdir(), "storml_elev.gpkg")
-#'
 #' args <- c("--overwrite", f_tif, f_gpkg)
+#'
+#' # finalize the algorithm immediately after it is run if only generating
+#' # file output for later use:
+#' # gdal_run("raster convert", args, close = TRUE)
+#'
+#' # or, assign to a variable and access algorithm output as a dataset object
 #' (alg <- gdal_run("raster convert", args))
 #'
 #' (ds <- alg$output())
@@ -329,7 +342,9 @@ gdal_usage <- function(cmd = NULL) {
 
 #' @name gdal_cli
 #' @export
-gdal_run <- function(cmd, args, setVectorArgsFromObject = TRUE) {
+gdal_run <- function(cmd, args, close = FALSE, quiet = FALSE,
+                     setVectorArgsFromObject = TRUE) {
+
     if (gdal_version_num() < gdal_compute_version(3, 11, 3)) {
         stop("gdal_run() requires GDAL >= 3.11.3", call. = FALSE)
     }
@@ -344,7 +359,17 @@ gdal_run <- function(cmd, args, setVectorArgsFromObject = TRUE) {
     if (!is.character(args) && !is.list(args))
         stop("'args' must be a character vector or named list", call. = FALSE)
 
-    if (missing(setVectorArgsFromObject) || is.null(setVectorArgsFromObject) ||
+    if (is.null(close) || all(is.na(close)))
+        close <- FALSE
+    if (!is.logical(close) || length(close) != 1)
+        stop("'close' must be a single logical value", call. = FALSE)
+
+    if (is.null(quiet) || all(is.na(quiet)))
+        quiet <- TRUE
+    if (!is.logical(quiet) || length(quiet) != 1)
+        stop("'quiet' must be a single logical value", call. = FALSE)
+
+    if (is.null(setVectorArgsFromObject) ||
         all(is.na(setVectorArgsFromObject))) {
 
         setVectorArgsFromObject <- TRUE
@@ -357,18 +382,23 @@ gdal_run <- function(cmd, args, setVectorArgsFromObject = TRUE) {
     }
 
     alg <- new(GDALAlg, cmd, args)
+    alg$quiet <- quiet
     alg$setVectorArgsFromObject <- setVectorArgsFromObject
 
     if (!alg$parseCommandLineArgs()) {
-        cat("parseCommandLineArgs() failed\n")
         alg$release()
         stop("failed to parse arguments and set their values", call. = FALSE)
     }
 
     if (!alg$run()) {
-        cat("run() failed\n")
         alg$release()
         stop("failed to execute the command", call. = FALSE)
+    }
+
+    if (close) {
+        res <- alg$close()
+        if (!res && !quiet)
+            cli::cli_alert_warning("Error reported during algorithm finalize.")
     }
 
     return(alg)
@@ -405,7 +435,6 @@ gdal_alg <- function(cmd = NULL, args = NULL, parse = TRUE) {
 
     if (has_args && parse) {
         if (!alg$parseCommandLineArgs()) {
-            cat("parseCommandLineArgs() failed\n")
             alg$release()
             stop("failed to parse arguments and set their values",
                  call. = FALSE)

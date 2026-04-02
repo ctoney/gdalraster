@@ -13,7 +13,13 @@ gdal_commands(contains = NULL, recurse = TRUE, cout = TRUE)
 
 gdal_usage(cmd = NULL)
 
-gdal_run(cmd, args, setVectorArgsFromObject = TRUE)
+gdal_run(
+  cmd,
+  args,
+  close = FALSE,
+  quiet = FALSE,
+  setVectorArgsFromObject = TRUE
+)
 
 gdal_alg(cmd = NULL, args = NULL, parse = TRUE)
 
@@ -36,6 +42,16 @@ Defaults to \code{"gdal"}, the main entry point to CLI commands.}
 
 \item{args}{Either a character vector or a named list containing input
 arguments of the algorithm (see section \verb{Algorithm Argument Syntax} below).}
+
+\item{close}{Logical value, \code{FALSE} by default. Set to \code{TRUE} to finalize
+the algorithm immediately after it is run, which completes any pending
+actions such as closing output datasets. This is useful if you do not need to
+access the output as objects, e.g., when only generating file output for
+later use. See \code{GDALAlg$close()}.}
+
+\item{quiet}{Logical value, \code{FALSE} by default. Set to \code{TRUE} to suppress
+progress reporting along with various messages and warnings. Sets the value
+of \code{GDALAlg$quiet}.}
 
 \item{setVectorArgsFromObject}{Logical value, \code{TRUE} to set algorithm
 arguments automatically when the \code{"input"} argument or the \code{"like"} argument
@@ -213,8 +229,13 @@ gdal_usage("raster convert")
 
 f_tif <- system.file("extdata/storml_elev.tif", package="gdalraster")
 f_gpkg <- file.path(tempdir(), "storml_elev.gpkg")
-
 args <- c("--overwrite", f_tif, f_gpkg)
+
+# finalize the algorithm immediately after it is run if only generating
+# file output for later use:
+# gdal_run("raster convert", args, close = TRUE)
+
+# or, assign to a variable and access algorithm output as a dataset object
 (alg <- gdal_run("raster convert", args))
 
 (ds <- alg$output())
