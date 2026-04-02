@@ -50,8 +50,8 @@ access the output as objects, e.g., when only generating file output for
 later use. See \code{GDALAlg$close()}.}
 
 \item{quiet}{Logical value, \code{FALSE} by default. Set to \code{TRUE} to suppress
-progress reporting along with various messages and warnings. Sets
-\code{GDALAlg$quiet} on the algorithm object.}
+progress reporting along with various messages and warnings. Sets the value
+of \code{GDALAlg$quiet}.}
 
 \item{setVectorArgsFromObject}{Logical value, \code{TRUE} to set algorithm
 arguments automatically when the \code{"input"} argument or the \code{"like"} argument
@@ -229,8 +229,13 @@ gdal_usage("raster convert")
 
 f_tif <- system.file("extdata/storml_elev.tif", package="gdalraster")
 f_gpkg <- file.path(tempdir(), "storml_elev.gpkg")
-
 args <- c("--overwrite", f_tif, f_gpkg)
+
+# finalize the algorithm immediately after it is run if only generating
+# file output for later use:
+# gdal_run("raster convert", args, close = TRUE)
+
+# or, assign to a variable and access algorithm output as a dataset object
 (alg <- gdal_run("raster convert", args))
 
 (ds <- alg$output())

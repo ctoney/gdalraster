@@ -75,8 +75,8 @@
 #' access the output as objects, e.g., when only generating file output for
 #' later use. See `GDALAlg$close()`.
 #' @param quiet Logical value, `FALSE` by default. Set to `TRUE` to suppress
-#' progress reporting along with various messages and warnings. Sets
-#' `GDALAlg$quiet` on the algorithm object.
+#' progress reporting along with various messages and warnings. Sets the value
+#' of `GDALAlg$quiet`.
 #' @param setVectorArgsFromObject Logical value, `TRUE` to set algorithm
 #' arguments automatically when the `"input"` argument or the `"like"` argument
 #' is an object of class `GDALVector` (the default). Can be set to `FALSE` to
@@ -197,8 +197,13 @@
 #'
 #' f_tif <- system.file("extdata/storml_elev.tif", package="gdalraster")
 #' f_gpkg <- file.path(tempdir(), "storml_elev.gpkg")
-#'
 #' args <- c("--overwrite", f_tif, f_gpkg)
+#'
+#' # finalize the algorithm immediately after it is run if only generating
+#' # file output for later use:
+#' # gdal_run("raster convert", args, close = TRUE)
+#'
+#' # or, assign to a variable and access algorithm output as a dataset object
 #' (alg <- gdal_run("raster convert", args))
 #'
 #' (ds <- alg$output())
