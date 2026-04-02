@@ -295,3 +295,7 @@ test_that("vector_to_MEM works with object dereference and garbage collect", {
     rm(ds_mem)
     gc()
 })
+
+test_that("progress_bar_clear runs without error", {
+    expect_no_error(progress_bar_clear())
+})

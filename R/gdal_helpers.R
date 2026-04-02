@@ -1006,3 +1006,18 @@ vector_to_MEM <- function(data, xsize, ysize, nbands = 1L, gt = NULL,
 
     return(ds_mem)
 }
+
+#' Clear progress bar
+#'
+#' `progress_bar_clear()` terminates any active \pkg{cli} progress bars and
+#' resets the global progress bar in C++. Generally not needed unless a process
+#' using a progress bar terminates abnormally, or with ctrl-c interrupt, and
+#' a progress bar display anomaly results.
+#'
+#' @return
+#' No return value, call for side effects.
+progress_bar_clear <- function() {
+    cli::cli_progress_cleanup()
+    cli::cli_progress_message("")
+    .progress_bar_cleanup()
+}
