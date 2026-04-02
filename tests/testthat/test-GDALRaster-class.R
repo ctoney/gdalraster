@@ -20,8 +20,8 @@ test_that("class constructors work as expected", {
 test_that("info() prints output to the console", {
     evt_file <- system.file("extdata/storml_evt.tif", package="gdalraster")
     ds <- new(GDALRaster, evt_file, TRUE)
-    # check S4 show here also
-    expect_output(show(ds), "Bbox")
+    # check S4 show here also, needs snapshot test for {cli} formatting
+    expect_no_error(show(ds))
     expect_output(ds$info())
     # with args
     ds$infoOptions <- c("-nomd", "-norat", "-noct")
