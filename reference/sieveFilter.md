@@ -111,8 +111,9 @@ evt_mmu_file <- file.path(tempdir(), "storml_evt_mmu2.tif")
 rasterFromRaster(srcfile = evt_file,
                  dstfile = evt_mmu_file,
                  init = 32767)
-#> initializing destination raster...
-#> done
+#> ℹ initializing destination raster...
+#> ✔ done [6ms]
+#> 
 
 # create a mask to exclude water pixels from the algorithm
 # recode water (7292) to 0
@@ -120,7 +121,7 @@ expr <- "ifelse(EVT == 7292, 0, EVT)"
 mask_file <- calc(expr = expr,
                   rasterfiles = evt_file,
                   var.names = "EVT")
-#> ℹ output written to: "/tmp/RtmpREGu2n/rastcalc22e124ad058.tif"
+#> ℹ output written to: "/tmp/RtmpBJbYLM/rastcalc22e73947e3ad.tif"
 
 # create a version of EVT with two-pixel minimum mapping unit
 sieveFilter(src_filename = evt_file,
