@@ -53,6 +53,20 @@ test_that("gdal_run works", {
     expect_true(alg$close())
     alg$release()
 
+    # with close
+    deleteDataset(f_out)
+
+    expect_no_error(
+        gdal_run("vector rasterize", args, close = TRUE, quiet = TRUE))
+
+    expect_true(vsi_stat_size(f_out) > 0)
+    expect_no_error(ds <- GDALRaster$new(f_out))
+    expect_equal(ds$res(), c(90, 90))
+    expect_equal(ds$getDataTypeName(band = 1), "Int16")
+    expect_equal(ds$getNoDataValue(band = 1), -32767)
+
+    ds$close()
+
     ## vector output
     f_shp <- system.file("extdata/poly_multipoly.shp", package="gdalraster")
     f_gpkg <- file.path(tempdir(), "polygons_test.gpkg")
