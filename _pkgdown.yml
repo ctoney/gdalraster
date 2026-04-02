@@ -201,6 +201,7 @@ reference:
   - http_enabled
   - push_error_handler
   - pop_error_handler
+  - progress_bar_clear
   - dump_open_datasets
 - subtitle: PROJ configuration
 - contents:

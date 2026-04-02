@@ -251,12 +251,17 @@ buildRAT <- function(raster,
     if (!is.null(na_value))
         d[is.na(d[, 1]), 1] <- na_value
     if (join) {
-        if (anyNA(d[, 1]))
-            message("row with 'NA' value will be dropped in join")
+        if (anyNA(d[, 1])) {
+            cli::cli_alert_warning(
+                "row with {.val {NA}} value will be dropped in join")
+        }
         n_before <- nrow(d)
         d <- merge(d, join_df)
-        if (n_before != nrow(d))
-            message("rows before join: ", n_before, ", rows after: ", nrow(d))
+        if (n_before != nrow(d)) {
+            cli::cli_alert_info(
+                paste0("rows before join: {.val {n_before}}, ",
+                       "rows after: {.val {nrow(d)}}"))
+        }
     }
     d <- d[order(d[, col_names[1]]), ]
     row.names(d) <- NULL
@@ -335,7 +340,8 @@ displayRAT <- function(tbl, title = "Raster Attribute Table") {
         stop("'tbl' must be a data frame", call. = FALSE)
 
     if (is.null(attr(tbl, "GDALRATTableType"))) {
-        message("input data frame is missing attribute 'GDALRATTableType'")
+        cli::cli_alert_danger(
+            "input data frame is missing attribute {.val 'GDALRATTableType'}")
         stop("'tbl' must be formatted as a GDAL RAT",
              call.=FALSE)
     }

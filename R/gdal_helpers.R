@@ -260,17 +260,27 @@ addFilesInZip <- function(
         }
         archive_fname <- .check_gdal_filename(archive_fname)
 
+        if (!quiet) {
+            cli::cli_progress_step(
+                "Adding {.val {archive_fname}}",
+                msg_failed = "Failed to add {.val {archive_fname}}")
+        }
+
         if (!.addFileInZip(zip_file,
                            overwrite = FALSE,
                            archive_fname,
                            f,
                            opt,
-                           quiet)) {
+                           quiet = TRUE)) {
             ret <- FALSE
+            if (!quiet)
+                cli::cli_progress_done("failed")
             break
         } else {
             ret <- TRUE
         }
+        if (!quiet)
+            cli::cli_progress_done()
     }
 
     if (!ret)
@@ -349,7 +359,7 @@ getCreationOptions <- function(format, filter = NULL) {
     }
 
     if (.getCreationOptions(format) == "") {
-        message("no creation options found for ", format)
+        cli::cli_alert_warning("no creation options found for {.val {format}}")
         return(NULL)
     }
 
@@ -995,4 +1005,19 @@ vector_to_MEM <- function(data, xsize, ysize, nbands = 1L, gt = NULL,
         set_config_option("GDAL_MEM_ENABLE_OPEN", orig_opt)
 
     return(ds_mem)
+}
+
+#' Clear progress bar
+#'
+#' `progress_bar_clear()` terminates any active \pkg{cli} progress bars and
+#' resets the global progress bar in C++. Generally not needed unless a process
+#' using a progress bar terminates abnormally, or with ctrl-c interrupt, and
+#' a progress bar display anomaly results.
+#'
+#' @return
+#' No return value, call for side effects.
+progress_bar_clear <- function() {
+    cli::cli_progress_cleanup()
+    cli::cli_progress_message("")
+    .progress_bar_cleanup()
 }

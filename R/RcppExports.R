@@ -3168,6 +3168,11 @@ bbox_to_wkt <- function(bbox, extend_x = 0, extend_y = 0) {
     invisible(.Call(`_gdalraster_ogr_execute_sql`, dsn, sql, spatial_filter, dialect))
 }
 
+#' @noRd
+.progress_bar_cleanup <- function() {
+    invisible(.Call(`_gdalraster_progress_bar_cleanup`))
+}
+
 #' Get pointer address of R data as a character string
 #'
 #' @param x Vector of type numeric, integer, raw or complex.

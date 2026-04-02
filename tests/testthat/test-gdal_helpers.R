@@ -40,9 +40,10 @@ test_that("getCreationOptions works", {
     expect_true(is.list(all_opt))
     expect_true(length(names(all_opt)) > 10)
     expect_true(is.list(all_opt$TILED))
+    expect_message(getCreationOptions("AIG"))
+    expect_true(is.null(getCreationOptions("AIG")))
     expect_error(getCreationOptions("invalid format name"))
     expect_error(getCreationOptions(NA))
-
 })
 
 test_that("dump_open_datasets works", {
@@ -292,4 +293,8 @@ test_that("vector_to_MEM works with object dereference and garbage collect", {
     rm(v3)
     rm(ds_mem)
     gc()
+})
+
+test_that("progress_bar_clear runs without error", {
+    expect_no_error(progress_bar_clear())
 })
