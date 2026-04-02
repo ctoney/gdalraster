@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9010 (dev)
+# gdalraster 2.5.0.9011 (dev)
+
+* **cli**-format the global error handler and class `GDALRaster` messages (#940) (2026-04-02)
 
 * progress bar improvements and format console messages with **cli** [WIP] (#939) (2026-04-01)
 
