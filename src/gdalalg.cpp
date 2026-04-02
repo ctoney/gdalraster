@@ -1508,7 +1508,7 @@ void GDALAlg::show() const {
     else {
         const GDALAlgorithmH &alg = m_hActualAlg ? m_hActualAlg : m_hAlg;
         cli_ul_();
-        cli_li_("{.emph Name}: {.str "s + m_cmd_str + "}");
+        cli_li_("{.emph Command}: {.str "s + m_cmd_str + "}");
         cli_li_("{.emph Description}: "s + GDALAlgorithmGetDescription(alg));
         cli_li_("{.emph Help URL}: {.url "s + GDALAlgorithmGetHelpFullURL(alg) +
                 "}");
