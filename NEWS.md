@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9011 (dev)
+# gdalraster 2.5.0.9012 (dev)
+
+* `gdal_run()`: add arguments `close` and `quiet` (#941) (2026-04-02)
 
 * **cli**-format the global error handler and class `GDALRaster` messages (#940) (2026-04-02)
 
