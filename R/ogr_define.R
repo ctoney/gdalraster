@@ -379,8 +379,8 @@ ogr_def_field_domain <- function(domain_type, domain_name, description = NULL,
                                  glob = "") {
 
     if (gdal_version_num() <= gdal_compute_version(3, 3, 0)) {
-        warning("GDAL >= 3.3 is required for writing field domains",
-                call. = FALSE)
+        cli::cli_alert_warning(
+            "GDAL >= 3.3 is required for writing field domains.")
     }
 
     defn <- list()
@@ -394,8 +394,9 @@ ogr_def_field_domain <- function(domain_type, domain_name, description = NULL,
     if (!(tolower(domain_type) %in%
             c("coded", "range", "rangedatetime", "glob"))) {
 
-        cat("valid domain types are:\n")
-        cat("  \"Coded\", \"Range\", \"RangeDateTime\", \"GLOB\"\n")
+        cli::cli_alert(paste0("Valid domain types: {.str Coded}, ",
+                              "{.str Range}, {.str RangeDateTime}, ",
+                              "{.str GLOB}"))
         stop("invalid 'domain_type'", call. = FALSE)
     }
     defn$type <- domain_type
@@ -441,8 +442,8 @@ ogr_def_field_domain <- function(domain_type, domain_name, description = NULL,
     if (!(toupper(split_policy) %in%
             c("DEFAULT_VALUE", "DUPLICATE", "GEOMETRY_RATIO"))) {
 
-        cat("valid split policies are:\n")
-        cat("  \"DEFAULT_VALUE\", \"DUPLICATE\", \"GEOMETRY_RATIO\"\n")
+        cli::cli_alert(paste0("Valid split policies: {.str DEFAULT_VALUE} ",
+                              "{.str DUPLICATE}, {.str GEOMETRY_RATIO}"))
         stop("invalid 'split_policy'", call. = FALSE)
     }
     defn$split_policy <- toupper(split_policy)
@@ -457,8 +458,8 @@ ogr_def_field_domain <- function(domain_type, domain_name, description = NULL,
     if (!(toupper(merge_policy) %in%
             c("DEFAULT_VALUE", "SUM", "GEOMETRY_WEIGHTED"))) {
 
-        cat("valid merge policies are:\n")
-        cat("   \"DEFAULT_VALUE\", \"SUM\", \"GEOMETRY_WEIGHTED\"\n")
+        cli::cli_alert(paste0("Valid merge policies: {.str DEFAULT_VALUE}, ",
+                              "{.str SUM}, {.str GEOMETRY_WEIGHTED}"))
         stop("invalid 'merge_policy'", call. = FALSE)
     }
     defn$merge_policy <- toupper(merge_policy)

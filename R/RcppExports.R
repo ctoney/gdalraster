@@ -1938,7 +1938,7 @@ vsi_read_dir <- function(path, max_files = 0L, recursive = FALSE, all_files = FA
 #'   * `one.tif`
 #'   * `my_subdir/two.tif`
 #'   * `my_subdir/subsubdir/three.tif`
-#' 
+#'
 #' ```
 #' vsi_glob("one.tif")
 #'   # returns ("one.tif")

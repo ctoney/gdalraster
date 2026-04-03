@@ -793,8 +793,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
 
     for (R_xlen_t band_idx = 0; band_idx < num_bands; ++band_idx) {
         if (!quiet) {
-            cli_alert_info_("extracting from band {.val "s +
-                            std::to_string(bands_in[band_idx]) + "}");
+            cli_alert_info_("extracting from band "s +
+                            std::to_string(bands_in[band_idx]));
 
             pfnProgress(0, nullptr, nullptr);
         }

@@ -21,6 +21,8 @@
 #include "gdalraster.h"
 #include "rcpp_util.h"
 
+using std::string_literals::operator""s;
+
 constexpr uint64_t VSI_L_OFFSET_MAX_R_ = MAX_INTEGER64;
 
 VSIFile::VSIFile()
@@ -274,7 +276,7 @@ SEXP VSIFile::ingest(Rcpp::NumericVector max_size) {
     int result = VSIIngestFile(m_fp, nullptr, &paby, &nSize, max_size_in);
 
     if (!result) {
-        Rcpp::Rcout << "failed to ingest file\n";
+        cli_alert_danger_("failed to ingest file");
         return R_NilValue;
     }
 
@@ -304,7 +306,7 @@ std::string VSIFile::get_access() const {
 
 int VSIFile::set_access(std::string access) {
     if (m_fp != nullptr) {
-        Rcpp::Rcout << "cannot set access while the file is open\n";
+        cli_alert_danger_("cannot set access while the file is open");
         return -1;
     }
 
@@ -313,15 +315,17 @@ int VSIFile::set_access(std::string access) {
         return 0;
     }
     else {
-        Rcpp::Rcout << "'access' should be 'r', 'r+', 'w' or 'w+'\n";
+        cli_alert_danger_("'access' should be 'r', 'r+', 'w' or 'w+'");
         return -1;
     }
 }
 
 void VSIFile::show() const {
-    Rcpp::Rcout << "C++ object of class VSIFile\n";
-    Rcpp::Rcout << " Filename : " << get_filename() << "\n";
-    Rcpp::Rcout << " Access   : " << get_access() << "\n";
+    cli_text_("C++ object of class {.cls VSIFile}");
+    cli_ul_();
+    cli_li_("{.emph Filename}: {.str "s + get_filename() + "}");
+    cli_li_("{.emph Access}: "s + get_access());
+    cli_end_();
 }
 
 RCPP_MODULE(mod_VSIFile) {

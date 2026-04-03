@@ -532,7 +532,7 @@ ogr_ds_add_field_domain <- function(dsn, fld_dom_defn) {
     if (ogr_ds_test_cap(dsn)$AddFieldDomain) {
         return(.ogr_ds_add_field_domain(dsn, fld_dom_defn))
     } else {
-        message("the dataset does not support AddFieldDomain")
+        cli::cli_alert_danger("dataset does not support AddFieldDomain")
         return(FALSE)
     }
 }
@@ -554,7 +554,7 @@ ogr_ds_delete_field_domain <- function(dsn, domain_name) {
     if (ogr_ds_test_cap(dsn)$DeleteFieldDomain) {
         return(.ogr_ds_delete_field_domain(dsn, domain_name))
     } else {
-        message("the dataset does not support DeleteFieldDomain")
+        cli::cli_alert_danger("dataset does not support DeleteFieldDomain")
         return(FALSE)
     }
 }

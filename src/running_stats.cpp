@@ -7,6 +7,11 @@
 
 #include <Rcpp.h>
 
+#include "rcpp_util.h"
+
+using std::string_literals::operator""s;
+
+
 RunningStats::RunningStats()
         : m_na_rm(true), m_count(0) {}
 
@@ -100,8 +105,10 @@ double RunningStats::get_sd() const {
 }
 
 void RunningStats::show() const {
-    Rcpp::Rcout << "C++ object of class RunningStats\n";
-    Rcpp::Rcout << " Number of values: " << get_count() << "\n";
+    cli_text_("C++ object of class {.cls RunningStats}");
+    cli_ul_();
+    cli_li_("{.emph Number of values}: "s + std::to_string(get_count()));
+    cli_end_();
 }
 
 RCPP_MODULE(mod_running_stats) {

@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9012 (dev)
+# gdalraster 2.5.0.9013 (dev)
+
+* complete formatting console messages with **cli** (#942) (2026-04-02)
 
 * `gdal_run()`: add arguments `close` and `quiet` (#941) (2026-04-02)
 
