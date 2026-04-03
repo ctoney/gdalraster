@@ -280,7 +280,7 @@ Rcpp::CharacterVector vsi_read_dir(const Rcpp::CharacterVector &path,
 //'   * `one.tif`
 //'   * `my_subdir/two.tif`
 //'   * `my_subdir/subsubdir/three.tif`
-//' 
+//'
 //' ```
 //' vsi_glob("one.tif")
 //'   # returns ("one.tif")
@@ -336,7 +336,7 @@ Rcpp::CharacterVector vsi_glob(const Rcpp::CharacterVector &pattern,
 #else
     const std::string pattern_in =
         Rcpp::as<std::string>(check_gdal_filename(pattern));
-    
+
     const CPLStringList aosNames(
         VSIGlob(pattern_in.c_str(),
                 nullptr,
@@ -796,7 +796,7 @@ SEXP vsi_stat(const Rcpp::CharacterVector &filename,
         return Rcpp::wrap(ret);
     }
 
-    Rcpp::Rcout << "invalid value for 'info'\n";
+    cli_alert_danger_("invalid value for {.arg info}");
     return R_NilValue;
 }
 

@@ -20,6 +20,8 @@
 #include "srs_api.h"
 #include "transform.h"
 
+using std::string_literals::operator""s;
+
 
 //' Convert spatial reference definitions to OGC WKT or PROJJSON
 //'
@@ -534,8 +536,9 @@ SEXP srs_find_epsg(const std::string &srs, bool all_matches = false) {
 
         if (!all_matches) {
             if (panConfidence[i] != 100) {
-                Rcpp::Rcout << "confidence in this match: " <<
-                    panConfidence[i] << "%" << "\n";
+                cli_alert_info_(
+                    "confidence in this match: "s +
+                    std::to_string(panConfidence[i]) + "%");
             }
             if (pszAuthorityName && pszAuthorityCode) {
                 identified_code = pszAuthorityName;
@@ -936,7 +939,7 @@ SEXP srs_get_area_of_use(const std::string &srs) {
                          &pszAreaName)) {
 
         OSRDestroySpatialReference(hSRS);
-        Rcpp::Rcout << "OSRGetAreaOfUse() API call did not succeed\n";
+        cli_alert_danger_("API call to `OSRGetAreaOfUse()` did not succeed");
         return R_NilValue;
     }
 

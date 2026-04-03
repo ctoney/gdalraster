@@ -244,10 +244,11 @@ ogr_reproject <- function(src_dsn, src_layer, out_dsn, out_srs,
 
     if (!ogr_ds_exists(out_dsn, with_update = TRUE)) {
         if (ogr_ds_exists(out_dsn) && !overwrite) {
-            msg <- "'out_dsn' exists but cannot be updated.\n"
-            msg <- paste0(msg, "You may need to remove it first, ")
-            msg <- paste0(msg, "or use 'overwrite = TRUE'.")
-            stop(msg, call. = FALSE)
+            cli::cli_alert_danger(
+                paste0("{.arg out_dsn} exists but cannot be updated. You ",
+                       "may need to remove it first, or use ",
+                       "{.code overwrite = TRUE}."))
+            stop("cannot update the output data source", call. = FALSE)
         }
     }
 

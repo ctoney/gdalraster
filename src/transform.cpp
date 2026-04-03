@@ -80,9 +80,9 @@ void setPROJEnableNetwork(int enabled) {
     if (getPROJVersion()[0] >= 7)
         OSRSetPROJEnableNetwork(enabled);
     else
-        Rcpp::Rcout << "OSRSetPROJEnableNetwork() requires PROJ 7 or later\n";
+        cli_alert_danger_("OSRSetPROJEnableNetwork() requires PROJ 7 or later");
 #else
-    Rcpp::Rcout << "OSRSetPROJEnableNetwork() requires GDAL 3.4 or later\n";
+    cli_alert_danger_("OSRSetPROJEnableNetwork() requires GDAL 3.4 or later");
 #endif
     return;
 }

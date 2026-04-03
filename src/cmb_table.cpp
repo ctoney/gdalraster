@@ -11,6 +11,8 @@
 
 #include "rcpp_util.h"
 
+using std::string_literals::operator""s;
+
 CmbTable::CmbTable()
         : CmbTable(1, Rcpp::CharacterVector::create()) {}
 
@@ -140,8 +142,10 @@ void CmbTable::show() const {
     for (const auto& s : m_var_names) {
         out += (" " + s);
     }
-    Rcpp::Rcout << "C++ object of class CmbTable\n";
-    Rcpp::Rcout << " Columns: " << out.c_str() << "\n";
+    cli_text_("C++ object of class {.cls CmbTable}");
+    cli_ul_();
+    cli_li_("{.emph Columns}: "s + out);
+    cli_end_();
 }
 
 RCPP_MODULE(mod_cmb_table) {
