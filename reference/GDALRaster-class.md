@@ -1017,12 +1017,12 @@ lcp_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
 ds <- new(GDALRaster, lcp_file)
 ds
 #> C++ object of class <GDALRaster>
-#> • Driver: FARSITE v.4 Landscape File (.lcp) (LCP)
-#> • DSN: "/home/runner/work/_temp/Library/gdalraster/extdata/storm_lake.lcp"
-#> • Dimensions: 143, 107, 8
-#> • CRS: NAD83 / UTM zone 12N (EPSG:26912)
-#> • Pixel resolution: 30.000000, 30.000000
-#> • Bbox: 323476.071971, 5101871.983031, 327766.071971, 5105081.983031
+#>   • Driver: FARSITE v.4 Landscape File (.lcp) (LCP)
+#>   • DSN: "/home/runner/work/_temp/Library/gdalraster/extdata/storm_lake.lcp"
+#>   • Dimensions: 143, 107, 8
+#>   • CRS: NAD83 / UTM zone 12N (EPSG:26912)
+#>   • Pixel resolution: 30.000000, 30.000000
+#>   • Bbox: 323476.071971, 5101871.983031, 327766.071971, 5105081.983031
 
 ## print information about the dataset to the console
 ds$info()
@@ -1240,7 +1240,7 @@ rasterFromRaster(srcfile = lcp_file,
                  dtName = "Byte",
                  init = -9999)
 #> ℹ initializing destination raster...
-#> ✔ done [9ms]
+#> ✔ done [8ms]
 #> 
 
 ds_new <- new(GDALRaster, new_file, read_only = FALSE)

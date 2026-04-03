@@ -203,7 +203,7 @@ hi_file <- calc(expr = expr,
                 dtName = "Int16",
                 nodata_value = -32767,
                 setRasterNodataValue = TRUE)
-#> ℹ output written to: "/tmp/RtmpTBl4YB/rastcalc231cef0a184.tif"
+#> ℹ output written to: "/tmp/RtmpNiBv56/rastcalc22b513452667.tif"
 
 ds <- new(GDALRaster, hi_file)
 # min, max, mean, sd
@@ -269,7 +269,7 @@ rasterfiles <- c(lcp_file, lcp_file)
 var.names <- c("SLP", "FBFM")
 bands <- c(2, 4)
 tbl <- combine(rasterfiles, var.names, bands)
-#> combining 2 rasters...
+#> → combining 2 rasters...
 nrow(tbl)
 #> [1] 449
 tbl_subset <- subset(tbl, SLP >= 40 & FBFM %in% c(101,102))
@@ -304,12 +304,15 @@ calc(expr = expr,
      dstfile = tif_file,
      out_band = 4,
      write_mode = "update")
-#> ℹ output written to: "/tmp/RtmpTBl4YB/storml_lndscp.tif"
+#> ℹ output written to: "/tmp/RtmpNiBv56/storml_lndscp.tif"
 
 # verify the ouput
 rasterfiles <- c(tif_file, tif_file)
 tbl <- combine(rasterfiles, var.names, bands)
-#> combining 2 rasters...
+#> → combining 2 rasters...
+#>  ■■■■■■■■■■■■■■■■                  50% |  ETA:  0s
+#> ✔ Done (15ms)
+#> 
 tbl_subset <- subset(tbl, SLP >= 40 & FBFM %in% c(101,102))
 print(tbl_subset)
 #> [1] cmbid count SLP   FBFM 
