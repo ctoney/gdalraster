@@ -107,7 +107,7 @@ double RunningStats::get_sd() const {
 void RunningStats::show() const {
     cli_text_("C++ object of class {.cls RunningStats}");
     cli_ul_();
-    cli_li_("{.emph Number of values}: "s + std::to_string(get_count()));
+    cli_li_("{.emph Number of values}: "s + std::to_string(m_count));
     cli_end_();
 }
 

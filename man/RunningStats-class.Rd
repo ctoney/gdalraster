@@ -108,8 +108,7 @@ No return value, called for side effects.
 
 \examples{
 set.seed(42)
-rs <- new(RunningStats, na_rm = TRUE)
-rs
+(rs <- new(RunningStats, na_rm = TRUE))
 
 chunk <- runif(1000)
 rs$update(chunk)
