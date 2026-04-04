@@ -180,7 +180,7 @@ class GDALRaster {
 
     void close();
 
-    void show() const;
+    void show();
 
     // internal methods exported to R
     bool preserveRObject_(SEXP robj);

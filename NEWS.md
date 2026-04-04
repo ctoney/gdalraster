@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9013 (dev)
+# gdalraster 2.5.0.9014 (dev)
+
+* suppress warning messages in the `show()` method for `GDALRaster` and `GDALVector` (e.g., if no spatial reference is defined) (2026-04-03)
 
 * complete formatting console messages with **cli** (#942) (2026-04-02)
 
