@@ -2714,7 +2714,10 @@ void GDALRaster::close() {
     }
 }
 
-void GDALRaster::show() const {
+void GDALRaster::show() {
+    bool quiet_reset = this->quiet;
+    this->quiet = true;
+
     GDALDriverH hDriver = nullptr;
     if (m_hDataset) {
         hDriver = GDALGetDatasetDriver(m_hDataset);
@@ -2728,9 +2731,12 @@ void GDALRaster::show() const {
     const int xsize = static_cast<int>(getRasterXSize());
     const int ysize = static_cast<int>(getRasterYSize());
 
-    Rcpp::Environment pkg = Rcpp::Environment::namespace_env("gdalraster");
-    Rcpp::Function fn = pkg[".get_crs_name"];
-    std::string crs_name = Rcpp::as<std::string>(fn(getProjection()));
+    std::string crs_name = "not set";
+    if (!getProjection().empty()) {
+        Rcpp::Environment pkg = Rcpp::Environment::namespace_env("gdalraster");
+        Rcpp::Function fn = pkg[".get_crs_name"];
+        crs_name = Rcpp::as<std::string>(fn(getProjection()));
+    }
 
     cli_text_("C++ object of class {.cls GDALRaster}");
     cli_ul_();
@@ -2751,6 +2757,8 @@ void GDALRaster::show() const {
             std::to_string(bbox()[1]) + ", " + std::to_string(bbox()[2]) +
             ", " + std::to_string(bbox()[3]));
     cli_end_();
+
+    this->quiet = quiet_reset;
 }
 
 // ****************************************************************************
@@ -3061,7 +3069,7 @@ RCPP_MODULE(mod_GDALRaster) {
         "Compute checksum for raster region")
     .method("close", &GDALRaster::close,
         "Close the GDAL dataset for proper cleanup")
-    .const_method("show", &GDALRaster::show,
+    .method("show", &GDALRaster::show,
         "S4 show()")
     .method("preserveRObject_", &GDALRaster::preserveRObject_,
         "For internal use only")

@@ -2447,7 +2447,10 @@ void GDALVector::OGRFeatureFromList_dumpReadble(
 #endif
 }
 
-void GDALVector::show() const {
+void GDALVector::show() {
+    bool quiet_reset = this->quiet;
+    this->quiet = true;
+
     std::string lyr_name = "";
     if (m_is_sql) {
         // the API call to OGR_L_GetName() returns only "SELECT" for SQL layer
@@ -2458,9 +2461,12 @@ void GDALVector::show() const {
         lyr_name = getName();
     }
 
-    Rcpp::Environment pkg = Rcpp::Environment::namespace_env("gdalraster");
-    Rcpp::Function fn = pkg[".get_crs_name"];
-    std::string crs_name = Rcpp::as<std::string>(fn(getSpatialRef()));
+    std::string crs_name = "not set";
+    if (!getSpatialRef().empty()) {
+        Rcpp::Environment pkg = Rcpp::Environment::namespace_env("gdalraster");
+        Rcpp::Function fn = pkg[".get_crs_name"];
+        crs_name = Rcpp::as<std::string>(fn(getSpatialRef()));
+    }
 
     cli_text_("C++ object of class {.cls GDALVector}");
     cli_ul_();
@@ -2471,6 +2477,8 @@ void GDALVector::show() const {
     cli_li_("{.emph CRS}: "s + crs_name);
     cli_li_("{.emph Geometry}: "s + getGeomType());
     cli_end_();
+
+    this->quiet = quiet_reset;
 }
 
 // ****************************************************************************
@@ -4120,7 +4128,7 @@ RCPP_MODULE(mod_GDALVector) {
     .const_method("OGRFeatureFromList_dumpReadble",
         &GDALVector::OGRFeatureFromList_dumpReadble,
         "Create an OGRFeature from list and dump to console in readable form")
-    .const_method("show", &GDALVector::show,
+    .method("show", &GDALVector::show,
         "S4 show()")
 
     ;
