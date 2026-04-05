@@ -166,6 +166,8 @@ test_that("gdal_usage works", {
     expect_output(gdal_usage(cmd), "Options:")
     expect_output(gdal_usage(cmd), "Advanced options:")
     expect_output(gdal_usage(cmd), "For more details:")
+
+    expect_no_error(gdal_usage("pipeline"))
 })
 
 test_that("gdal_global_reg_names returns a character vector", {

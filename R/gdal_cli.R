@@ -401,7 +401,10 @@ gdal_run <- function(cmd, args, close = FALSE, quiet = FALSE,
             cli::cli_alert_warning("Error reported during algorithm finalize.")
     }
 
-    return(alg)
+    if (quiet)
+        return(invisible(alg))
+    else
+        return(alg)
 }
 
 #' @name gdal_cli
@@ -726,7 +729,10 @@ gdal_global_reg_names <- function() {
     }
 
     if (alginfo$name == "pipeline") {
-        x <- alg$usageAsJSON() |> yyjsonr::read_json_str()
+        # workaround for non-standard Infinity value in GDAL JSON
+        x <- gsub("Infinity", '"Infinity"', alg$usageAsJSON(), fixed = TRUE) |>
+            yyjsonr::read_json_str()
+
         if (!is.null(x$pipeline_algorithms) &&
             is.data.frame(x$pipeline_algorithms) &&
             nrow(x$pipeline_algorithms) > 0) {
