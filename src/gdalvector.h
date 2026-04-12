@@ -42,6 +42,10 @@ class GDALVector {
     GDALVector(const Rcpp::CharacterVector &dsn, const std::string &layer,
                bool read_only,
                const Rcpp::Nullable<Rcpp::CharacterVector> &open_options,
+               const std::string &spatial_filter);
+    GDALVector(const Rcpp::CharacterVector &dsn, const std::string &layer,
+               bool read_only,
+               const Rcpp::Nullable<Rcpp::CharacterVector> &open_options,
                const std::string &spatial_filter, const std::string &dialect);
     ~GDALVector();
 

@@ -49,17 +49,15 @@ GDALVector::GDALVector()
 }
 
 GDALVector::GDALVector(const Rcpp::CharacterVector &dsn)
-        : GDALVector(dsn, "", true, Rcpp::CharacterVector::create(), "", "") {}
+        : GDALVector(dsn, "", true, R_NilValue, "", "") {}
 
 GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
                        const std::string &layer)
-        : GDALVector(dsn, layer, true, Rcpp::CharacterVector::create(), "",
-                     "") {}
+        : GDALVector(dsn, layer, true, R_NilValue, "", "") {}
 
 GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
                        const std::string &layer, bool read_only)
-        : GDALVector(dsn, layer, read_only, Rcpp::CharacterVector::create(), "",
-                     "") {}
+        : GDALVector(dsn, layer, read_only, R_NilValue, "", "") {}
 
 GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
                        const std::string &layer, bool read_only,
@@ -70,16 +68,29 @@ GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
                        const std::string &layer, bool read_only,
                        const Rcpp::Nullable<Rcpp::CharacterVector>
                            &open_options,
+                       const std::string &spatial_filter)
+        : GDALVector(dsn, layer, read_only, open_options, spatial_filter, "") {}
+
+GDALVector::GDALVector(const Rcpp::CharacterVector &dsn,
+                       const std::string &layer, bool read_only,
+                       const Rcpp::Nullable<Rcpp::CharacterVector>
+                           &open_options,
                        const std::string &spatial_filter,
-                       const std::string &dialect = "")
-        : m_layer_name(layer), m_dialect(dialect),
-          m_open_options(open_options.isNotNull() ?
-                         open_options : Rcpp::CharacterVector::create()),
-          m_spatial_filter(spatial_filter),
-          m_ignored_fields(Rcpp::CharacterVector::create()),
-          m_hDataset(nullptr), m_eAccess(GA_ReadOnly), m_hLayer(nullptr) {
+                       const std::string &dialect) {
 
     m_dsn = Rcpp::as<std::string>(check_gdal_filename(dsn));
+    m_layer_name = layer;
+
+    if (open_options.isNotNull())
+        m_open_options = Rcpp::CharacterVector(open_options);
+    else
+        m_open_options = Rcpp::CharacterVector::create();
+
+    m_spatial_filter = spatial_filter;
+    m_dialect = dialect;
+
+    m_ignored_fields = Rcpp::CharacterVector::create();
+
     open(read_only);
     setFieldNames_();
 }
