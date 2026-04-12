@@ -39,12 +39,21 @@ test_that("class constructors work", {
     expect_equal(lyr$getFeatureCount(), 40)
     lyr$close()
 
-    # add dialect
+    # add empty dialect
     expect_no_error(lyr <- new(GDALVector, dsn, sql, read_only = TRUE,
                                open_options = NULL,
                                spatial_filter = bbox_to_wkt(bb),
                                dialect = ""))
     expect_equal(lyr$getFeatureCount(), 40)
+    lyr$close()
+
+    # OGRSQL instead of native dialect
+    expect_no_error(lyr <- new(GDALVector, dsn, sql, read_only = TRUE,
+                               open_options = NULL,
+                               spatial_filter = "",
+                               dialect = "OGRSQL"))
+    expect_equal(lyr$m_dialect, "OGRSQL")
+    expect_equal(lyr$getFeatureCount(), 61)
     lyr$close()
 
     # invalid layer name
@@ -1073,6 +1082,7 @@ test_that("feature write methods work", {
                                open_options = NULL, spatial_filter = "",
                                dialect = "SQLITE"))
     lyr$returnGeomAs <- "WKT"
+    expect_equal(lyr$m_dialect, "SQLITE")
     expect_no_error(f <- lyr$getFeature(test1_fid))
     expect_equal(f$id, feat1$id)
     expect_true(g_equals(f$geom, feat1$geom))
