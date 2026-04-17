@@ -92,7 +92,7 @@ ds <- createCopy(format = "GTiff",
                  src_filename = lcp_file,
                  options = "COMPRESS=LZW",
                  return_obj = TRUE)
-#>  ■                                  0% |  ETA:  3s
+#>  ■                                  0% |  ETA:  2s
 #> ✔ Done (25ms)
 #> 
 
