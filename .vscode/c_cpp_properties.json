@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/share/R/include",
+                "/usr/local/lib/R/site-library/Rcpp/include",
+                "/usr/local/lib/R/site-library/RcppInt64/include",
+                "/usr/include/gdal",
+                "/usr/local/lib/R/site-library/nanoarrow/include",
+                "/usr/local/lib/R/site-library/cli/include"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
