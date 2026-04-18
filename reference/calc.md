@@ -203,7 +203,7 @@ hi_file <- calc(expr = expr,
                 dtName = "Int16",
                 nodata_value = -32767,
                 setRasterNodataValue = TRUE)
-#> ℹ output written to: "/tmp/Rtmp4SOHUr/rastcalc206f355a4c5.tif"
+#> ℹ output written to: "/tmp/RtmpYYlwXL/rastcalc208b63c56fb0.tif"
 
 ds <- new(GDALRaster, hi_file)
 # min, max, mean, sd
@@ -270,6 +270,9 @@ var.names <- c("SLP", "FBFM")
 bands <- c(2, 4)
 tbl <- combine(rasterfiles, var.names, bands)
 #> → combining 2 rasters...
+#>  ■■■■■■■■■■■■■■■■■■■■■■■■■■■■      91% |  ETA:  0s
+#> ✔ Done (15ms)
+#> 
 nrow(tbl)
 #> [1] 449
 tbl_subset <- subset(tbl, SLP >= 40 & FBFM %in% c(101,102))
@@ -304,7 +307,7 @@ calc(expr = expr,
      dstfile = tif_file,
      out_band = 4,
      write_mode = "update")
-#> ℹ output written to: "/tmp/Rtmp4SOHUr/storml_lndscp.tif"
+#> ℹ output written to: "/tmp/RtmpYYlwXL/storml_lndscp.tif"
 
 # verify the ouput
 rasterfiles <- c(tif_file, tif_file)
