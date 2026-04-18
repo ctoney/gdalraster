@@ -767,7 +767,7 @@ plot_raster(ds, legend = TRUE, col_map_fn = ramp, na_col = "#d9d9d9",
 knitr::include_graphics("img/ynp_fire_year.png")
 ```
 
-```r
+``` r
 lyr$close()
 ds$close()
 deleteDataset(f_out)
@@ -863,7 +863,7 @@ deleteDataset(f_out)
 
 Compute slope-masked aspect for the Storm Lake AOI, and plot as "northness" (see `?gdalraster::northness`). Based on Example 6 for [`gdal raster calc`](https://gdal.org/programs/gdal_raster_calc.html).
 
-```r
+``` r
 # requires GDAL >= 3.12.1 for nested pipelines
 library(gdalraster)
 #> GDAL 3.12.1 (released 2025-12-12), GEOS 3.12.2, PROJ 9.4.1
@@ -916,7 +916,7 @@ plot_raster(ds, legend = TRUE, col_map_fn = pal, pixel_fn = northness,
 knitr::include_graphics("img/storml_northness.png")
 ```
 
-```
+``` r
 ds$close()
 ```
 
