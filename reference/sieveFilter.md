@@ -112,7 +112,7 @@ rasterFromRaster(srcfile = evt_file,
                  dstfile = evt_mmu_file,
                  init = 32767)
 #> ℹ initializing destination raster...
-#> ✔ done [6ms]
+#> ✔ done [10ms]
 #> 
 
 # create a mask to exclude water pixels from the algorithm
@@ -121,7 +121,7 @@ expr <- "ifelse(EVT == 7292, 0, EVT)"
 mask_file <- calc(expr = expr,
                   rasterfiles = evt_file,
                   var.names = "EVT")
-#> ℹ output written to: "/tmp/RtmpYYlwXL/rastcalc208b10f4a351.tif"
+#> ℹ output written to: "/tmp/RtmpIgLRu3/rastcalc20b359850a11.tif"
 
 # create a version of EVT with two-pixel minimum mapping unit
 sieveFilter(src_filename = evt_file,
