@@ -897,9 +897,8 @@ alg <- gdal_run("raster calc", args)
 alg$release()
 
 # diverging palette for northness
-# adapted from "heatmap3" in {ltc-color-palettes}
+# adapted from "heatmap3" in ltc-color-palettes
 # https://github.com/loukesio/ltc-color-palettes
-# Copyright 2021 ltc authors
 pal <- c("#d7191c", "#fdae61", "#ffffbf", "#abd9e9")
 
 # transform the pixel values with `gdalraster::northness()`

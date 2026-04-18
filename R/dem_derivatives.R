@@ -52,12 +52,11 @@
 #'                        dtName = "Float64",
 #'                        nodata_value = -9999,
 #'                        setRasterNodataValue = TRUE,
-#'                        return_obj = TRUE)
+#'                        return_obj = TRUE))
 #'
 #' # diverging palette for northness
-#' # adapted from "heatmap3" in {ltc-color-palettes}
+#' # adapted from "heatmap3" in ltc-color-palettes
 #' # https://github.com/loukesio/ltc-color-palettes
-#' # Copyright 2021 ltc authors
 #' pal <- c("#d7191c", "#fdae61", "#ffffbf", "#abd9e9")
 #'
 #' plot_raster(ds_masked_asp, legend = TRUE, col_map_fn = pal,
@@ -65,7 +64,7 @@
 #'             main = "Storm Lake AOI northness")
 #'
 #' # clean up
-#' ds$close()
+#' ds_masked_asp$close()
 #' deleteDataset(f_slp)
 #' deleteDataset(f_asp)
 #'
