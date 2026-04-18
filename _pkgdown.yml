@@ -53,6 +53,7 @@ reference:
   - calc
   - combine
   - dem_proc
+  - dem_derivatives
   - fillNodata
   - footprint
   - is_los_visible
