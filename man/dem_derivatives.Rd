@@ -18,24 +18,24 @@ Numeric vector of transformed values.
 }
 \description{
 Functions to calculate simple DEM derivatives, currently \code{northness()} and
-\code{eastness()}.
+\code{eastness()} for transforming aspect degrees into the range \code{-1:1}.
 }
 \details{
-\code{northness()} is a cosine transform of aspect degrees, with flat (\code{-1}) set
-to \code{90} degrees aspect (east) as neutral value:
+\code{northness()} is a cosine transform of aspect degrees, with any flat aspect
+values (\code{-1} if present) set to \code{90} degrees (east) as a neutral value:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{northness <- cos(asp_deg * pi / 180)
 }\if{html}{\out{</div>}}
 
-\code{eastness()} is a sine transform of aspect degrees, with flat (\code{-1}) set
-to \code{0} degrees aspect (north) as neutral value:
+\code{eastness()} is a sine transform of aspect degrees, with any flat aspect
+values (\code{-1} if present) set to \code{0} degrees (north) as a neutral value:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{eastness <- sin(asp_deg * pi / 180)
 }\if{html}{\out{</div>}}
 }
 \note{
-No validation is done on the input values. Caller is responsible for
-ensuring the input is a valid type within range.
+No validation is done on the input values. The caller is responsible for
+ensuring input has valid type and range.
 }
 \examples{
 ## plot northness from slope-masked aspect for the Storm Lake AOI

@@ -1,18 +1,19 @@
 #' Convenience functions for simple DEM derivatives
 #'
 #' Functions to calculate simple DEM derivatives, currently `northness()` and
-#' `eastness()`.
+#' `eastness()` for transforming aspect degrees into the range `-1:1`.
 #'
 #' @name dem_derivatives
 #' @details
 #'
-#' `northness()` is a cosine transform of aspect degrees, with flat (`-1`) set
-#' to `90` degrees aspect (east) as neutral value:
+#' `northness()` is a cosine transform of aspect degrees, with any flat aspect
+#' values (`-1` if present) set to `90` degrees (east) as a neutral value:
 #' ```
 #' northness <- cos(asp_deg * pi / 180)
 #' ```
-#' `eastness()` is a sine transform of aspect degrees, with flat (`-1`) set
-#' to `0` degrees aspect (north) as neutral value:
+#' 
+#' `eastness()` is a sine transform of aspect degrees, with any flat aspect
+#' values (`-1` if present) set to `0` degrees (north) as a neutral value:
 #' ```
 #' eastness <- sin(asp_deg * pi / 180)
 #' ```
@@ -22,8 +23,8 @@
 #' Numeric vector of transformed values.
 #'
 #' @note
-#' No validation is done on the input values. Caller is responsible for
-#' ensuring the input is a valid type within range.
+#' No validation is done on the input values. The caller is responsible for
+#' ensuring input has valid type and range.
 #'
 #' @seealso
 #' [calc()], [dem_proc()]
