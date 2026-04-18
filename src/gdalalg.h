@@ -26,6 +26,7 @@ Rcpp::DataFrame gdal_commands(const std::string &contains, bool recurse,
 Rcpp::CharacterVector gdal_global_reg_names();
 
 struct VectorObjectProperties {
+    std::string arg_name {};
     bool is_set {false};
     std::string driver_short_name {};
     std::string layer_name {};
@@ -86,7 +87,6 @@ class GDALAlg {
     GDALAlgorithmH m_hAlg {nullptr};
     GDALAlgorithmH m_hActualAlg {nullptr};
 #endif
-    bool m_input_is_object {false};
     std::map<std::string, std::vector<GDALDatasetH>> m_map_input_hDS {};
     size_t m_num_input_datasets {0};
     VectorObjectProperties m_in_vector_props;
