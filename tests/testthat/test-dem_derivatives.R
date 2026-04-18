@@ -14,12 +14,16 @@ test_that("dem_derivatives work", {
     expected <- r[r == -1] <- 90
     expected <- cos(r * pi / 180)
     expect_equal(northness(r), expected)
+    expect_true(max(northness(r), na.rm = TRUE) <= 1)
+    expect_true(min(northness(r), na.rm = TRUE) >= -1)
 
     # eastness
     r <- ds_asp$read(1, 0, 0, dm[1], dm[2], dm[1], dm[2])
     expected <- r[r == -1] <- 0
     expected <- sin(r * pi / 180)
     expect_equal(eastness(r), expected)
+    expect_true(max(eastness(r), na.rm = TRUE) <= 1)
+    expect_true(min(eastness(r), na.rm = TRUE) >= -1)
 
     ds_asp$close()
 })
