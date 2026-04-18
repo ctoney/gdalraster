@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9016 (dev)
+# gdalraster 2.5.0.9020 (dev)
+
+* add `northness()` and `eastness()`: convenience functions for transforming aspect degrees, and use in a new [CLI pipeline example](https://firelab.github.io/gdalraster/articles/use-gdal-cli-from-r.html#pipeline-examples) for `gdal raster calc` (2026-04-18)
 
 * `GDALAlg::setArg()`: more robust handling of algorithm arguments with object input (#949, also adding a new pipeline example in [use-gdal-cli-from-r](https://firelab.github.io/gdalraster/articles/use-gdal-cli-from-r.html)) (2026-04-17)
 
