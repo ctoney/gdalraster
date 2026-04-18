@@ -173,3 +173,35 @@ test_that("gdal_usage works", {
 test_that("gdal_global_reg_names returns a character vector", {
     expect_vector(gdal_global_reg_names(), character())
 })
+
+test_that("raster pipeline works", {
+    ## test raster pipeline algorithms
+    skip_if(gdal_version_num() < gdal_compute_version(3, 12, 0))
+
+    ## with a nested input pipeline
+    f <- system.file("extdata/storml_elev.tif", package="gdalraster")
+    f_elev <- tempfile(fileext = ".tif")
+    file.copy(f, f_elev)
+    on.exit(deleteDataset(f_elev), add = TRUE)
+    f_pal <- system.file("extdata/storml_elev_pal.txt", package="gdalraster")
+    f_out <- file.path(tempdir(), "storml_col_relief.tif")
+    on.exit(deleteDataset(f_out), add = TRUE)
+
+    args <- paste(
+        "read --input", f_elev,
+        "! color-map --color-map", f_pal,
+        "! blend --overlay [ read --input", f_elev, "! hillshade -z 1.5 ]",
+            "--operator=hsv-value",
+        "! write --output", f_out, "--overwrite")
+
+    expect_no_error(alg <- gdal_run("raster pipeline", args))
+    expect_true(is.list(alg$outputs()))
+    ds <- alg$outputs()$output
+    expect_true(is(ds, "Rcpp_GDALRaster"))
+    expect_equal(ds$res(), c(30, 30))
+    expect_equal(ds$dim(), c(143, 107, 3))
+
+    ds$close()
+    expect_true(alg$close())
+    alg$release()
+})
