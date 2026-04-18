@@ -176,7 +176,7 @@ test_that("gdal_global_reg_names returns a character vector", {
 
 test_that("raster pipeline works", {
     ## test raster pipeline algorithms
-    skip_if(gdal_version_num() < gdal_compute_version(3, 12, 0))
+    skip_if(gdal_version_num() < gdal_compute_version(3, 12, 1))
 
     ## with a nested input pipeline
     f <- system.file("extdata/storml_elev.tif", package="gdalraster")

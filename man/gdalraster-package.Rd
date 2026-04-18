@@ -42,6 +42,7 @@
   \code{\link[=rasterToVRT]{rasterToVRT()}}
 
   \item algorithms/utilities: \code{\link[=dem_proc]{dem_proc()}},
+  \code{\link[=dem_derivatives]{dem_derivatives}},
   \code{\link[=fillNodata]{fillNodata()}},
   \code{\link[=footprint]{footprint()}},
   \code{\link[=is_los_visible]{is_los_visible()}},
