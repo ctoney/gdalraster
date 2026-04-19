@@ -1217,7 +1217,13 @@ calc <- function(expr,
     if (fmt == "MEM" && !return_obj) {
         stop("'return_obj' must be TRUE for \"MEM\" format", call. = FALSE)
     } else if (fmt == "MEM") {
-        output_name = "in-memory-raster"
+        # by default, dstfile is a temporary .tif
+        if (endsWith(dstfile, ".tif")) {
+            # make a temp name for the MEM dataset
+            f_tmp <- tempfile()
+            suf <- substr(f_tmp, nchar(f_tmp) - 12 + 1, nchar(f_tmp))
+            output_name <- paste0("calc", suf)
+        }
     }
 
     if (is.null(nodata_value)) {

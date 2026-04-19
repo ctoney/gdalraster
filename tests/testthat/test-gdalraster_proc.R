@@ -51,6 +51,7 @@ test_that("calc writes correct results", {
     ds <- calc(expr = expr,
                rasterfiles = c(b4_file, b5_file),
                var.names = c("B4", "B5"),
+               dstfile = "test_mem",
                fmt = "MEM",
                dtName = "Float32",
                nodata_value = -32767,
@@ -58,6 +59,7 @@ test_that("calc writes correct results", {
                quiet = TRUE,
                return_obj = TRUE)
     expect_true(is(ds, "Rcpp_GDALRaster"))
+    expect_equal(ds$getDescription(0), "test_mem")
     dm <- ds$dim()
     chk <- ds$getChecksum(1, 0, 0, dm[1], dm[2])
     ds$close()
