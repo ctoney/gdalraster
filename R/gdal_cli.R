@@ -409,6 +409,108 @@ gdal_run <- function(cmd, args, close = FALSE, quiet = FALSE,
 
 #' @name gdal_cli
 #' @export
+gdal_run_piped <- function(input, cmd, output, output_format = NULL,
+                           other_args = NULL, output_idx = 1,
+                           outputLayerNameForOpen = NULL) {
+
+    if (gdal_version_num() < gdal_compute_version(3, 11, 3)) {
+        stop("gdal_run_piped() requires GDAL >= 3.11.3", call. = FALSE)
+    }
+
+    if (missing(cmd) || is.null(cmd) || all(is.na(cmd)))
+        stop("'cmd' is required", call. = FALSE)
+    if (!is.character(cmd))
+        stop("'cmd' must be a character vector", call. = FALSE)
+
+    if (missing(output) || is.null(output) || all(is.na(output)))
+        output <- ""
+    if (!(is.character(output) && length(output) == 1))
+        stop("'output' must be a single character string", call. = FALSE)
+
+    if (is.null(output_format) || all(is.na(output_format))) {
+        output_format <- NULL
+    } else if (!(is.character(output_format) && length(output_format) == 1)) {
+        stop("'output_format' must be a single character string", call. = FALSE)
+    }
+
+    if (!is.null(other_args)) {
+        if (!is.character(other_args) && !is.list(other_args)) {
+            stop("'other_args' must be a character vector or named list",
+                 call. = FALSE)
+        }
+    }
+
+    if (missing(outputLayerNameForOpen) ||
+        is.null(outputLayerNameForOpen) ||
+        all(is.na(outputLayerNameForOpen))) {
+
+        outputLayerNameForOpen <- ""
+    }
+
+    alg <- new(GDALAlg, cmd, other_args)
+    alg$quiet <- TRUE
+    alg$outputLayerNameForOpen <- outputLayerNameForOpen
+
+    input_arg_name <- "input"
+    alg_info <- alg$info()
+    if (!("input" %in% alg_info$arg_names)) {
+        if ("dataset" %in% alg_info$arg_names) {
+            input_arg_name <- "dataset"
+        } else {
+            cli::cli_alert_danger(
+                "Algorithm does not have an 'input' or 'dataset' argument")
+            return(invisible(FALSE))
+        }
+    }
+
+    if (!alg$setArg(input_arg_name, input)) {
+        alg$release()
+        cli::cli_alert_danger("Failed to set the input argument.")
+        return(invisible(FALSE))
+    }
+
+    if (!alg$setArg("output", output)) {
+        if (output != "")
+            cli::cli_alert_warning("Failed to set the 'output' argument.")
+    }
+
+    if (!is.null(output_format)) {
+        if (!alg$setArg("output-format", output_format)) {
+            cli::cli_alert_warning("Failed to set 'output-format' argument.")
+        }
+    }
+
+    if (!alg$parseCommandLineArgs()) {
+        alg$release()
+        cli::cli_alert_danger(
+            "Failed to parse arguments and set their values.")
+        return(invisible(FALSE))
+    }
+
+    if (!alg$run()) {
+        alg$release()
+        cli::cli_alert_danger("Failed to execute {.str {cmd}}")
+        return(invisible(FALSE))
+    }
+
+    if (length(alg$outputs()) == 0) {
+        cli::cli_alert_warning("Algorithm did not return output.")
+        out <- FALSE
+    } else {
+        out <- alg$outputs()[[output_idx]]
+    }
+
+    if (!alg$close()) {
+        cli::cli_alert_warning("Error reported during algorithm finalize.")
+    }
+
+    alg$release()
+
+    invisible(out)
+}
+
+#' @name gdal_cli
+#' @export
 gdal_alg <- function(cmd = NULL, args = NULL, parse = TRUE) {
     if (gdal_version_num() < gdal_compute_version(3, 11, 3)) {
         stop("gdal_alg() requires GDAL >= 3.11.3", call. = FALSE)

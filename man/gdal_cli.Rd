@@ -5,6 +5,7 @@
 \alias{gdal_commands}
 \alias{gdal_usage}
 \alias{gdal_run}
+\alias{gdal_run_piped}
 \alias{gdal_alg}
 \alias{gdal_global_reg_names}
 \title{Functions for using GDAL CLI algorithms}
@@ -19,6 +20,16 @@ gdal_run(
   close = FALSE,
   quiet = FALSE,
   setVectorArgsFromObject = TRUE
+)
+
+gdal_run_piped(
+  input,
+  cmd,
+  output,
+  output_format = NULL,
+  other_args = NULL,
+  output_idx = 1,
+  outputLayerNameForOpen = NULL
 )
 
 gdal_alg(cmd = NULL, args = NULL, parse = TRUE)
