@@ -597,16 +597,28 @@ gdal_global_reg_names <- function() {
                 if (this_arg$min_count != 1)
                     cat("    [", this_arg$max_count, " values]\n", sep = "")
 
-            } else if (this_arg$min_count > 0 &&
+            } else if (this_arg$min_count >= 0 &&
                        this_arg$max_count < .Machine$integer.max) {
 
                 cat("    [", this_arg$min_count, "..", this_arg$max_count,
                     " values]\n", sep = "")
 
-            } else if (this_arg$min_count > 0) {
-                cat("    [", this_arg$min_count, "..", " values]\n", sep = "")
-            } else if (this_arg$max_count > 1) {
-                cat("    [may be repeated]\n")
+            } else if (this_arg$min_count >= 0) {
+                cat("    [", this_arg$min_count, " or more values]\n", sep = "")
+            }
+
+            if (this_arg$max_count > 1) {
+                if (this_arg$packed_values_allowed &&
+                    this_arg$repeated_arg_allowed) {
+                    cat("    [packed values allowed, repeated arg allowed]")
+                } else if (!this_arg$packed_values_allowed &&
+                           this_arg$repeated_arg_allowed) {
+                    cat("    [packed values not allowed, repeated arg allowed]")
+                } else if (this_arg$packed_values_allowed &&
+                           !this_arg$repeated_arg_allowed) {
+                    cat("    [packed values allowed, repeated arg not allowed]")
+                }
+                cat("\n")
             }
         }
 
