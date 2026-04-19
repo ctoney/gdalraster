@@ -207,7 +207,8 @@ for algorithm arguments that accept dataset object input. A list of
 \code{GDALRaster} or \code{GDALVector} objects may be given for algorithm arguments of
 type \code{DATASET_LIST} that accept object input. Generally, an input dataset can
 also be specified by name as a character string (DSN), or character vector of
-DSNs for a \code{DATASET_LIST}.
+DSNs for a \code{DATASET_LIST}. Returns a logical value, \code{TRUE} indicating success
+or \code{FALSE} if an error occurs.
 
 \code{$parseCommandLineArgs()}\cr
 Sets the value of arguments previously specified in the class constructor,

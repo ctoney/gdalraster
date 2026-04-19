@@ -22,9 +22,9 @@ GDAL 3.11 added a framework for a unified command line interface (CLI) with a co
 
 ## Development status
 
-The GDAL project states that the new CLI framework
+The GDAL project states that the new CLI framework is
 
-> "is provisionally provided as an alternative interface to GDAL and OGR command line utilities. The project reserves the right to modify, rename, reorganize, and change the behavior until it is officially frozen via PSC vote in a future major GDAL release. The utility needs time to mature, benefit from incremental feedback, and explore enhancements without carrying the burden of full backward compatibility. Your usage of it should have no expectation of compatibility until that time." (<https://gdal.org/en/latest/programs/#gdal-application>)
+> "provisionally provided as an alternative interface to GDAL and OGR command line utilities. The project reserves the right to modify, rename, reorganize, and change the behavior until it is officially frozen via PSC vote in a future major GDAL release. The utility needs time to mature, benefit from incremental feedback, and explore enhancements without carrying the burden of full backward compatibility. Your usage of it should have no expectation of compatibility until that time." (<https://gdal.org/en/latest/programs/#gdal-application>)
 
 The initial bindings in **gdalraster** 2.2.0 will evolve over future releases. *The bindings are considered experimental until the upstream API is declared stable*. Breaking changes in minor version releases are possible until then. Please use with those cautions in mind. Bug reports may be filed at: <https://github.com/firelab/gdalraster/issues>.
 
@@ -328,7 +328,7 @@ A convenient way to access a CLI algorithm and run it is to use the `gdal_run()`
 
 #### raster convert
 
-In this example, the input and output datasets are given as positional arguments which do not have to be named. They could instead be given as named arguments if preferred for clarity.
+The input and output datasets are given as positional arguments which do not have to be named. They could instead be given as named arguments if preferred for clarity.
 
 ``` r
 ## convert storml_elev.tif to GeoPackage raster
@@ -754,8 +754,7 @@ alg <- gdal_run("vector rasterize", args)
 alg$release()
 
 pal <- scales::viridis_pal(end = 0.8, direction = -1)(6)
-ramp <- scales::colour_ramp(pal)
-plot_raster(ds, legend = TRUE, col_map_fn = ramp, na_col = "#d9d9d9",
+plot_raster(ds, legend = TRUE, col_map_fn = pal, na_col = "#d9d9d9",
             main = "YNP Fires 1984-2022 - Most Recent Burn Year")
 ```
 ```{r out.width = '80%', echo = FALSE}
@@ -778,7 +777,7 @@ deleteDataset(f_out)
 
 #### Colorized shaded relief
 
-A raster pipline to create a color shaded relief file, based on Example 3 for [GDAL nested pipeline](https://gdal.org/en/latest/programs/gdal_pipeline.html#nested-pipeline).
+A raster pipeline to create a color shaded relief file, based on Example 3 for [GDAL nested pipeline](https://gdal.org/en/latest/programs/gdal_pipeline.html#nested-pipeline).
 
 ``` r
 # requires GDAL >= 3.12.1 for nested pipelines and "raster blend"
@@ -896,14 +895,10 @@ alg <- gdal_run("raster calc", args)
 
 alg$release()
 
-# diverging palette for northness
-# adapted from "heatmap3" in ltc-color-palettes
-# https://github.com/loukesio/ltc-color-palettes
-pal <- c("#d7191c", "#fdae61", "#ffffbf", "#abd9e9")
-
 # transform the pixel values with `gdalraster::northness()`
-plot_raster(ds, legend = TRUE, col_map_fn = pal, pixel_fn = northness,
-            na_col = "#2c7bb6", main = "Storm Lake AOI northness")
+plot_raster(ds, legend = TRUE, col_map_fn = ltc::ltc("heatmap3", 4),
+            pixel_fn = northness, na_col = ltc::ltc("heatmap3")[5],
+            main = "Storm Lake AOI northness")
 ```
 
 ```{r out.width = '80%', echo = FALSE}
@@ -918,6 +913,17 @@ knitr::include_graphics("img/storml_northness.png")
 
 ``` r
 ds$close()
+```
+
+#### Visualize topographic position index (TPI)
+
+``` r
+system.file("extdata/storml_elev.tif", package = "gdalraster") |>
+  gdal_run_piped("raster tpi", "", "MEM") |>
+  plot_raster(legend = TRUE,
+              minmax_pct_cut = c(1, 99),
+              col_map_fn = rev(ltc::ltc("heatmap3")),
+              main = "Storm Lake AOI: topgraphic position index")
 ```
 
 ## See also

@@ -5,6 +5,7 @@
 \alias{gdal_commands}
 \alias{gdal_usage}
 \alias{gdal_run}
+\alias{gdal_run_piped}
 \alias{gdal_alg}
 \alias{gdal_global_reg_names}
 \title{Functions for using GDAL CLI algorithms}
@@ -19,6 +20,16 @@ gdal_run(
   close = FALSE,
   quiet = FALSE,
   setVectorArgsFromObject = TRUE
+)
+
+gdal_run_piped(
+  input,
+  cmd,
+  output = NULL,
+  output_format = NULL,
+  other_args = NULL,
+  output_idx = 1,
+  outputLayerNameForOpen = NULL
 )
 
 gdal_alg(cmd = NULL, args = NULL, parse = TRUE)
@@ -59,6 +70,35 @@ is an object of class \code{GDALVector} (the default). Can be set to \code{FALSE
 disable automatically setting algorithm arguments from \code{GDALVector} input
 (see Note).}
 
+\item{input}{Value passed as input to the GDAL algorithm specified in \code{cmd}
+(i.e., the \code{"input"}, \code{"dataset"} or \code{"source"} argument for the command).
+Typically this is a dataset name (e.g., file or database connection string),
+or an object of class \code{GDALRaster} or \code{GDALVector}.}
+
+\item{output}{Value passed for the \code{"output"} (or \code{"destination"}) argument
+of \code{cmd}. Typically this is a filename for commands that generate a raster
+or vector dataset or other file output. May be \code{NULL} or empty string (\code{""})
+if \code{output_format} is \code{"MEM"} (in-memory dataset).}
+
+\item{output_format}{Optional character string specifying the output format,
+e.g., a format driver short name when output is a raster or vector dataset.
+Will be passed to the algorithm's optional \code{"output-format"} argument.}
+
+\item{other_args}{Either a character vector or a named list containing other
+input arguments of the algorithm (i.e., other than those already specified
+via \code{input}, \code{output} and \code{output_format} above, see also the section
+\verb{Algorithm Argument Syntax} below).}
+
+\item{output_idx}{Optional numeric value or character string giving the list
+index or output argument name for an algorithm with more than one output.
+Defaults to \code{1}.}
+
+\item{outputLayerNameForOpen}{Optional character string specifying a layer
+name to open when obtaining algorithm output as an object of class
+\code{GDALVector} (see the class method \link[=GDALAlg]{GDALAlg$output()}). Defaults to
+empty string (\code{""}) in which case the first layer by index is opened.
+Ignored if output is not a vector dataset.}
+
 \item{parse}{Logical value, \code{TRUE} to attempt parsing \code{args} if they are
 given in \code{gdal_alg()} (the default). Set to \code{FALSE} to instantiate the
 algorithm without parsing arguments. The \code{$parseCommandLineArgs()}
@@ -96,6 +136,21 @@ object, or, more conveniently in most cases, by calling \code{$output()}
 After assigning the output, or otherwise completing work with the \code{GDALAlg}
 object, its \code{$release()} method can be called to close datasets and
 free resources.
+
+\code{gdal_run_piped()} is a variation of \code{gdal_run()}. It is suitable for use
+with the R native pipe operator (\verb{|>}), but may be useful stand-alone when
+it is desirable to obtain the output of the algorithm directly, and access
+to the \code{GDALAlg} object itself is not needed. The first argument to this
+function is passed to the \code{"input"} (or \code{"dataset"} or \code{"source"}) argument
+of the algorithm (i.e., as input to the GDAL command specified in \code{cmd}). The
+function returns (invisibly) the output of the CLI algorithm if it has one.
+If the algorithm has multiple outputs, the first by index is returned by
+default but this can be controlled by the \code{output_idx} argument (numeric
+index or character name of the desired output). Logical \code{TRUE} is returned
+invisibly if the algorithm has no output and no error was reported by the
+\code{run()} method of the algorithm object. Logical \code{FALSE} is returned invisibly
+but a message printed if an error occurs. The algorithm object used
+internally is always finalized before return.
 
 \code{gdal_alg()} instantiates and returns an object of class \code{\link{GDALAlg}}
 without running it. Passing argument values to the requested CLI algorithm is
@@ -218,7 +273,7 @@ Please use with those cautions in mind. Bug reports may be filed at:
 }
 
 \examples{
-\dontshow{if (length(gdal_global_reg_names()) > 0) withAutoprint(\{ # examplesIf}
+\dontshow{if (gdal_version_num() >= gdal_compute_version(3, 12, 0) && length(gdal_global_reg_names()) > 0) withAutoprint(\{ # examplesIf}
 ## top-level commands
 gdal_commands(recurse = FALSE)
 
@@ -246,6 +301,16 @@ plot_raster(ds, legend = TRUE)
 
 ds$close()
 unlink(f_gpkg)
+
+## use with the R native pipe operator
+## make a of plot of 'terrain ruggedness index' (TRI) for Storm Lake AOI
+
+system.file("extdata/storml_elev.tif", package="gdalraster") |>
+  gdal_run_piped("raster tri", "", "MEM") |>
+  plot_raster(legend = TRUE,
+              minmax_pct_cut = c(0, 99),
+              col_map_fn = rev(ltc::ltc("heatmap3")),
+              main = "Storm Lake AOI: terrain ruggedness index")
 
 ## get help for vector commands
 gdal_usage("vector")
@@ -305,7 +370,7 @@ plot_raster(ds, legend = TRUE, col_map_fn = ramp, na_col = "#d9d9d9",
 ds$close()
 deleteDataset(f_out)
 
-## pipeline syntax
+## GDAL CLI pipeline syntax
 # "raster pipeline" example 2 from:
 # https://gdal.org/en/latest/programs/gdal_raster_pipeline.html
 # serialize the command to reproject a GTiff file into GDALG format, and
