@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9021 (dev)
+# gdalraster 2.5.0.9022 (dev)
+
+* `calc()`: use a unique temp name when the output dataset is MEM and a specific name is not given (#954) (2026-04-18)
 
 * `gdal_usage()`: replace `[may be repeated]` with packed values, repeated arg allowed or not (#953) (2026-04-18)
 
