@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9020 (dev)
+# gdalraster 2.5.0.9021 (dev)
+
+* `gdal_usage()`: replace `[may be repeated]` with packed values, repeated arg allowed or not (#953) (2026-04-18)
 
 * add `northness()` and `eastness()`: convenience functions for transforming aspect degrees, and use in a new [CLI pipeline example](https://firelab.github.io/gdalraster/articles/use-gdal-cli-from-r.html#pipeline-examples) for `gdal raster calc` (2026-04-18)
 
