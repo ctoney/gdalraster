@@ -2201,6 +2201,24 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// rasterize_polygon
+int rasterize_polygon(int rasterXsize, int rasterYsize, const Rcpp::IntegerVector& part_sizes, const Rcpp::NumericVector& polygonX, const Rcpp::NumericVector& polygonY, Rcpp::Function fnRasterIO, double burn_value, Rcpp::String attr_value);
+RcppExport SEXP _gdalraster_rasterize_polygon(SEXP rasterXsizeSEXP, SEXP rasterYsizeSEXP, SEXP part_sizesSEXP, SEXP polygonXSEXP, SEXP polygonYSEXP, SEXP fnRasterIOSEXP, SEXP burn_valueSEXP, SEXP attr_valueSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type rasterXsize(rasterXsizeSEXP);
+    Rcpp::traits::input_parameter< int >::type rasterYsize(rasterYsizeSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type part_sizes(part_sizesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type polygonX(polygonXSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type polygonY(polygonYSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Function >::type fnRasterIO(fnRasterIOSEXP);
+    Rcpp::traits::input_parameter< double >::type burn_value(burn_valueSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type attr_value(attr_valueSEXP);
+    rcpp_result_gen = Rcpp::wrap(rasterize_polygon(rasterXsize, rasterYsize, part_sizes, polygonX, polygonY, fnRasterIO, burn_value, attr_value));
+    return rcpp_result_gen;
+END_RCPP
+}
 // get_data_ptr
 std::string get_data_ptr(const Rcpp::RObject& x);
 RcppExport SEXP _gdalraster_get_data_ptr(SEXP xSEXP) {
@@ -2780,6 +2798,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_ogr_field_delete", (DL_FUNC) &_gdalraster_ogr_field_delete, 3},
     {"_gdalraster_ogr_execute_sql", (DL_FUNC) &_gdalraster_ogr_execute_sql, 4},
     {"_gdalraster_progress_bar_cleanup", (DL_FUNC) &_gdalraster_progress_bar_cleanup, 0},
+    {"_gdalraster_rasterize_polygon", (DL_FUNC) &_gdalraster_rasterize_polygon, 8},
     {"_gdalraster_get_data_ptr", (DL_FUNC) &_gdalraster_get_data_ptr, 1},
     {"_gdalraster_epsg_to_wkt", (DL_FUNC) &_gdalraster_epsg_to_wkt, 2},
     {"_gdalraster_srs_to_wkt", (DL_FUNC) &_gdalraster_srs_to_wkt, 3},
