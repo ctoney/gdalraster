@@ -16,7 +16,7 @@ get_usable_physical_ram()
 ## Value
 
 Numeric scalar, number of bytes as
-[`bit64::integer64`](https://rdrr.io/pkg/bit64/man/bit64-package.html)
+[`bit64::integer64`](https://bit64.r-lib.org/reference/bit64-package.html)
 type (or 0 in case of failure).
 
 ## Note

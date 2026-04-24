@@ -19,7 +19,7 @@ vsi_get_disk_free_space(path)
 ## Value
 
 Numeric scalar. The free space in bytes (as
-[`bit64::integer64`](https://rdrr.io/pkg/bit64/man/bit64-package.html)
+[`bit64::integer64`](https://bit64.r-lib.org/reference/bit64-package.html)
 type), or `-1` in case of error.
 
 ## Examples
