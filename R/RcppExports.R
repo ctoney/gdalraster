@@ -3173,6 +3173,13 @@ bbox_to_wkt <- function(bbox, extend_x = 0, extend_y = 0) {
     invisible(.Call(`_gdalraster_progress_bar_cleanup`))
 }
 
+#' Rasterize one polygon
+#'
+#' @noRd
+.rasterize_polygon <- function(rasterXsize, rasterYsize, part_sizes, polygonX, polygonY, fnRasterIO, burn_value, attr_value = NA_character_) {
+    .Call(`_gdalraster_rasterize_polygon`, rasterXsize, rasterYsize, part_sizes, polygonX, polygonY, fnRasterIO, burn_value, attr_value)
+}
+
 #' Get pointer address of R data as a character string
 #'
 #' @param x Vector of type numeric, integer, raw or complex.
