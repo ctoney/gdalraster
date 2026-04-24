@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9022 (dev)
+# gdalraster 2.5.0.9023 (dev)
+
+* add `.rasterize_polygon()` for internal use (#955) (2026-04-23)
 
 * `calc()`: use a unique temp name when the output dataset is MEM and a specific name is not given (#954) (2026-04-18)
 
