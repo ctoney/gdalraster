@@ -945,7 +945,7 @@ ds$close()
 #### Visualize DEM derivatives
 
 ``` r
-# terrain ruggedness index' (TRI)
+# terrain ruggedness index (TRI)
 system.file("extdata/storml_elev.tif", package="gdalraster") |>
   gdal_run_piped("raster tri", "", "MEM") |>
   plot_raster(legend = TRUE,
