@@ -96,6 +96,19 @@ test_that("gdal_run works", {
 
 })
 
+test_that("gdal_run_piped works", {
+    ds_tpi <- system.file("extdata/storml_elev.tif", package="gdalraster") |>
+        gdal_run_piped("raster resize", "", "MEM", list(
+            resolution = c(90, 90), resampling = "bilinear")
+        ) |>
+        gdal_run_piped("raster tpi", "", "MEM")
+
+    expect_true(is(ds_tpi, "Rcpp_GDALRaster"))
+    expect_equal(ds_tpi$dim(), c(48, 36, 1))
+    expect_equal(ds_tpi$res(), c(90, 90))
+    ds_tpi$close()
+})
+
 test_that("gdal_alg works", {
     expect_no_error(alg <- gdal_alg())
     expect_true(is(alg, "Rcpp_GDALAlg"))
