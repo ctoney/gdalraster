@@ -852,9 +852,36 @@ knitr::include_graphics("img/storml_col_shaded_relief.png")
 ``` r
 # cleanup
 ds$close()
-deleteDataset(f_elev)
-#> [1] TRUE
 deleteDataset(f_out)
+#> [1] TRUE
+```
+
+Alternatively, native R pipe operations can also be used. GDAL in-memory datasets (MEM) are an option for intermediate steps as done in the following example which generates the color shaded relief map with `gdal_run_piped()`. Whether in-memory or file-backed datasets are used, they are generally passed as objects in API usage of GDAL CLI. Object passing avoids the overhead of dataset opening and potentially provides cached data.
+
+``` r
+f_elev |>
+  gdal_run_piped("raster color-map", "", "MEM", list(color_map = f_pal)) |>
+  gdal_run_piped("raster blend", "", "MEM", list(
+    operator = "hsv-value",
+    overlay = gdal_run_piped(f_elev, "raster hillshade", "", "MEM",
+                             list(zfactor = 1.5))
+    )
+  ) |>
+  plot_raster(main = "Storm Lake AOI colorized shaded relief")
+```
+
+```{r out.width = '80%', echo = FALSE}
+#| fig.alt: >
+#|   Identical to the previous graphical output: a plot of the colorized shaded
+#|   relief map for the Storm Lake area of interest. Lower elevation areas are
+#|   green, transitioning to yellow then light brown, pinkish and almost white
+#|   at the highest elevations.
+knitr::include_graphics("img/storml_col_shaded_relief.png")
+```
+
+``` r
+## clean up the temp file
+deleteDataset(f_elev)
 #> [1] TRUE
 ```
 
@@ -915,15 +942,46 @@ knitr::include_graphics("img/storml_northness.png")
 ds$close()
 ```
 
-#### Visualize topographic position index (TPI)
+#### Visualize DEM derivatives
 
 ``` r
+# terrain ruggedness index' (TRI)
+system.file("extdata/storml_elev.tif", package="gdalraster") |>
+  gdal_run_piped("raster tri", "", "MEM") |>
+  plot_raster(legend = TRUE,
+              minmax_pct_cut = c(0, 99),
+              col_map_fn = rev(ltc::ltc("heatmap3")),
+              main = "Storm Lake AOI: terrain ruggedness index")
+```
+
+```{r out.width = '80%', echo = FALSE}
+#| fig.alt: >
+#|   A plot of terrain ruggedness index (TRI) for the Storm Lake area of
+#|   interest. The pixel values range from 0 to 75, with a diverging heatmap
+#|   color gradient ranging from blue to yellow, orange and then red. These
+#|   correspond to blue for flat terrain with low ruggedness, to red for the
+#|   most rugged terrain.
+knitr::include_graphics("img/storml_tri.png")
+```
+
+``` r
+# topographic position index (TPI)
 system.file("extdata/storml_elev.tif", package = "gdalraster") |>
   gdal_run_piped("raster tpi", "", "MEM") |>
   plot_raster(legend = TRUE,
-              minmax_pct_cut = c(1, 99),
+              minmax_pct_cut = c(1, 98),
               col_map_fn = rev(ltc::ltc("heatmap3")),
               main = "Storm Lake AOI: topgraphic position index")
+```
+
+```{r out.width = '80%', echo = FALSE}
+#| fig.alt: >
+#|   A plot of topographic position index (TPI) for the Storm Lake area of
+#|   interest. The pixel values range from -4.4 to 6.0, with a diverging heatmap
+#|   color gradient ranging from blue to yellow, orange and then red. Negative
+#|   values indicate concave positions (e.g., ravines) while positive values
+#|   indicate convexity (e.g., ridge tops).
+knitr::include_graphics("img/storml_tpi.png")
 ```
 
 ## See also

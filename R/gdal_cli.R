@@ -253,9 +253,9 @@
 #' ds$close()
 #' unlink(f_gpkg)
 #'
-#' ## use with the R native pipe operator
-#' ## make a of plot of 'terrain ruggedness index' (TRI) for Storm Lake AOI
-#'
+#' ## use the R native pipe operator
+#' 
+#' # make a of plot of 'terrain ruggedness index' (TRI) for Storm Lake AOI
 #' system.file("extdata/storml_elev.tif", package="gdalraster") |>
 #'   gdal_run_piped("raster tri", "", "MEM") |>
 #'   plot_raster(legend = TRUE,
