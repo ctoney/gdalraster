@@ -716,6 +716,7 @@ g_build_polygon_from_edges <- function(lines, auto_close = TRUE,
 #' These functions return information about WKB/WKT geometries. The input
 #' geometries may be given as a single raw vector of WKB, a list of WKB raw
 #' vectors, or a character vector containing one or more WKT strings.
+#'
 #' @name g_query
 #' @details
 #' `g_is_empty()` tests whether a geometry has no points. Returns a logical
@@ -725,6 +726,10 @@ g_build_polygon_from_edges <- function(lines, auto_close = TRUE,
 #'
 #' `g_is_valid()` tests whether a geometry is valid. Returns a logical vector
 #' analogous to the above for `g_is_empty()`.
+#'
+#' `g_invalid_reason()` tests if a geometry is valid and, if not, returns the
+#' invalidity reason as a character string. `NA` is returned for valid
+#' geometries. Requires GDAL >= 3.13.
 #'
 #' `g_is_3D()` checks whether a geometry has Z coordinates. Returns a logical
 #' vector analogous to the above for `g_is_empty()`.
@@ -766,6 +771,13 @@ g_build_polygon_from_edges <- function(lines, auto_close = TRUE,
 #' g2 <- "POLYGON ((0 0, 10 10, 10 0))"
 #' g3 <- "POLYGON ((0 0, 10 10, 10 0, 0 1))"
 #' g_is_valid(c(g1, g2, g3))
+#'
+#' # g_invalid_reason() requires GDAL >= 3.13
+#' if (gdal_version_num() >= gdal_compute_version(3, 13, 0)) {
+#'   g_invalid_reason("LINESTRING(0 0)") |> print()
+#'
+#'   g_invalid_reason("LINESTRING(0 0, 1 1)") |> print()
+#' }
 #'
 #' g_is_3D(g1)
 #' g_is_measured(g1)
@@ -842,6 +854,34 @@ g_is_valid <- function(geom, quiet = FALSE) {
             ret <- .g_is_valid(g_wk2wk(geom), quiet)
         } else {
             ret <- sapply(g_wk2wk(geom), .g_is_valid, quiet)
+        }
+    } else {
+        stop("'geom' must be a character vector, raw vector, or list",
+             call. = FALSE)
+    }
+
+    return(ret)
+}
+
+#' @name g_query
+#' @export
+g_invalid_reason <- function(geom, quiet = FALSE) {
+    # quiet
+    if (is.null(quiet))
+        quiet <- FALSE
+    if (!is.logical(quiet) || length(quiet) > 1)
+        stop("'quiet' must be a single logical value", call. = FALSE)
+
+    ret <- NULL
+    if (.is_raw_or_null(geom)) {
+        ret <- .g_invalid_reason(geom, quiet)
+    } else if (is.list(geom) && .is_raw_or_null(geom[[1]])) {
+        ret <- sapply(geom, .g_invalid_reason, quiet)
+    } else if (is.character(geom)) {
+        if (length(geom) == 1) {
+            ret <- .g_invalid_reason(g_wk2wk(geom), quiet)
+        } else {
+            ret <- sapply(g_wk2wk(geom), .g_invalid_reason, quiet)
         }
     } else {
         stop("'geom' must be a character vector, raw vector, or list",

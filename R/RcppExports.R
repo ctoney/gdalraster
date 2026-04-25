@@ -2785,6 +2785,11 @@ has_geos <- function() {
 }
 
 #' @noRd
+.g_invalid_reason <- function(geom, quiet = FALSE) {
+    .Call(`_gdalraster_g_invalid_reason`, geom, quiet)
+}
+
+#' @noRd
 .g_make_valid <- function(geom, method = "LINEWORK", keep_collapsed = FALSE, as_iso = FALSE, byte_order = "LSB", quiet = FALSE) {
     .Call(`_gdalraster_g_make_valid`, geom, method, keep_collapsed, as_iso, byte_order, quiet)
 }

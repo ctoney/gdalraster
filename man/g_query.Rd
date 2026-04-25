@@ -4,6 +4,7 @@
 \alias{g_query}
 \alias{g_is_empty}
 \alias{g_is_valid}
+\alias{g_invalid_reason}
 \alias{g_is_3D}
 \alias{g_is_measured}
 \alias{g_is_ring}
@@ -15,6 +16,8 @@
 g_is_empty(geom, quiet = FALSE)
 
 g_is_valid(geom, quiet = FALSE)
+
+g_invalid_reason(geom, quiet = FALSE)
 
 g_is_3D(geom, quiet = FALSE)
 
@@ -47,6 +50,10 @@ non-empty geometries.
 
 \code{g_is_valid()} tests whether a geometry is valid. Returns a logical vector
 analogous to the above for \code{g_is_empty()}.
+
+\code{g_invalid_reason()} tests if a geometry is valid and, if not, returns the
+invalidity reason as a character string. \code{NA} is returned for valid
+geometries. Requires GDAL >= 3.13.
 
 \code{g_is_3D()} checks whether a geometry has Z coordinates. Returns a logical
 vector analogous to the above for \code{g_is_empty()}.
@@ -81,6 +88,13 @@ g1 <- "POLYGON ((0 0, 10 10, 10 0, 0 0))"
 g2 <- "POLYGON ((0 0, 10 10, 10 0))"
 g3 <- "POLYGON ((0 0, 10 10, 10 0, 0 1))"
 g_is_valid(c(g1, g2, g3))
+
+# g_invalid_reason() requires GDAL >= 3.13
+if (gdal_version_num() >= gdal_compute_version(3, 13, 0)) {
+  g_invalid_reason("LINESTRING(0 0)") |> print()
+
+  g_invalid_reason("LINESTRING(0 0, 1 1)") |> print()
+}
 
 g_is_3D(g1)
 g_is_measured(g1)

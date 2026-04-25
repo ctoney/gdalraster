@@ -950,7 +950,7 @@ test_that("geometry properties are correct", {
     expect_equal(g_geom_count("GEOMETRYCOLLECTION EMPTY"), 0)
 
     # g_summary requires GDAL >= 3.7
-    skip_if(gdal_version_num() < 3070000 )
+    skip_if(gdal_version_num() < gdal_compute_version(3, 7, 0))
 
     g <- "MULTIPOLYGON (((10 0,0 0,5 5,10 0)),((10 10,5 5,0 10,10 10)))"
     expected_value <-
@@ -962,6 +962,12 @@ test_that("geometry properties are correct", {
     expect_vector(g_summary(wkb_list), character(), size = 3)
 
     expect_true(is.na(g_summary(raw(0))))
+
+    # g_invalid_reason requires GDAL >= 3.13
+    skip_if(gdal_version_num() < gdal_compute_version(3, 13, 0))
+
+    expect_false(is.na(g_invalid_reason("LINESTRING(0 0)")))
+    expect_true(is.na(g_invalid_reason("LINESTRING(0 0, 1 1)")))
 })
 
 test_that("geometry binary predicates/ops return correct values", {
