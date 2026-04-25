@@ -1381,6 +1381,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// g_invalid_reason
+Rcpp::String g_invalid_reason(const Rcpp::RObject& geom, bool quiet);
+RcppExport SEXP _gdalraster_g_invalid_reason(SEXP geomSEXP, SEXP quietSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type geom(geomSEXP);
+    Rcpp::traits::input_parameter< bool >::type quiet(quietSEXP);
+    rcpp_result_gen = Rcpp::wrap(g_invalid_reason(geom, quiet));
+    return rcpp_result_gen;
+END_RCPP
+}
 // g_make_valid
 SEXP g_make_valid(const Rcpp::RObject& geom, const std::string& method, bool keep_collapsed, bool as_iso, const std::string& byte_order, bool quiet);
 RcppExport SEXP _gdalraster_g_make_valid(SEXP geomSEXP, SEXP methodSEXP, SEXP keep_collapsedSEXP, SEXP as_isoSEXP, SEXP byte_orderSEXP, SEXP quietSEXP) {
@@ -2737,6 +2749,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_g_build_collection", (DL_FUNC) &_gdalraster_g_build_collection, 4},
     {"_gdalraster_g_build_polygon_from_edges", (DL_FUNC) &_gdalraster_g_build_polygon_from_edges, 5},
     {"_gdalraster_g_is_valid", (DL_FUNC) &_gdalraster_g_is_valid, 2},
+    {"_gdalraster_g_invalid_reason", (DL_FUNC) &_gdalraster_g_invalid_reason, 2},
     {"_gdalraster_g_make_valid", (DL_FUNC) &_gdalraster_g_make_valid, 6},
     {"_gdalraster_g_normalize", (DL_FUNC) &_gdalraster_g_normalize, 4},
     {"_gdalraster_g_set_3D", (DL_FUNC) &_gdalraster_g_set_3D, 5},

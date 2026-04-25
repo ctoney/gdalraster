@@ -864,6 +864,42 @@ Rcpp::LogicalVector g_is_valid(const Rcpp::RObject &geom,
 }
 
 //' @noRd
+// [[Rcpp::export(name = ".g_invalid_reason")]]
+Rcpp::String g_invalid_reason(const Rcpp::RObject &geom, bool quiet = false) {
+// Test if the geometry is valid and, if not, return the invalidity reason.
+
+    if (geom.isNULL() || !Rcpp::is<Rcpp::RawVector>(geom))
+        return "input object is not a raw vector";
+
+    const Rcpp::RawVector geom_in(geom);
+    if (geom_in.size() == 0)
+        return "input raw vector is empty";
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 13, 0)
+    Rcpp::stop("`g_invalid_reason()` requires GDAL >= 3.13");
+#else
+    OGRGeometryH hGeom = createGeomFromWkb_(geom_in);
+
+    if (hGeom == nullptr) {
+        if (!quiet) {
+            Rcpp::warning(
+                "failed to create geometry object from WKB, NA returned");
+        }
+        return NA_STRING;
+    }
+
+    Rcpp::String ret = NA_STRING;
+    char *pszReason = OGR_G_GetInvalidityReason(hGeom);
+    if (pszReason) {
+        ret = Rcpp::String(pszReason);
+        CPLFree(pszReason);
+    }
+    OGR_G_DestroyGeometry(hGeom);
+    return ret;
+#endif
+}
+
+//' @noRd
 // [[Rcpp::export(name = ".g_make_valid")]]
 SEXP g_make_valid(const Rcpp::RObject &geom,
                   const std::string &method = "LINEWORK",

@@ -54,6 +54,7 @@ SEXP g_build_polygon_from_edges(const Rcpp::RObject &lines,
                                 bool as_iso, const std::string &byte_order);
 
 Rcpp::LogicalVector g_is_valid(const Rcpp::RObject &geom, bool quiet);
+Rcpp::String g_invalid_reason(const Rcpp::RObject &geom, bool quiet);
 SEXP g_make_valid(const Rcpp::RObject &geom, const std::string &method,
                   bool keep_collapsed, bool as_iso,
                   const std::string &byte_order, bool quiet);
