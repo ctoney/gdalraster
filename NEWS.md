@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9023 (dev)
+# gdalraster 2.5.0.9024 (dev)
+
+* add `g_invalid_reason()`: interface to `OGR_G_GetInvalidityReason()` in GDAL >=3.13 (#957) (2026-04-25)
 
 * add `.rasterize_polygon()` for internal use (#955) (2026-04-23)
 
