@@ -1571,6 +1571,74 @@ Rcpp::List GDALRaster::getDefaultHistogram(int band, bool force) const {
     return list_out;
 }
 
+Rcpp::NumericVector GDALRaster::getInterBandCovMatrix(
+    const Rcpp::IntegerVector &bands, bool approx_ok, bool force,
+    bool write_in_metadata, int df_correction) const {
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 13, 0)
+    Rcpp::stop("getInterBandCovMatrix() requires GDAL >= 3.13");
+#else
+
+    checkAccess_(GA_ReadOnly);
+
+    int nBandCount = 0;
+    const int *panBandList = nullptr;
+    if (bands.size() != 0) {
+        if (!(bands.size() == 1 && bands[0] == 0)) {
+            for (auto band : bands) {
+                if (band < 1 || band > getRasterCount())
+                    Rcpp::stop("'bands' contains invalid band numbers");
+            }
+            nBandCount = bands.size();
+            panBandList = bands.cbegin();
+        }
+    }
+
+    Rcpp::NumericVector cov_matrix;
+    if (panBandList) {
+        cov_matrix = Rcpp::NumericVector(nBandCount * nBandCount, NA_REAL);
+        cov_matrix.attr("dim") = Rcpp::Dimension(nBandCount, nBandCount);
+    }
+    else {
+        cov_matrix =
+            Rcpp::NumericVector(getRasterCount() * getRasterCount(), NA_REAL);
+        cov_matrix.attr("dim") =
+            Rcpp::Dimension(getRasterCount(), getRasterCount());
+    }
+
+    CPLErr err = CE_None;
+    GDALProgressFunc pfnProgress = nullptr;
+    void *pProgressData = nullptr;
+
+    if (!force) {
+        if (!quiet)
+            pfnProgress = GDALTermProgressR;
+
+        err = GDALDatasetGetInterBandCovarianceMatrix(
+            m_hDataset, cov_matrix.begin(), cov_matrix.size(), nBandCount,
+            panBandList, approx_ok, force, write_in_metadata, df_correction,
+            pfnProgress, pProgressData);
+    }
+    else {
+        if (!quiet)
+            pfnProgress = GDALTermProgressR;
+
+        err = GDALDatasetComputeInterBandCovarianceMatrix(
+            m_hDataset, cov_matrix.begin(), cov_matrix.size(), nBandCount,
+            panBandList, approx_ok, write_in_metadata, df_correction,
+            pfnProgress, pProgressData);
+    }
+
+    if (err != CE_None && !quiet) {
+        cli_alert_danger_("failed to get inter-band covariance matrix, "
+                          "{.val NA} returned");
+    }
+
+    return cov_matrix;
+
+#endif
+}
+
 Rcpp::CharacterVector GDALRaster::getMetadata(int band,
                                               const std::string &domain) const {
 
@@ -3025,6 +3093,8 @@ RCPP_MODULE(mod_GDALRaster) {
         "Compute raster histogram for this band")
     .const_method("getDefaultHistogram", &GDALRaster::getDefaultHistogram,
         "Fetch default raster histogram for this band")
+    .const_method("getInterBandCovMatrix", &GDALRaster::getInterBandCovMatrix,
+        "Get the covariance matrix between bands of this dataset")
     .const_method("getMetadata", &GDALRaster::getMetadata,
         "Return a list of metadata name=value for a domain")
     .method("setMetadata", &GDALRaster::setMetadata,
