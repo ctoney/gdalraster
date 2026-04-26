@@ -1,6 +1,6 @@
 # gdalraster 2.5.0.9100 (dev)
 
-* **breaking change**: rename `vector_to_MEM()` as `rvector_to_MEM()` (#957) (2026-04-25)
+* rename `vector_to_MEM()` as `rvector_to_MEM()` but keep an alias for now (#957) (2026-04-25)
 
 * add `gdal_run_piped()` (GDAL CLI): a variation of `gdal_run()` suitable for use with the R native pipe operator (#956) (2026-04-25)
 
