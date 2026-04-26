@@ -42,7 +42,7 @@ reference:
   - validateCreationOptions
   - rasterFromRaster
   - translate
-  - vector_to_MEM
+  - rvector_to_MEM
 - subtitle: Virtual raster
 - contents:
   - autoCreateWarpedVRT

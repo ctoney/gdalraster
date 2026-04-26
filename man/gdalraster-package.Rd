@@ -34,7 +34,7 @@
   \code{\link[=translate]{translate()}},
   \code{\link[=getCreationOptions]{getCreationOptions()}},
   \code{\link[=validateCreationOptions]{validateCreationOptions()}},
-  \code{\link[=vector_to_MEM]{vector_to_MEM()}}
+  \code{\link[=rvector_to_MEM]{rvector_to_MEM()}}
 
   \item virtual raster:
   \code{\link[=autoCreateWarpedVRT]{autoCreateWarpedVRT()}},
