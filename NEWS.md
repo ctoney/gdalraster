@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9024 (dev)
+# gdalraster 2.5.0.9025 (dev)
+
+* add `gdal_run_piped()` (GDAL CLI): a variation of `gdal_run()` suitable for use with the R native pipe operator (#956) (2026-04-25)
 
 * add `g_invalid_reason()`: interface to `OGR_G_GetInvalidityReason()` in GDAL >=3.13 (#957) (2026-04-25)
 
