@@ -46,7 +46,7 @@
 #' of the algorithm (i.e., as input to the GDAL command specified in `cmd`). The
 #' function returns (invisibly) the output of the CLI algorithm if it has one.
 #' If the algorithm has multiple outputs, the first by index is returned by
-#' default but this can be controlled by the `output_idx` argument (numeric
+#' default but this can be controlled by the `output_index` argument (numeric
 #' index or character name of the desired output). Logical `TRUE` is returned
 #' invisibly if the algorithm has no output and no error was reported by the
 #' `run()` method of the algorithm object. Logical `FALSE` is returned invisibly
@@ -112,9 +112,9 @@
 #' input arguments of the algorithm (i.e., other than those already specified
 #' via `input`, `output` and `output_format` above, see also the section
 #' `Algorithm Argument Syntax` below).
-#' @param output_idx Optional numeric value or character string giving the list
-#' index or output argument name for an algorithm with more than one output.
-#' Defaults to `1`.
+#' @param output_index Optional numeric value or character string giving the
+#' list index or output argument name for an algorithm with more than one
+#' output. Defaults to `1`.
 #' @param outputLayerNameForOpen Optional character string specifying a layer
 #' name to open when obtaining algorithm output as an object of class
 #' `GDALVector` (see the class method [GDALAlg$output()][GDALAlg]). Defaults to
@@ -224,7 +224,7 @@
 #' Using `gdal` CLI algorithms from R\cr
 #' \url{https://firelab.github.io/gdalraster/articles/use-gdal-cli-from-r.html}
 #'
-#' @examplesIf gdal_version_num() >= gdal_compute_version(3, 12, 0) && length(gdal_global_reg_names()) > 0
+#' @examplesIf length(gdal_global_reg_names()) > 0
 #' ## top-level commands
 #' gdal_commands(recurse = FALSE)
 #'
@@ -254,7 +254,7 @@
 #' unlink(f_gpkg)
 #'
 #' ## use the R native pipe operator
-#' 
+#'
 #' # make a of plot of 'terrain ruggedness index' (TRI) for Storm Lake AOI
 #' system.file("extdata/storml_elev.tif", package="gdalraster") |>
 #'   gdal_run_piped("raster tri", "", "MEM") |>
@@ -459,7 +459,7 @@ gdal_run <- function(cmd, args, close = FALSE, quiet = FALSE,
 #' @name gdal_cli
 #' @export
 gdal_run_piped <- function(input, cmd, output = NULL, output_format = NULL,
-                           other_args = NULL, output_idx = 1,
+                           other_args = NULL, output_index = 1,
                            outputLayerNameForOpen = NULL) {
 
     if (gdal_version_num() < gdal_compute_version(3, 11, 3)) {
@@ -483,12 +483,15 @@ gdal_run_piped <- function(input, cmd, output = NULL, output_format = NULL,
         stop("'output_format' must be a single character string", call. = FALSE)
     }
 
-    if (is.null(output_idx) || all(is.na(output_idx))) {
-        output_idx <- 1
-    } else if (!((is.character(output_idx) || is.numeric(output_idx))
-                 && length(output_idx) == 1)) {
-        stop("'output_idx' must be a single numeric value or character string",
-             call. = FALSE)
+    if (is.null(output_index) || all(is.na(output_index))) {
+        output_index <- 1
+    } else if (!((is.character(output_index) || is.numeric(output_index))
+                 && length(output_index) == 1)) {
+        stop(
+            "'output_index' must be a single numeric value or character string",
+            call. = FALSE)
+    } else if (is.numeric(output_index) && output_index < 1) {
+        stop("'output_index' must be greater than or equal to 1", call. = FALSE)
     }
 
     if (!is.null(other_args)) {
@@ -511,8 +514,9 @@ gdal_run_piped <- function(input, cmd, output = NULL, output_format = NULL,
 
     input_arg_name <- "input"
     alg_info <- alg$info()
-    # should it check for other input argument names here, or use any positional
-    # one that exists?
+    # TODO:
+    # should it check for other input argument names here
+    # or use any positional one that exists
     if (!("input" %in% alg_info$arg_names)) {
         if ("dataset" %in% alg_info$arg_names) {
             input_arg_name <- "dataset"
@@ -542,7 +546,6 @@ gdal_run_piped <- function(input, cmd, output = NULL, output_format = NULL,
             alg_has_output_or_destination <- FALSE
         }
     }
-
     if (alg_has_output_or_destination) {
         if (!alg$setArg(output_arg_name, output)) {
             cli::cli_alert_warning(
@@ -571,14 +574,29 @@ gdal_run_piped <- function(input, cmd, output = NULL, output_format = NULL,
 
     out <- TRUE
     if (length(alg$outputs()) != 0) {
-        out <- alg$outputs()[[output_idx]]
+        if (is.numeric(output_index)) {
+            if (output_index > length(alg$outputs())) {
+                cli::cli_alert_danger(paste0(
+                    "{.arg output_index = {output_index}} is greater than the ",
+                    "number of outputs ({length(alg$outputs())})."))
+                out <- FALSE
+            }
+        } else {
+            if (!(output_index %in% names(alg$outputs()))) {
+                cli::cli_alert_danger(paste0(
+                    "{.arg output_index = {output_index}} is not an element name ",
+                    "in the algorithm output list"))
+                out <- FALSE
+            }
+        }
+
+        if (out)
+            out <- alg$outputs()[[output_index]]
     }
 
     if (!alg$close()) {
-        warning(
-            cli::format_warning(
-                "Error reported during algorithm finalize."),
-            call. = FALSE)
+        warning(cli::format_warning(
+            "Error reported during algorithm finalize."), call. = FALSE)
     }
 
     alg$release()

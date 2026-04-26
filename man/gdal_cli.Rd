@@ -28,7 +28,7 @@ gdal_run_piped(
   output = NULL,
   output_format = NULL,
   other_args = NULL,
-  output_idx = 1,
+  output_index = 1,
   outputLayerNameForOpen = NULL
 )
 
@@ -89,9 +89,9 @@ input arguments of the algorithm (i.e., other than those already specified
 via \code{input}, \code{output} and \code{output_format} above, see also the section
 \verb{Algorithm Argument Syntax} below).}
 
-\item{output_idx}{Optional numeric value or character string giving the list
-index or output argument name for an algorithm with more than one output.
-Defaults to \code{1}.}
+\item{output_index}{Optional numeric value or character string giving the
+list index or output argument name for an algorithm with more than one
+output. Defaults to \code{1}.}
 
 \item{outputLayerNameForOpen}{Optional character string specifying a layer
 name to open when obtaining algorithm output as an object of class
@@ -145,7 +145,7 @@ function is passed to the \code{"input"} (or \code{"dataset"} or \code{"source"}
 of the algorithm (i.e., as input to the GDAL command specified in \code{cmd}). The
 function returns (invisibly) the output of the CLI algorithm if it has one.
 If the algorithm has multiple outputs, the first by index is returned by
-default but this can be controlled by the \code{output_idx} argument (numeric
+default but this can be controlled by the \code{output_index} argument (numeric
 index or character name of the desired output). Logical \code{TRUE} is returned
 invisibly if the algorithm has no output and no error was reported by the
 \code{run()} method of the algorithm object. Logical \code{FALSE} is returned invisibly
@@ -273,7 +273,7 @@ Please use with those cautions in mind. Bug reports may be filed at:
 }
 
 \examples{
-\dontshow{if (gdal_version_num() >= gdal_compute_version(3, 12, 0) && length(gdal_global_reg_names()) > 0) withAutoprint(\{ # examplesIf}
+\dontshow{if (length(gdal_global_reg_names()) > 0) withAutoprint(\{ # examplesIf}
 ## top-level commands
 gdal_commands(recurse = FALSE)
 
