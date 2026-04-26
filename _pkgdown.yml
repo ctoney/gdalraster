@@ -41,7 +41,6 @@ reference:
   - getCreationOptions
   - validateCreationOptions
   - rasterFromRaster
-  - translate
   - rvector_to_MEM
 - subtitle: Virtual raster
 - contents:
@@ -61,6 +60,7 @@ reference:
   - polygonize
   - rasterize
   - sieveFilter
+  - translate
   - warp
 - subtitle: Raster display
 - contents:
