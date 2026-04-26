@@ -269,6 +269,52 @@ test_that("get histogram works", {
     deleteDataset(f2)
 })
 
+test_that("getInterBandCovMatrix works", {
+    skip_if(gdal_version_num() < gdal_compute_version(3, 13, 0))
+
+    # https://github.com/OSGeo/gdal/blob/master/autotest/gcore/gdal_stats.py
+
+    f <- system.file("extdata/rgbsmall.tif", package="gdalraster")
+    f_tmp <- tempfile(fileext = ".tif")
+    expect_true(file.copy(f, f_tmp))
+    f_tmp_aux <- paste0(f_tmp, ".aux.xml")
+
+    ds <- new(GDALRaster, f_tmp)
+    on.exit(ds$close(), add = TRUE)
+    on.exit(deleteDataset(f_tmp), add = TRUE)
+
+    x <- c(2241.7045363745387, 2898.8196128051163, 1009.979953581434,
+           2898.8196128051163, 3900.269159023618, 1248.65396718687,
+           1009.979953581434, 1248.65396718687, 602.4703641456648)
+
+    expected_cov_matrix <- matrix(x, 3, 3, byrow = TRUE)
+
+    cov_matrix <- ds$getInterBandCovMatrix(0, FALSE, TRUE, FALSE, 1)
+    ds$flushCache()
+
+    expect_equal(cov_matrix, expected_cov_matrix, tolerance = 1e4)
+    expect_false(vsi_stat_exists(f_tmp_aux))
+
+    # write in metadata
+    cov_matrix <- ds$getInterBandCovMatrix(0, FALSE, TRUE, TRUE, 1)
+    ds$flushCache()
+
+    expect_equal(cov_matrix, expected_cov_matrix, tolerance = 1e4)
+    expect_true(vsi_stat_exists(f_tmp_aux))
+
+    # retrieve from metadata
+    cov_matrix <- ds$getInterBandCovMatrix(0, FALSE, FALSE, FALSE, 1)
+    expect_equal(cov_matrix, expected_cov_matrix, tolerance = 1e4)
+
+    # with band list
+    cov_matrix <- ds$getInterBandCovMatrix(c(1, 2, 3), FALSE, FALSE, FALSE, 1)
+    expect_equal(cov_matrix, expected_cov_matrix, tolerance = 1e4)
+
+    # invalid bands
+    expect_error(ds$getInterBandCovMatrix(c(0, 1, 2), FALSE, FALSE, FALSE, 1))
+    expect_error(ds$getInterBandCovMatrix(c(1, 2, 4), FALSE, FALSE, FALSE, 1))
+})
+
 test_that("floating point I/O works", {
     f <- paste0(tempdir(), "/", "testfloat.tif")
     create(format="GTiff", dst_filename=f, xsize=10, ysize=10,

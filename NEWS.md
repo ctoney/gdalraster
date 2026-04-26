@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9100 (dev)
+# gdalraster 2.5.0.9101 (dev)
+
+* add `GDALRaster$getInterBandCovMatrix()`: class method to fetch or compute the covariance matrix between bands of a dataset using `GDALDatasetGetInterBandCovarianceMatrix()` in GDAL 3.13 (2026-04-26)
 
 * rename `vector_to_MEM()` as `rvector_to_MEM()` but keep an alias for now (#957) (2026-04-25)
 
