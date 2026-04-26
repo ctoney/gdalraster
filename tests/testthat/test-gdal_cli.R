@@ -96,6 +96,72 @@ test_that("gdal_run works", {
 
 })
 
+test_that("gdal_run_piped works", {
+    # "size" is passed to "raster resize" here since the "resolution" argument
+    # was added later in GDAL 3.12, so this test will work with GDAL >= 3.11.
+    # This will generate an output raster with _roughly_ 90-m pixel resolution.
+    ds_mem <- system.file("extdata/storml_elev.tif", package="gdalraster") |>
+        gdal_run_piped("raster resize", "", "MEM", list(
+            size = c(48, 36), resampling = "bilinear")
+        ) |>
+        gdal_run_piped("raster tpi", "", "MEM")
+
+    expect_true(is(ds_mem, "Rcpp_GDALRaster"))
+    expect_equal(ds_mem$dim(), c(48, 36, 1))
+    expect_true(all(ds_mem$res() >= 89))
+    ds_mem$close()
+
+    f_zip <- system.file("extdata/ynp_features.zip", package = "gdalraster")
+
+    # output_index
+    out_str <- file.path("/vsizip", f_zip, "ynp_features.gpkg") |>
+	    gdal_run_piped("vector info", output_format = "text",
+                       other_args = list(layer = "ynp_bnd"),
+                       output_index = "output_string")
+
+    expect_true(is.character(out_str))
+    expect_true(grepl("Layer name: ynp_bnd", out_str, ignore.case = TRUE))
+
+    # input validation error: output_index < 1
+    out_str <- ""
+    expect_error(
+        out_str <- file.path("/vsizip", f_zip, "ynp_features.gpkg") |>
+            gdal_run_piped("vector info", output_format = "text",
+                           other_args = list(layer = "ynp_bnd"),
+                           output_index = 0)
+    )
+
+    # output_index > the number of outputs
+    out_str <- ""
+    expect_no_error(
+        out_str <- file.path("/vsizip", f_zip, "ynp_features.gpkg") |>
+            gdal_run_piped("vector info", output_format = "text",
+                           other_args = list(layer = "ynp_bnd"),
+                           output_index = 2)
+    )
+    expect_false(out_str)
+
+    # output_index not a valid list element name
+    out_str <- ""
+    expect_no_error(
+        out_str <- file.path("/vsizip", f_zip, "ynp_features.gpkg") |>
+            gdal_run_piped("vector info", output_format = "text",
+                           other_args = list(layer = "ynp_bnd"),
+                           output_index = "invalid")
+    )
+    expect_false(out_str)
+
+    # outputLayerNameForOpen
+    lyr_mem <- file.path("/vsizip", f_zip, "ynp_features.gpkg") |>
+        gdal_run_piped("vector reproject", "", "MEM", c("-d", "EPSG:5070"),
+            outputLayerNameForOpen = "points_of_interest")
+
+    expect_true(is(lyr_mem, "Rcpp_GDALVector"))
+    expect_equal(lyr_mem$getName(), "points_of_interest")
+    expect_equal(lyr_mem$getFeatureCount(), 1399)
+    lyr_mem$close()
+})
+
 test_that("gdal_alg works", {
     expect_no_error(alg <- gdal_alg())
     expect_true(is(alg, "Rcpp_GDALAlg"))

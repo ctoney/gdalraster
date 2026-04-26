@@ -69,6 +69,7 @@ Suggests:
     glue (>= 1.6.0),
     gt,
     knitr,
+    ltc,
     rmarkdown,
     scales,
     testthat (>= 3.0.0),
