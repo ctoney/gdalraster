@@ -841,7 +841,7 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
 
 #' Create a GDAL in-memory dataset from R data without copying
 #'
-#' `vector_to_MEM()` creates a GDAL MEM dataset that references pixel data in
+#' `rvector_to_MEM()` creates a GDAL MEM dataset that references pixel data in
 #' an existing R vector. It returns an object of class `GDALRaster` for a
 #' writable in-memory dataset without copying the source data. The underlying
 #' R object is protected from garbage collection until the returned dataset is
@@ -865,6 +865,10 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
 #' raw                \tab  UInt8 (Byte in GDAL < 3.13)\cr
 #' complex            \tab  CFloat64
 #' }
+#'
+#' `vector_to_MEM()` is an alias of `rvector_to_MEM()` for backward
+#' compatibility. It is a deprecated name of the function that will be removed
+#' in a future version. Please use `rvector_to_MEM()` instead.
 #'
 #' @param data An R vector of type `"double"`, `"integer"`, `"raw"` or
 #' `"complex"`, containing pixel values to be exposed as a GDAL in-memory
@@ -894,12 +898,16 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
 #' longer needed so that resources can be freed. MEM datasets cannot be
 #' re-opened once the object's `$close()` method has been called.
 #'
+#' `vector_to_MEM()` is a deprecated name for the function, currently set as
+#' an alias of `rvector_to_MEM()`. _The `vector_to_MEM()` alias will be removed
+#' in a future version_.
+#'
 #' @seealso
 #' [`GDALRaster-class`][GDALRaster]
 #'
 #' @examples
 #' v <- sample(0:255, 50, replace = TRUE)
-#' (ds_mem <- vector_to_MEM(v, xsize = 10, ysize = 5))
+#' (ds_mem <- rvector_to_MEM(v, xsize = 10, ysize = 5))
 #'
 #' all((ds_mem$read(1, 0, 0, 10, 5, 10, 5) == v))
 #'
@@ -908,8 +916,9 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
 #'
 #' ds_mem$close()
 #' @export
-vector_to_MEM <- function(data, xsize, ysize, nbands = 1L, gt = NULL,
-                          bbox = NULL, srs = NULL) {
+#' @rdname rvector_to_MEM
+rvector_to_MEM <- function(data, xsize, ysize, nbands = 1L, gt = NULL,
+                           bbox = NULL, srs = NULL) {
 
     if (!is.vector(data) && !is.numeric(data) && !is.raw(data) &&
         !is.complex(data)) {
@@ -1006,6 +1015,10 @@ vector_to_MEM <- function(data, xsize, ysize, nbands = 1L, gt = NULL,
 
     return(ds_mem)
 }
+
+#' @export
+#' @rdname rvector_to_MEM
+vector_to_MEM <- rvector_to_MEM
 
 #' Clear progress bar
 #'
