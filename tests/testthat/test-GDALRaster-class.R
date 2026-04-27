@@ -607,16 +607,24 @@ test_that("get/set default RAT works", {
 })
 
 test_that("add band works", {
-    ds <- create(format="MEM", dst_filename="", xsize=20, ysize=10,
-                 nbands=1, dataType="Byte", return_obj = TRUE)
+    ds_mem <- create(format="MEM", dst_filename="", xsize=20, ysize=10,
+                     nbands=1, dataType="Byte", return_obj = TRUE)
 
-    ds$setProjection(epsg_to_wkt(4326))
-    ds$setGeoTransform(c(-180, 18, 0, 90, 0, -18))
-    ds$fillRaster(1, 255, 0)
-    expect_true(ds$addBand("Byte", NULL))
-    expect_no_error(ds$fillRaster(2, 255, 0))
+    on.exit(ds_mem$close(), add = TRUE)
 
-    ds$close()
+    ds_mem$setProjection(epsg_to_wkt(4326))
+    ds_mem$setGeoTransform(c(-180, 18, 0, 90, 0, -18))
+    ds_mem$fillRaster(1, 255, 0)
+    expect_true(ds_mem$addBand("Byte", NULL))
+    expect_no_error(ds_mem$fillRaster(2, 255, 0))
+    expect_equal(ds_mem$getRasterCount(), 2)
+    expect_true(all(ds_mem$read(2, 0, 0, 20, 10, 20, 10) == 255))
+
+    # add band from R vector without copy
+    v <- sample(0:255, 200, replace = TRUE)
+    expect_true(ds_mem$addBand("Byte", as.raw(v)))
+    expect_equal(ds_mem$getRasterCount(), 3)
+    expect_equal(ds_mem$read(3, 0, 0, 20, 10, 20, 10), v)
 })
 
 test_that("pixel extract internal class method returns correct data", {
