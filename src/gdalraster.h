@@ -72,8 +72,7 @@ class GDALRaster {
     bool setGeoTransform(const Rcpp::NumericVector &transform);
     bool setBbox(const Rcpp::NumericVector &bbox);
     int getRasterCount() const;
-    bool addBand(const std::string &dataType,
-                 const Rcpp::Nullable<Rcpp::CharacterVector> &options);
+    bool addBand(const std::string &dataType, const Rcpp::RObject &options);
 
     std::string getProjection() const;
     std::string getProjectionRef() const;
@@ -197,6 +196,7 @@ class GDALRaster {
     void warnInt64_() const;
     GDALDatasetH getGDALDatasetH_() const;
     void setGDALDatasetH_(GDALDatasetH hDs);
+    bool isMEM_() const;
 
  private:
     std::string m_fname {};
@@ -205,8 +205,7 @@ class GDALRaster {
     GDALDatasetH m_hDataset {nullptr};
     GDALAccess m_eAccess {GA_ReadOnly};
     bool m_shared {false};
-    bool m_is_MEM {false};
-    SEXP m_preserved_r_object {nullptr};
+    std::vector<SEXP> m_preserved_r_objects {};
 };
 
 // cppcheck-suppress unknownMacro

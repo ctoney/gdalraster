@@ -894,6 +894,9 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
 #' MEM dataset fails.
 #'
 #' @note
+#' MEM datasets also support `addBand()` from existing R data without copying
+#' (see Examples).
+#'
 #' The `$close()` method should be called when the `GDALRaster` object is no
 #' longer needed so that resources can be freed. MEM datasets cannot be
 #' re-opened once the object's `$close()` method has been called.
@@ -906,14 +909,34 @@ make_chunk_index <- function(raster_xsize, raster_ysize,
 #' [`GDALRaster-class`][GDALRaster]
 #'
 #' @examples
-#' v <- sample(0:255, 50, replace = TRUE)
-#' (ds_mem <- rvector_to_MEM(v, xsize = 10, ysize = 5))
+#' v <- sample(0:255, 20, replace = TRUE)
+#' (ds_mem <- rvector_to_MEM(v, xsize = 5, ysize = 4))
 #'
-#' all((ds_mem$read(1, 0, 0, 10, 5, 10, 5) == v))
+#' all((ds_mem$read(1, 0, 0, 5, 4, 5, 4) == v))
 #'
-#' ds_mem$write(1, 0, 0, 10, 5, (v * -1))
+#' ds_mem$write(1, 0, 0, 5, 4, (v * -1))
 #' print(v)
 #'
+#' ds_mem$close()
+#'
+#' # MEM also supports no-copy addBand() from R data
+#' xsize <- 400
+#' ysize <- 300
+#' r <- sample(0:255, xsize * ysize, replace = TRUE) |> as.raw()
+#' ds_mem <- rvector_to_MEM(r, xsize, ysize)
+#' ds_mem$setRasterColorInterp(1, "Red")
+#'
+#' g <- sample(0:255, xsize * ysize, replace = TRUE) |> as.raw()
+#' ds_mem$addBand("Byte", g)
+#' ds_mem$setRasterColorInterp(2, "Green")
+#'
+#' b <- sample(0:255, xsize * ysize, replace = TRUE) |> as.raw()
+#' ds_mem$addBand("Byte", b)
+#' ds_mem$setRasterColorInterp(3, "Blue")
+#'
+#' ds_mem$info()
+#'
+#' plot_raster(ds_mem, main = "random RGB")
 #' ds_mem$close()
 #' @export
 #' @rdname rvector_to_MEM

@@ -88,6 +88,9 @@ compatibility. It is a deprecated name of the function that will be removed
 in a future version. Please use \code{rvector_to_MEM()} instead.
 }
 \note{
+MEM datasets also support \code{addBand()} from existing R data without copying
+(see Examples).
+
 The \verb{$close()} method should be called when the \code{GDALRaster} object is no
 longer needed so that resources can be freed. MEM datasets cannot be
 re-opened once the object's \verb{$close()} method has been called.
@@ -97,14 +100,34 @@ an alias of \code{rvector_to_MEM()}. \emph{The \code{vector_to_MEM()} alias will
 in a future version}.
 }
 \examples{
-v <- sample(0:255, 50, replace = TRUE)
-(ds_mem <- rvector_to_MEM(v, xsize = 10, ysize = 5))
+v <- sample(0:255, 20, replace = TRUE)
+(ds_mem <- rvector_to_MEM(v, xsize = 5, ysize = 4))
 
-all((ds_mem$read(1, 0, 0, 10, 5, 10, 5) == v))
+all((ds_mem$read(1, 0, 0, 5, 4, 5, 4) == v))
 
-ds_mem$write(1, 0, 0, 10, 5, (v * -1))
+ds_mem$write(1, 0, 0, 5, 4, (v * -1))
 print(v)
 
+ds_mem$close()
+
+# MEM also supports no-copy addBand() from R data
+xsize <- 400
+ysize <- 300
+r <- sample(0:255, xsize * ysize, replace = TRUE) |> as.raw()
+ds_mem <- rvector_to_MEM(r, xsize, ysize)
+ds_mem$setRasterColorInterp(1, "Red")
+
+g <- sample(0:255, xsize * ysize, replace = TRUE) |> as.raw()
+ds_mem$addBand("Byte", g)
+ds_mem$setRasterColorInterp(2, "Green")
+
+b <- sample(0:255, xsize * ysize, replace = TRUE) |> as.raw()
+ds_mem$addBand("Byte", b)
+ds_mem$setRasterColorInterp(3, "Blue")
+
+ds_mem$info()
+
+plot_raster(ds_mem, main = "random RGB")
 ds_mem$close()
 }
 \seealso{
