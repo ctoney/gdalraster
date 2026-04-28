@@ -707,7 +707,7 @@ test_that("add band works", {
     ds_mem$readByteAsRaw <- FALSE
 
     # integer vector as Int32 band
-    expect_true(ds_mem$addBand("Int8", v))
+    expect_true(ds_mem$addBand("Byte", v))
     expect_equal(ds_mem$getRasterCount(), 8)
     expect_equal(ds_mem$getDataTypeName(8), "Int32")
     expect_equal(ds_mem$read(8, 0, 0, 20, 10, 20, 10), v)
