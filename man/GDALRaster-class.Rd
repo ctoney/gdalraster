@@ -318,15 +318,18 @@ argument is the integer band number (1-based).
 
 \code{$addBand(dataType, options)}\cr
 Adds a band to a dataset if the underlying format supports this action.
-Most formats do not, but \code{"MEM"} and \code{"VRT"} are notable exceptions
-that support adding bands. The added band will always be the last band.
+Most formats do not, but MEM and VRT are notable exceptions that support
+adding bands. The added band will always be the last band.
 \code{dataType} is a character string containing the data type name
 (e.g., \code{"Byte"}, \code{"UInt8"} (GDAL >= 3.13), \code{"Int16"}, \code{"UInt16"}, \code{"Int32"},
 \code{"Float32"}, etc).
-The \code{options} argument is a character vector of NAME=VALUE option strings.
-Supported options are format specific. Note that the \code{options} argument is
-required but may be given as \code{NULL}. Returns logical \code{TRUE} on success
-or \code{FALSE} if a band could not be added.
+The \code{options} argument is a character vector of format specific \code{NAME=VALUE}
+strings (may be \code{NULL}). For a MEM dataset, \code{options} can also be a vector
+of \code{"numeric"}, \code{"integer"}, \code{"raw"} or \code{"complex"} values to be exposed as
+a MEM band. In that case, the vector must have length equal to the raster
+\code{xsize * ysize}, with values in left to right, top to bottom pixel order.
+See also \code{rvector_to_MEM()}. Returns logical \code{TRUE} on success or
+\code{FALSE} if a band could not be added.
 
 \code{$getGeoTransform()}\cr
 Returns the affine transformation coefficients for transforming between
