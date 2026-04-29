@@ -22,6 +22,7 @@
 #include <cmath>
 #include <complex>
 #include <cstdint>
+#include <cstdio>
 #include <map>
 #include <string>
 #include <utility>
@@ -77,12 +78,25 @@ void gdal_silent_errors_r(CPLErr err_class, int err_no, const char *msg) {
     }
 }
 
+// VSIWriteFunction for VSIStdoutSetRedirection()
+static size_t gdal_vsistdout_redirect(
+    const void *ptr, size_t size, size_t nmemb, FILE *stream) {
+
+    if (!ptr || size == 0 || nmemb == 0)
+        return 0;
+
+    std::string out(reinterpret_cast<const char*>(ptr), size * nmemb);
+    Rcpp::Rcout << out;
+    return nmemb;
+}
+
 // [[Rcpp::init]]
 void gdal_init(DllInfo *dll) {
     CPLSetErrorHandler((CPLErrorHandler) gdal_silent_errors_r);
     GDALAllRegister();
     CPLSetErrorHandler((CPLErrorHandler) gdal_error_handler_r);
     CPLSetConfigOption("OGR_CT_FORCE_TRADITIONAL_GIS_ORDER", "YES");
+    VSIStdoutSetRedirection(gdal_vsistdout_redirect, nullptr);
 }
 
 // Map certain GDAL enums to string names for use in R

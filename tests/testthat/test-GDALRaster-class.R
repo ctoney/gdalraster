@@ -1416,3 +1416,35 @@ test_that("read to nativeRaster works", {
     expect_true(attr(r4, "channels") == 3)
     ds$close()
 })
+
+test_that("/vsistdout/ redirection works", {
+    f <- system.file("extdata/ynp_features.zip", package = "gdalraster")
+    zf_gpkg <- file.path("/vsizip", f, "ynp_features.gpkg")
+
+    expected_output <- 'X,Y,poiname,poitype,createdate,editdate
+-110.692921344,44.7390491040001,Norris Campground Loop C Comfort Station,Flush Toilet,2024/02/23,2024/02/23
+-110.157825952,44.4784871940001,Sylvan Lake Picnic Area Vault Toilet,Vault Toilet,2024/02/23,2024/02/23
+-110.182290061,44.324319185,"5E1",Campsite,2015/12/30,2018/06/13
+-110.386556517,44.8907427240001,Tower Fall Parking Area Northern End Vault Toilet,Vault Toilet,2024/02/23,2024/02/23
+-110.826393985,44.5316894210001,,Parking Lot,2016/02/22,2020/09/21
+-110.570605761,44.41759791,Big Cone,Geyser,2016/02/17,2018/06/13
+-110.450915693,44.948928046,,Parking Lot,2016/02/22,2020/09/21
+-110.860329219,44.61843165,Firehole Canyon Swimming Area Vault Toilet,Vault Toilet,2024/02/23,2024/02/23
+-110.800428191,44.535760318,Surprise Pool,Geyser,2016/09/13,2018/06/13
+-110.235181696,44.6354910580001,The Mudkettles,Geyser,2015/11/27,2018/06/13'
+
+    expect_output(
+        ogr2ogr(zf_gpkg, "/vsistdout/", "points_of_interest",
+                c("-f", "CSV", "-lco", "GEOMETRY=AS_XY", "-limit", 10)),
+        expected_output)
+
+    skip_if(gdal_version_num() < gdal_compute_version(3, 11, 3))
+
+    expected_output <- 'admn_type,state_fips,state_name,sub_region
+"Park, monument, etc.",56,Wyoming,Mtn'
+
+    expect_output(
+        gdal_run_piped(zf_gpkg, "vector sql", "/vsistdout/", "CSV",
+                       list(sql = "SELECT * FROM ynp_bnd")),
+        expected_output)
+})
