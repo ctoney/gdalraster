@@ -70,10 +70,10 @@ expr <- "ifelse(SLOPE >= 2, ASPECT, -9999)"
                        nodata_value = -9999,
                        setRasterNodataValue = TRUE,
                        return_obj = TRUE))
-#> ℹ output written to: "calc20b75529479e"
+#> ℹ output written to: "calc20bb57f7a5bf"
 #> C++ object of class <GDALRaster>
 #>   • Driver: In Memory Raster (MEM)
-#>   • DSN: "calc20b75529479e"
+#>   • DSN: "calc20bb57f7a5bf"
 #>   • Dimensions: 143, 107, 1
 #>   • CRS: NAD83 / UTM zone 12N (EPSG:26912)
 #>   • Pixel resolution: 30.000000, 30.000000
