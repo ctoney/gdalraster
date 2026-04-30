@@ -1439,6 +1439,7 @@ test_that("/vsistdout/ redirection works", {
         expected_output)
 
     skip_if(gdal_version_num() < gdal_compute_version(3, 11, 3))
+    skip_if(length(gdal_global_reg_names()) == 0)  # GDAL CLI bindings availability
 
     expected_output <- 'admn_type,state_fips,state_name,sub_region
 "Park, monument, etc.",56,Wyoming,Mtn'
