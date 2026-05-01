@@ -106,7 +106,7 @@ int rasterize_polygon(int rasterXsize, int rasterYsize,
                 if (nodeX[i] < minX)
                     nodeX[i] = minX;
                 if (nodeX[i + 1] > maxX)
-                    nodeX[i + 1] = maxX;
+                    nodeX[i + 1] = maxX + 1;
             }
             else {
                 continue;
