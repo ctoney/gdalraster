@@ -242,6 +242,7 @@ GDAL_RASTERIO_RESAMPLING configuration option can be defined to override
 the default resampling (NEAREST) to one of BILINEAR, CUBIC, CUBICSPLINE,
 LANCZOS, AVERAGE or MODE, for example:
 
+
     set_config_option("GDAL_RASTERIO_RESAMPLING", "BILINEAR")
 
 ## See also
@@ -281,9 +282,6 @@ band_files <- c(b6_file, b5_file, b4_file)
 
 vrt_file <- file.path(tempdir(), "storml_b6_b5_b4.vrt")
 buildVRT(vrt_file, band_files, cl_arg = "-separate")
-#>  ■■■■■■■■■■■■■■■■■■■■■             67% |  ETA:  0s
-#> ✔ Done (12ms)
-#> 
 
 ds <- new(GDALRaster, vrt_file)
 
