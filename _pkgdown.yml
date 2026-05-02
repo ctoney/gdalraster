@@ -189,6 +189,7 @@ reference:
 - contents:
   - gdal_version
   - gdal_compute_version
+  - lib_versions
   - gdal_formats
   - gdal_get_driver_md
   - get_cache_max
