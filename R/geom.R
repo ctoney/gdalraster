@@ -2825,6 +2825,10 @@ g_geodesic_length <- function(geom, srs, traditional_gis_order = TRUE,
 #' vertices of the given polygon(s). For non-polygonal inputs, silently returns
 #' an empty geometry collection. Requires GDAL >= 3.12 and GEOS >= 3.10.
 #'
+#' `g_segmentize()` modifies a geometry such that it has no segment longer then
+#' the given `max_length`. Interpolated points will have Z and M values
+#' (if needed) set to `0`. Distance computation is performed in 2D only.
+#'
 #' `g_simplify()` computes a simplified geometry. By default, it simplifies
 #' the input geometries while preserving topology (see Note). Wrapper of
 #' `OGR_G_Simplify()` / `OGR_G_SimplifyPreserveTopology()` in the GDAL API.
@@ -2848,6 +2852,8 @@ g_geodesic_length <- function(geom, srs, traditional_gis_order = TRUE,
 #' @param allow_holes Logical value, whether holes are allowed.
 #' @param constrained Logical value, `TRUE` to return a constrained Delaunay
 #' triangulation of the vertices of the given polygon(s). Defaults to `FALSE`.
+#' @param max_length Numeric maximum distance between 2 points after
+#' segmentization.
 #' @param tolerance Numeric value. For `g_simplify()`, the simplification
 #' tolerance as distance in units of the input `geom`. Simplification removes
 #' vertices which are within the tolerance distance of the simplified linework
@@ -2944,6 +2950,9 @@ g_geodesic_length <- function(geom, srs, traditional_gis_order = TRUE,
 #'   g <- "MULTIPOINT(0 0,0 1,1 1,1 0)"
 #'   g_delaunay_triangulation(g, as_wkb = FALSE)
 #' }
+#'
+#' g <- "LINESTRING(0 0,0 10)"
+#' g_segmentize(g, 1) |> g_wk2wk()
 #'
 #' g <- "LINESTRING(0 0,1 1,10 0)"
 #' g_simplify(g, tolerance = 5, as_wkb = FALSE)
@@ -3249,6 +3258,63 @@ g_delaunay_triangulation <- function(geom, constrained = FALSE, tolerance = 0.0,
         } else {
             wkb <- lapply(g_wk2wk(geom), .g_delaunay_triangulation, constrained,
                           tolerance, only_edges, as_iso, byte_order, quiet)
+        }
+    } else {
+        stop("'geom' must be a character vector, raw vector, or list",
+             call. = FALSE)
+    }
+
+    if (as_wkb)
+        return(wkb)
+    else
+        return(g_wk2wk(wkb, as_iso))
+}
+
+#' @name g_unary_op
+#' @export
+g_segmentize <- function(geom, max_length, as_wkb = TRUE, as_iso = FALSE,
+                         byte_order = "LSB", quiet = FALSE) {
+
+    # max_length
+    if (!(is.numeric(max_length) && length(max_length) == 1))
+        stop("'max_length' must be a single numeric value", call. = FALSE)
+    # as_wkb
+    if (is.null(as_wkb))
+        as_wkb <- TRUE
+    if (!is.logical(as_wkb) || length(as_wkb) > 1)
+        stop("'as_wkb' must be a single logical value", call. = FALSE)
+    # as_iso
+    if (is.null(as_iso))
+        as_iso <- FALSE
+    if (!is.logical(as_iso) || length(as_iso) > 1)
+        stop("'as_iso' must be a single logical value", call. = FALSE)
+    # byte_order
+    if (is.null(byte_order))
+        byte_order <- "LSB"
+    if (!is.character(byte_order) || length(byte_order) > 1)
+        stop("'byte_order' must be a character string", call. = FALSE)
+    byte_order <- toupper(byte_order)
+    if (byte_order != "LSB" && byte_order != "MSB")
+        stop("invalid 'byte_order'", call. = FALSE)
+    # quiet
+    if (is.null(quiet))
+        quiet <- FALSE
+    if (!is.logical(quiet) || length(quiet) > 1)
+        stop("'quiet' must be a single logical value", call. = FALSE)
+
+    wkb <- NULL
+    if (.is_raw_or_null(geom)) {
+        wkb <- .g_segmentize(geom, max_length, as_iso, byte_order, quiet)
+    } else if (is.list(geom) && .is_raw_or_null(geom[[1]])) {
+        wkb <- lapply(geom, .g_segmentize, max_length, as_iso, byte_order,
+                      quiet)
+    } else if (is.character(geom)) {
+        if (length(geom) == 1) {
+            wkb <- .g_segmentize(g_wk2wk(geom), max_length, as_iso, byte_order,
+                                 quiet)
+        } else {
+            wkb <- lapply(g_wk2wk(geom), .g_segmentize, max_length, as_iso,
+                          byte_order, quiet)
         }
     } else {
         stop("'geom' must be a character vector, raw vector, or list",

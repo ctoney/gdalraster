@@ -1194,6 +1194,33 @@ test_that("unary ops return correct values", {
         expect_equal(g_dt, g_expect)
     }
 
+    # g_segmentize
+    g1 <- "LINESTRING (0 0,0 10)"
+    g_seg <- g_segmentize(g1, max_length = 5, as_wkb = FALSE)
+    g_expect <- "LINESTRING (0 0,0 5,0 10)"
+    expect_equal(g_seg, g_expect)
+    # wkb input
+    g_seg <- g_segmentize(g_wk2wk(g1), max_length = 5, as_wkb = FALSE)
+    expect_equal(g_seg, g_expect)
+    # same but testing defaults in case optional arguments are nulled out
+    g_seg <- g_segmentize(g_wk2wk(g1), max_length = 5, as_wkb = FALSE,
+                          as_iso = NULL, byte_order = NULL, quiet = NULL)
+    expect_equal(g_seg, g_expect)
+    # empty raw vector
+    expect_true(is.null(g_segmentize(raw(0), max_length = 5)))
+    # vector/list input
+    g_expect <- c(g_expect, g_expect, NA)
+    # character vector of wkt input
+    expect_warning(g_seg <- g_segmentize(c(g1, g1, NA), max_length = 5,
+                                         as_wkb = FALSE)) |>
+        expect_warning()  # for as_wkb = FALSE
+    expect_equal(g_seg, g_expect)
+    # list of wkb input
+    expect_warning(g_seg <- g_segmentize(g_wk2wk(c(g1, g1, NA)), max_length = 5,
+                                         as_wkb = FALSE)) |>
+        expect_warning()  # for as_wkb = FALSE
+    expect_equal(g_seg, g_expect)
+
     # g_simplify
     g1 <- "LINESTRING(0 0,1 0,10 0)"
     g_simp <- g_simplify(g1, tolerance = 5, as_wkb = FALSE)

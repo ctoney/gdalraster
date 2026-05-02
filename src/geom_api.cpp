@@ -2445,6 +2445,65 @@ SEXP g_delaunay_triangulation(const Rcpp::RObject &geom,
 }
 
 //' @noRd
+// [[Rcpp::export(name = ".g_segmentize")]]
+SEXP g_segmentize(const Rcpp::RObject &geom, double max_length, bool as_iso,
+                  const std::string &byte_order, bool quiet) {
+// Modify the geometry such it has no segment longer then the given distance.
+// Interpolated points will have Z and M values (if needed) set to 0. Distance
+// computation is performed in 2d only.
+
+    if (geom.isNULL() || !Rcpp::is<Rcpp::RawVector>(geom))
+        return R_NilValue;
+
+    const Rcpp::RawVector geom_in(geom);
+    if (geom_in.size() == 0)
+        return R_NilValue;
+
+    OGRGeometryH hGeom = createGeomFromWkb_(geom_in);
+    if (hGeom == nullptr) {
+        if (!quiet) {
+            Rcpp::warning(
+                "failed to create geometry object from WKB, NULL returned");
+        }
+        return R_NilValue;
+    }
+
+    OGR_G_Segmentize(hGeom, max_length);
+
+    // probably never happens, OGR_G_Segmentize() has no return value as of
+    // GDAL 3.12 though:
+    if (hGeom == nullptr) {
+        OGR_G_DestroyGeometry(hGeom);
+        if (!quiet) {
+            Rcpp::warning("OGR_G_Segmentize() generated NULL object");
+        }
+        return R_NilValue;
+    }
+
+    int nWKBSize = OGR_G_WkbSize(hGeom);
+    if (!nWKBSize) {
+        OGR_G_DestroyGeometry(hGeom);
+        if (!quiet) {
+            Rcpp::warning("failed to obtain WKB size of output geometry");
+        }
+        return R_NilValue;
+    }
+
+    Rcpp::RawVector wkb = Rcpp::no_init(nWKBSize);
+    bool result = exportGeomToWkb_(hGeom, &wkb[0], as_iso, byte_order);
+    OGR_G_DestroyGeometry(hGeom);
+    if (!result) {
+        if (!quiet) {
+           Rcpp::warning(
+                "failed to export WKB raw vector for output geometry");
+        }
+        return R_NilValue;
+    }
+
+    return wkb;
+}
+
+//' @noRd
 // [[Rcpp::export(name = ".g_simplify")]]
 SEXP g_simplify(const Rcpp::RObject &geom, double tolerance,
                 bool preserve_topology = true, bool as_iso = false,
