@@ -231,18 +231,20 @@ plot_raster(ds, col_tbl = vat, interpolate = FALSE,
 ds$close()
 
 ## Apply a pixel function
-f <- system.file("extdata/complex.tif", package="gdalraster")
-ds <- new(GDALRaster, f)
-ds$getDataTypeName(band = 1)  # complex floating point
+if (requireNamespace("scales")) {
+  f <- system.file("extdata/complex.tif", package="gdalraster")
+  ds <- new(GDALRaster, f)
+  ds$getDataTypeName(band = 1)  # complex floating point
 
-plot_raster(ds,
-            pixel_fn = Arg,
-            col_map_fn = scales::pal_viridis(option = "plasma")(6),
-            interpolate = FALSE,
-            legend = TRUE,
-            main = "Arg(complex.tif)")
+  plot_raster(ds,
+              pixel_fn = Arg,
+              col_map_fn = scales::pal_viridis(option = "plasma")(6),
+              interpolate = FALSE,
+              legend = TRUE,
+              main = "Arg(complex.tif)")
 
-ds$close()
+  ds$close()
+}
 }
 \seealso{
 \code{\link[=GDALRaster]{GDALRaster$read()}}, \code{\link[=read_ds]{read_ds()}}, \code{\link[=set_config_option]{set_config_option()}}
