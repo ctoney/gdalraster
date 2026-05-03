@@ -282,9 +282,6 @@ band_files <- c(b6_file, b5_file, b4_file)
 
 vrt_file <- file.path(tempdir(), "storml_b6_b5_b4.vrt")
 buildVRT(vrt_file, band_files, cl_arg = "-separate")
-#>  ■■■■■■■■■■■■■■■■■■■■■             67% |  ETA:  0s
-#> ✔ Done (16ms)
-#> 
 
 ds <- new(GDALRaster, vrt_file)
 
@@ -324,18 +321,18 @@ plot_raster(ds, col_tbl = vat, interpolate = FALSE,
 ds$close()
 
 ## Apply a pixel function
-f <- system.file("extdata/complex.tif", package="gdalraster")
-ds <- new(GDALRaster, f)
-ds$getDataTypeName(band = 1)  # complex floating point
-#> [1] "CFloat32"
+if (requireNamespace("scales")) {
+  f <- system.file("extdata/complex.tif", package="gdalraster")
+  ds <- new(GDALRaster, f)
+  ds$getDataTypeName(band = 1)  # complex floating point
 
-plot_raster(ds,
-            pixel_fn = Arg,
-            col_map_fn = scales::pal_viridis(option = "plasma")(6),
-            interpolate = FALSE,
-            legend = TRUE,
-            main = "Arg(complex.tif)")
+  plot_raster(ds,
+              pixel_fn = Arg,
+              col_map_fn = scales::pal_viridis(option = "plasma")(6),
+              interpolate = FALSE,
+              legend = TRUE,
+              main = "Arg(complex.tif)")
 
-
-ds$close()
+  ds$close()
+}
 ```
