@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <map>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -45,13 +46,35 @@ void gdal_error_handler_r(CPLErr err_class, int err_no, const char *msg) {
         break;
 
         case CE_Warning:
-            cli_alert_warning_("GDAL WARNING "s + std::to_string(err_no) +
-                               ": " + msg);
+        {
+            // try to be compatible with sf, and terra default level 2, wrt to
+            // whether a warning is emitted in case sharing a GDAL instance
+            if (is_namespace_loaded_("sf")) {
+                std::stringstream ss_msg;
+                ss_msg << "GDAL WARNING " << err_no << ": " << msg;
+                Rcpp::warning(ss_msg.str());
+            }
+            else {
+                cli_alert_warning_("GDAL WARNING "s + std::to_string(err_no) +
+                                   ": " + msg);
+            }
+        }
         break;
 
         case CE_Failure:
-            cli_alert_danger_("GDAL FAILURE "s + std::to_string(err_no) +
-                              ": " + msg);
+        {
+            // try to be compatible with sf, and terra default level 2, wrt to
+            // whether a warning is emitted in case sharing a GDAL instance
+            if (is_namespace_loaded_("sf") || is_namespace_loaded_("terra")) {
+                std::stringstream ss_msg;
+                ss_msg << "GDAL FAILURE " << err_no << ": " << msg;
+                Rcpp::warning(ss_msg.str());
+            }
+            else {
+                cli_alert_danger_("GDAL FAILURE "s + std::to_string(err_no) +
+                                  ": " + msg);
+            }
+        }
         break;
 
         case CE_Fatal:
