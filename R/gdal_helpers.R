@@ -64,6 +64,43 @@ gdal_compute_version <- function(maj, min, rev) {
 }
 
 
+#' Return library version information for GDAL and its dependencies
+#'
+#' `lib_versions()` returns a named list of library version information for
+#' GDAL and its major dependencies, currently PROJ and GEOS. It provides library
+#' versions in a consistent format, as an alternative to the separate
+#' `gdal_version()`, `proj_version()` and `geos_version()`.
+#'
+#' @returns
+#' A named list with elements `"gdal"`, `"proj"` and `"geos"`, each
+#' containing a named list with the following elements:
+#' * `"name"`: character string version as `"major.minor.patch"`
+#' * `"major"`: integer major version number
+#' * `"minor"`: integer minor version number
+#' * `"patch"`: integer patch version number
+#'
+#' @seealso
+#' [gdal_version()], [proj_version()], [geos_version()]
+#'
+#' @examples
+#' lib_versions()
+#' @export
+lib_versions <- function() {
+    out <- vector("list", 3)
+    names(out) <- c("gdal", "proj", "geos")
+
+    gdal_parts <- gdal_version()[4] |> strsplit(".", fixed = TRUE) |> unlist()
+    out$gdal <- list(name = gdal_version()[4],
+                     major = as.integer(gdal_parts[1]),
+                     minor = as.integer(gdal_parts[2]),
+                     patch = as.integer(gdal_parts[3]))
+    out$proj <- proj_version()
+    out$geos <- geos_version()
+
+    return(out)
+}
+
+
 #' Create/append to a potentially Seek-Optimized ZIP file (SOZip)
 #'
 #' `addFilesInZip()` will create new or open existing ZIP file, and

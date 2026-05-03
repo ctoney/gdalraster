@@ -7,6 +7,21 @@ test_that("gdal_compute_version works", {
     expect_error(gdal_compute_version(3, 7, NULL))
 })
 
+test_that("lib_versions works", {
+    expect_true(is.list(lib_versions()))
+    expect_equal(length(lib_versions()), 3)
+
+    gdal_parts <- gdal_version()[4] |> strsplit(".", fixed = TRUE) |> unlist()
+    gdal_ver <- list(name = gdal_version()[4],
+                     major = as.integer(gdal_parts[1]),
+                     minor = as.integer(gdal_parts[2]),
+                     patch = as.integer(gdal_parts[3]))
+
+    expect_equal(lib_versions()$gdal, gdal_ver)
+    expect_equal(lib_versions()$proj, proj_version())
+    expect_equal(lib_versions()$geos, geos_version())
+})
+
 test_that("addFilesInZip works", {
     # requires GDAL >= 3.7
     skip_if(as.integer(gdal_version()[2]) < 3070000)

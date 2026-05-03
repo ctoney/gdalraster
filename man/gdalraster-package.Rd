@@ -168,6 +168,7 @@
   \item GDAL configuration:
   \code{\link[=gdal_version]{gdal_version}},
   \code{\link[=gdal_compute_version]{gdal_compute_version()}},
+  \code{\link[=lib_versions]{lib_versions()}},
   \code{\link[=gdal_formats]{gdal_formats()}},
   \code{\link[=gdal_get_driver_md]{gdal_get_driver_md()}},
   \code{\link[=get_cache_used]{get_cache_used()}},
