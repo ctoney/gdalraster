@@ -62,9 +62,7 @@ to the console unless \code{cout} is set to \code{FALSE}.
 \code{mdim_info()} is an interface to the \command{gdalmdiminfo} command-line
 utility (see \url{https://gdal.org/en/stable/programs/gdalmdiminfo.html}).
 This function lists various information about a GDAL supported
-multidimensional raster dataset as JSON output. It follows the JSON schema
-\href{https://github.com/OSGeo/gdal/blob/release/3.11/apps/data/gdalmdiminfo_output.schema.json}{gdalmdiminfo_output.schema.json}.
-Requires GDAL >= 3.2.
+multidimensional raster dataset as JSON output. Requires GDAL >= 3.2.
 }
 \examples{
 \dontshow{if (gdal_version_num() >= gdal_compute_version(3, 2, 0) && isTRUE(gdal_formats("netCDF")$multidim_raster)) withAutoprint(\{ # examplesIf}

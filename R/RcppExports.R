@@ -1541,9 +1541,7 @@ gdal_get_driver_md <- function(format, mdi_name = "") {
 #' `mdim_info()` is an interface to the \command{gdalmdiminfo} command-line
 #' utility (see \url{https://gdal.org/en/stable/programs/gdalmdiminfo.html}).
 #' This function lists various information about a GDAL supported
-#' multidimensional raster dataset as JSON output. It follows the JSON schema
-#' [gdalmdiminfo_output.schema.json](https://github.com/OSGeo/gdal/blob/release/3.11/apps/data/gdalmdiminfo_output.schema.json).
-#' Requires GDAL >= 3.2.
+#' multidimensional raster dataset as JSON output. Requires GDAL >= 3.2.
 #'
 #' @param dsn Character string giving the data source name of the
 #' multidimensional raster (e.g., file, VSI path).
