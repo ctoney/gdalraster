@@ -323,6 +323,7 @@
   [`g_convex_hull()`](https://firelab.github.io/gdalraster/reference/g_unary_op.md)
   [`g_concave_hull()`](https://firelab.github.io/gdalraster/reference/g_unary_op.md)
   [`g_delaunay_triangulation()`](https://firelab.github.io/gdalraster/reference/g_unary_op.md)
+  [`g_segmentize()`](https://firelab.github.io/gdalraster/reference/g_unary_op.md)
   [`g_simplify()`](https://firelab.github.io/gdalraster/reference/g_unary_op.md)
   [`g_unary_union()`](https://firelab.github.io/gdalraster/reference/g_unary_op.md)
   : Unary operations on WKB or WKT geometries
@@ -424,6 +425,8 @@
   : Get GDAL version
 - [`gdal_compute_version()`](https://firelab.github.io/gdalraster/reference/gdal_compute_version.md)
   : Compute a GDAL integer version number from major, minor, revision
+- [`lib_versions()`](https://firelab.github.io/gdalraster/reference/lib_versions.md)
+  : Return library version information for GDAL and its dependencies
 - [`gdal_formats()`](https://firelab.github.io/gdalraster/reference/gdal_formats.md)
   : Retrieve information on GDAL format drivers for raster and vector
 - [`gdal_get_driver_md()`](https://firelab.github.io/gdalraster/reference/gdal_get_driver_md.md)
