@@ -118,7 +118,7 @@
 #' * `URL`: character string, the algorithm help URL
 #' * `has_subalgorithms`: logical, `TRUE` if the algorithm has sub-algorithms
 #' * `subalgorithm_names`: character vector of sub-algorithm names (may be
-#' empty)parseCommandLineArgsparseCommanparseCommandLineArgsparseCommandLineArgsdLineArgs
+#' empty)
 #' * `arg_names`: character vector of available argument names
 #'
 #' \code{$argInfo(arg_name)}\cr

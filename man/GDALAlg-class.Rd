@@ -128,7 +128,7 @@ Returns a named list of algorithm properties with the following elements:
 \item \code{URL}: character string, the algorithm help URL
 \item \code{has_subalgorithms}: logical, \code{TRUE} if the algorithm has sub-algorithms
 \item \code{subalgorithm_names}: character vector of sub-algorithm names (may be
-empty)parseCommandLineArgsparseCommanparseCommandLineArgsparseCommandLineArgsdLineArgs
+empty)
 \item \code{arg_names}: character vector of available argument names
 }
 
