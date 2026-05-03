@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9105 (dev)
+# gdalraster 2.5.0.9106 (dev)
+
+* Doc: move vector-api-overview from web article to vignette (2026-05-02)
 
 * Geom API: add `g_segmentize()`, interface to `OGR_G_Segmentize()` (#966) (2026-05-02)
 

@@ -1,5 +1,16 @@
 ---
 title: "Vector API Overview"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 4
+    fig_width: 7
+    fig_height: 5
+    fig_caption: true
+vignette: >
+  %\VignetteIndexEntry{Vector API Overview}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
@@ -112,7 +123,6 @@ Objects of class `GDALVector` are used for obtaining layer information and readi
 It is not recommended to instantiate a new `GDALVector` object on a layer that is already open for update access (i.e., with `read_only = FALSE`). Likewise, potential modifications to a layer schema using the `ogr_*()` management functions should be done prior to instantiating a `GDALVector` object on the layer. 
 
 Relational database management systems (RDBMSs, e.g., GPKG / SQLite, PostgreSQL / PostGIS) generally support multiple connections including concurrent reads (e.g., multiple instances of `GDALVector` reading from different layers). It is also possible to have one or more `GDALVector` objects instantiated on RDBMS-based layers for read access, while another `GDALVector` object performs write operations on a different layer in the same database. Database locking mechanisms for write operations are specific to the driver and underlying RDBMS (see, e.g., SQLite [Configuration Options](https://gdal.org/en/stable/drivers/vector/sqlite.html#configuration-options) and [Performance Hints](https://gdal.org/en/stable/drivers/vector/sqlite.html#performance-hints)).
-
 
 ### Data retrieval
 
