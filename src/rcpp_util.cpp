@@ -179,10 +179,12 @@ bool contains_str_(const Rcpp::CharacterVector &v, const Rcpp::String &s,
 
 // does std::string contain a space character
 bool has_space_char_(const std::string &s) {
-    for (char c : s) {
-        if (std::isspace(static_cast<unsigned char>(c)))
-            return true;
+    if (std::any_of(s.begin(), s.end(), [](unsigned char ch) {
+                    return std::isspace(ch);})) {
+
+        return true;
     }
+
     return false;
 }
 
