@@ -1710,16 +1710,19 @@ dem_proc <- function(mode,
 #' example, datasets referenced against geographic coordinates at high latitudes
 #' may have issues.
 #'
-#' At the time of writing (GDAL 3.9 through 3.12.2), a point exactly on the
-#' surface of the DEM is never visible with `GDALIsLineOfSightVisible()`, even
-#' if viewed from a point directly above. For a detailed description, see
+#' In GDAL 3.9 through 3.12, a point exactly on the surface of the DEM is never
+#' visible with `GDALIsLineOfSightVisible()`, even if viewed from a point
+#' directly above. For a detailed description, see
 #' \url{https://github.com/OSGeo/gdal/issues/12458}. A workaround for that case
-#' could be to set a small but negligible positive Z value (if using
+#' is to set a small but negligible positive Z value (if using
 #' `"RELATIVE_TO_DEM"`) for points that are intended to be on the DEM surface,
-#' if appropriate for the use case.
+#' if appropriate for the use case. GDAL as of version 3.13 treats a point
+#' exactly on the surface as visible
+#' (\url{https://github.com/OSGeo/gdal/pull/14237}).
 #'
-#' @seealso
-#' \href{https://www.researchgate.net/publication/2411280_Efficient_Line-of-Sight_Algorithms_for_Real_Terrain_Data}{Efficient Line-of-Sight Algorithms for Real Terrain Data}
+#' @references
+#' Roberto de Beauclair Seixas, Maur Riguette Mediano and Marcelo Gattass. 1999.
+#' Efficient Line-of-Sight Algorithms for Real Terrain Data.
 #'
 #' @examplesIf gdal_version_num() >= gdal_compute_version(3, 9, 0)
 #' dem <- system.file("extdata/storml_elev.tif", package="gdalraster")
