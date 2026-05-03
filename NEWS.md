@@ -1,4 +1,6 @@
-# gdalraster 2.5.0.9104 (dev)
+# gdalraster 2.5.0.9105 (dev)
+
+* Geom API: add `g_segmentize()`, interface to `OGR_G_Segmentize()` (#966) (2026-05-02)
 
 * add `lib_versions()`: return a named list of library version information for GDAL and its major dependencies in a consistent format, as alternative to the separate version info functions (2026-05-02)
 
