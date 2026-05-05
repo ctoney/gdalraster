@@ -211,9 +211,6 @@ pts_wgs84 <- transform_xy(pts[-1], srs_from = ds$getProjection(),
 # transform the input xy
 pixel_extract(ds, xy = pts_wgs84, xy_srs = "WGS84")
 #> ℹ extracting from band 1
-#>  ■■■■                              10% |  ETA:  0s
-#> ✔ Done (9ms)
-#> 
 #>       storml_elev
 #>  [1,]        2648
 #>  [2,]        2876

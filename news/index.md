@@ -2,6 +2,8 @@
 
 ## gdalraster 2.6.0
 
+CRAN release: 2026-05-04
+
 ### Dependencies
 
 - packages **glue** and **ltc** have been added to `Suggests`
@@ -13,7 +15,7 @@
   as
   [`rvector_to_MEM()`](https://firelab.github.io/gdalraster/reference/rvector_to_MEM.md)
   but keep an alias to the deprecated name for now
-  ([\#957](https://github.com/firelab/gdalraster/issues/957))
+  ([\#958](https://github.com/firelab/gdalraster/issues/958))
 
 ### Features
 
@@ -41,6 +43,7 @@
 - add `GDALRaster$getInterBandCovMatrix()`: class method to fetch or
   compute the covariance matrix between bands of a dataset using
   `GDALDatasetGetInterBandCovarianceMatrix()` in GDAL 3.13
+  ([\#959](https://github.com/firelab/gdalraster/issues/959))
 - add
   [`northness()`](https://firelab.github.io/gdalraster/reference/dem_derivatives.md)
   and
@@ -72,6 +75,7 @@
   return a named list of library version information for GDAL and its
   major dependencies in a consistent format, as alternative to the
   separate version info functions
+  ([\#965](https://github.com/firelab/gdalraster/issues/965))
 - suppress warning messages in the `show()` method for `GDALRaster` and
   `GDALVector` (e.g., if no spatial reference is defined)
 - add
@@ -95,7 +99,7 @@
 
 - move [Vector API
   Overview](https://firelab.github.io/gdalraster/articles/vector-api-overview.html)
-  from web article to vignette
+  from a web-only article to package vignette
 - add new examples for GDAL CLI pipelines and
   [`gdal_run_piped()`](https://firelab.github.io/gdalraster/reference/gdal_cli.md)
   in web article [Using `gdal` CLI algorithms from
@@ -108,7 +112,7 @@
   ([\#932](https://github.com/firelab/gdalraster/issues/932))
 - [`g_make_valid()`](https://firelab.github.io/gdalraster/reference/g_util.md):
   update documentation to describe the new behavior of `MakeValid()` in
-  GDAL 3.13([\#934](https://github.com/firelab/gdalraster/issues/934))
+  GDAL 3.13 ([\#934](https://github.com/firelab/gdalraster/issues/934))
 
 ### Internal
 
