@@ -6,7 +6,7 @@
 
 ## API change
 
-* rename `vector_to_MEM()` as `rvector_to_MEM()` but keep an alias to the deprecated name for now (#957)
+* rename `vector_to_MEM()` as `rvector_to_MEM()` but keep an alias to the deprecated name for now (#958)
 
 ## Features
 
