@@ -579,7 +579,8 @@ apply_geotransform <- function(col_row, gt) {
 #' raster extent and a warning emitted giving the number points that were
 #' outside. This latter case is equivalent to calling the
 #' \code{$get_pixel_line()} class method on the `GDALRaster` object (see
-#' Examples).
+#' Examples). Points exactly on the raster right or bottom edge are considered
+#' inside as of \pkg{gdalraster} 2.7.0.
 #'
 #' @seealso [`GDALRaster$getGeoTransform()`][GDALRaster], [inv_geotransform()]
 #'

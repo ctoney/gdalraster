@@ -33,7 +33,8 @@ the raster x/y size). If \code{gt} is obtained from an object of class
 raster extent and a warning emitted giving the number points that were
 outside. This latter case is equivalent to calling the
 \code{$get_pixel_line()} class method on the \code{GDALRaster} object (see
-Examples).
+Examples). Points exactly on the raster right or bottom edge are considered
+inside as of \pkg{gdalraster} 2.7.0.
 }
 \examples{
 pt_file <- system.file("extdata/storml_pts.csv", package="gdalraster")
