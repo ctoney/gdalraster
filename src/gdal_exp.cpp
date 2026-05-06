@@ -1229,11 +1229,12 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
     Rcpp::IntegerMatrix pixel_line = Rcpp::no_init(xy_in.nrow(), 2);
     uint64_t num_outside = 0;
 
-    // these GDALRaster class methods return doubles to be <numeric> values in R
-    // prevents integer overflow if they are multiplied in R
-    // but use them as int here
-    int num_cols = static_cast<int>(ds->getRasterXSize());
-    int num_rows = static_cast<int>(ds->getRasterYSize());
+    // GDALRaster class methods for raster X/Y size return double in order to be
+    // <numeric> values in R (prevents integer overflow if they are multiplied
+    // in R). Here we're using them as int.
+    const int num_cols = static_cast<int>(ds->getRasterXSize());
+    const int num_rows = static_cast<int>(ds->getRasterYSize());
+    const Rcpp::NumericVector bbox = ds->bbox();
 
     for (R_xlen_t i = 0; i < xy_in.nrow(); ++i) {
         if (na_in[i]) {
@@ -1241,23 +1242,18 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
             pixel_line(i, 1) = NA_INTEGER;
         }
         else {
-            double geo_x = xy_in(i, 0);
-            double geo_y = xy_in(i, 1);
+            const double geo_x = xy_in(i, 0);
+            const double geo_y = xy_in(i, 1);
 
             double grid_x = inv_gt[0] + inv_gt[1] * geo_x + inv_gt[2] * geo_y;
             double grid_y = inv_gt[3] + inv_gt[4] * geo_x + inv_gt[5] * geo_y;
 
-            // allow input coordinates exactly on the bottom or right edges
+            // allow input coordinates "exactly" on the right or bottom edges
             // match behavior in: https://github.com/OSGeo/gdal/pull/12087
             // https://github.com/OSGeo/gdal/pull/12080#discussion_r2028790673
-            const bool pt_is_on_right_edge =
-                equal_within_ulps_(grid_x, ds->getRasterXSize());
-            const bool pt_is_on_bottom_edge =
-                equal_within_ulps_(grid_y, ds->getRasterYSize());
-
-            if (pt_is_on_right_edge)
+            if (equal_within_ulps_(geo_x, bbox[2]))
                 grid_x -= 0.25;
-            if (pt_is_on_bottom_edge)
+            if (equal_within_ulps_(geo_y, bbox[1]))
                 grid_y -= 0.25;
 
             // column

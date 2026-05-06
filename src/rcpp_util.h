@@ -103,10 +103,17 @@ struct _ci_less {
 
 // https://en.cppreference.com/cpp/types/numeric_limits/epsilon
 // use machine epsilon to compare floating-point values
+// This works for `NaN` and therefore R `NA`.
+// The cppreference example was modified to handle infinities (with `x == y`).
+// NB: This will return TRUE for x = Inf, y = -Inf and is not expected to be
+// used where that could occur.
 template <class T>
-std::enable_if_t<not std::numeric_limits<T>::is_integer, bool>
-equal_within_ulps_(T x, T y, std::size_t n = 2)
+std::enable_if_t<!std::numeric_limits<T>::is_integer, bool>
+equal_within_ulps_(T x, T y, std::size_t n = 4)
 {
+    if (x == y)
+        return true;
+
     // Since `epsilon()` is the gap size (ULP, unit in the last place)
     // of floating-point numbers in interval [1, 2), we can scale it to
     // the gap size in interval [2^e, 2^{e+1}), where `e` is the exponent
@@ -118,9 +125,9 @@ equal_within_ulps_(T x, T y, std::size_t n = 2)
     const T m = std::min(std::fabs(x), std::fabs(y));
 
     // Subnormal numbers have fixed exponent, which is `min_exponent - 1`.
-    const int exp = m < std::numeric_limits<T>::min()
-                  ? std::numeric_limits<T>::min_exponent - 1
-                  : std::ilogb(m);
+    const int exp = m < std::numeric_limits<T>::min() ?
+                    std::numeric_limits<T>::min_exponent - 1
+                    : std::ilogb(m);
 
     // We consider `x` and `y` equal if the difference between them is
     // within `n` ULPs.

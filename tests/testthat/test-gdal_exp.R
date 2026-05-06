@@ -193,22 +193,22 @@ test_that("get_pixel_line gives correct results", {
 
     # point on exactly right edge should be treated as inside
     bb <- ds$bbox()
-    num_cols <- ds$getRasterXSize()
+    num_cols <- as.integer(ds$getRasterXSize())
     x <- bb[3]
     y <- bb[4] - 0.1
     pts[11, ] <- c(11, x, y)
     # add point to res and use it as expected
-    res <- rbind(res, c(num_cols - 1, 0))
+    res <- rbind(res, c(num_cols - 1L, 0L))
     expect_no_error(res2 <- ds$get_pixel_line(pts[, -1]))
     expect_equal(res2, res)
 
     # point on exactly bottom edge should be treated as inside
-    num_rows <- ds$getRasterYSize()
+    num_rows <- as.integer(ds$getRasterYSize())
     x <- bb[1] + 0.1
     y <- bb[2]
     pts[12, ] <- c(12, x, y)
     # add point to res and use it as expected
-    res <- rbind(res, c(0, num_rows - 1))
+    res <- rbind(res, c(0L, num_rows - 1L))
     expect_no_error(res2 <- ds$get_pixel_line(pts[, -1]))
     expect_equal(res2, res)
 
@@ -217,7 +217,7 @@ test_that("get_pixel_line gives correct results", {
     y <- bb[4] - 0.1
     pts[13, ] <- c(13, x, y)
     # add point to res and use it as expected
-    res <- rbind(res, c(NA, NA))
+    res <- rbind(res, c(NA_integer_, NA_integer_))
     expect_warning(res2 <- ds$get_pixel_line(pts[, -1]))
     expect_equal(res2, res)
 

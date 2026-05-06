@@ -3202,6 +3202,11 @@ bbox_to_wkt <- function(bbox, extend_x = 0, extend_y = 0) {
 }
 
 #' @noRd
+.equal_within_ulps <- function(x, y, n = 4L) {
+    .Call(`_gdalraster_equal_within_ulps_r_`, x, y, n)
+}
+
+#' @noRd
 NULL
 
 #' Convert spatial reference definitions to OGC WKT or PROJJSON
