@@ -105,7 +105,7 @@ struct _ci_less {
 // use machine epsilon to compare floating-point values
 template <class T>
 std::enable_if_t<not std::numeric_limits<T>::is_integer, bool>
-equal_within_ulps_(T x, T y, std::size_t n = 1)
+equal_within_ulps_(T x, T y, std::size_t n = 2)
 {
     // Since `epsilon()` is the gap size (ULP, unit in the last place)
     // of floating-point numbers in interval [1, 2), we can scale it to

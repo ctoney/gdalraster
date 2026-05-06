@@ -649,7 +649,10 @@ inv_geotransform <- function(gt) {
 }
 
 #' Raster pixel/line from geospatial x,y coordinates
-#' alternate version for GDALRaster input, with bounds checking
+#' alternate version for GDALRaster input, with raster bounds checking
+#' input coordinates exactly on the bottom or right edges are considered inside
+#' matches behavior in https://github.com/OSGeo/gdal/pull/12087
+#' also consistent with GDALRaster::pixel_extract()
 #' @noRd
 .get_pixel_line_ds <- function(xy, ds) {
     .Call(`_gdalraster_get_pixel_line_ds`, xy, ds)

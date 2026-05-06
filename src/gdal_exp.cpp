@@ -1205,7 +1205,10 @@ Rcpp::IntegerMatrix get_pixel_line_gt(const Rcpp::RObject &xy,
 
 
 //' Raster pixel/line from geospatial x,y coordinates
-//' alternate version for GDALRaster input, with bounds checking
+//' alternate version for GDALRaster input, with raster bounds checking
+//' input coordinates exactly on the bottom or right edges are considered inside
+//' matches behavior in https://github.com/OSGeo/gdal/pull/12087
+//' also consistent with GDALRaster::pixel_extract()
 //' @noRd
 // [[Rcpp::export(name = ".get_pixel_line_ds")]]
 Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
@@ -1214,7 +1217,7 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
     const Rcpp::NumericMatrix xy_in = xy_robject_to_matrix_(xy);
 
     if (xy_in.nrow() == 0)
-        Rcpp::stop("input matri cox is empty");
+        Rcpp::stop("input matrix is empty");
 
     const Rcpp::LogicalVector na_in =
         Rcpp::is_na(xy_in.column(0)) | Rcpp::is_na(xy_in.column(1));
@@ -1225,6 +1228,13 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
 
     Rcpp::IntegerMatrix pixel_line = Rcpp::no_init(xy_in.nrow(), 2);
     uint64_t num_outside = 0;
+
+    // these GDALRaster class methods return doubles to be <numeric> values in R
+    // prevents integer overflow if they are multiplied in R
+    // but use them as int here
+    int num_cols = static_cast<int>(ds->getRasterXSize());
+    int num_rows = static_cast<int>(ds->getRasterYSize());
+
     for (R_xlen_t i = 0; i < xy_in.nrow(); ++i) {
         if (na_in[i]) {
             pixel_line(i, 0) = NA_INTEGER;
@@ -1233,18 +1243,30 @@ Rcpp::IntegerMatrix get_pixel_line_ds(const Rcpp::RObject& xy,
         else {
             double geo_x = xy_in(i, 0);
             double geo_y = xy_in(i, 1);
+
+            double grid_x = inv_gt[0] + inv_gt[1] * geo_x + inv_gt[2] * geo_y;
+            double grid_y = inv_gt[3] + inv_gt[4] * geo_x + inv_gt[5] * geo_y;
+
+            // allow input coordinates exactly on the bottom or right edges
+            // match behavior in: https://github.com/OSGeo/gdal/pull/12087
+            // https://github.com/OSGeo/gdal/pull/12080#discussion_r2028790673
+            const bool pt_is_on_right_edge =
+                equal_within_ulps_(grid_x, ds->getRasterXSize());
+            const bool pt_is_on_bottom_edge =
+                equal_within_ulps_(grid_y, ds->getRasterYSize());
+
+            if (pt_is_on_right_edge)
+                grid_x -= 0.25;
+            if (pt_is_on_bottom_edge)
+                grid_y -= 0.25;
+
             // column
-            pixel_line(i, 0) = static_cast<int>(std::floor(inv_gt[0] +
-                                                inv_gt[1] * geo_x +
-                                                inv_gt[2] * geo_y));
+            pixel_line(i, 0) = static_cast<int>(std::floor(grid_x));
             // row
-            pixel_line(i, 1) = static_cast<int>(std::floor(inv_gt[3] +
-                                                inv_gt[4] * geo_x +
-                                                inv_gt[5] * geo_y));
+            pixel_line(i, 1) = static_cast<int>(std::floor(grid_y));
 
             if (pixel_line(i, 0) < 0 || pixel_line(i, 1) < 0 ||
-                    pixel_line(i, 0) >= ds->getRasterXSize() ||
-                    pixel_line(i, 1) >= ds->getRasterYSize()) {
+                pixel_line(i, 0) >= num_cols || pixel_line(i, 1) >= num_rows) {
 
                 num_outside += 1;
                 pixel_line(i, 0) = NA_INTEGER;

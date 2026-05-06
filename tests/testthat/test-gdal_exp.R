@@ -180,8 +180,9 @@ test_that("get_pixel_line gives correct results", {
     pts <- read.csv(pt_file)
     pix_line <- c(39, 23, 1, 58, 74, 94, 68, 92, 141, 23, 57, 68, 58, 52, 90,
                   38, 31, 85, 20, 39)
-    raster_file <- system.file("extdata/storm_lake.lcp", package="gdalraster")
+    raster_file <- system.file("extdata/storml_elev.tif", package="gdalraster")
     ds <- new(GDALRaster, raster_file, read_only=TRUE)
+    on.exit(ds$close(), add = TRUE)
     gt <- ds$getGeoTransform()
     res <- get_pixel_line(as.matrix(pts[, -1]), gt)
     expect_equal(as.vector(res), pix_line)
@@ -190,23 +191,45 @@ test_that("get_pixel_line gives correct results", {
     res <- ds$get_pixel_line(pts[, -1])
     expect_equal(as.vector(res), pix_line)
 
-    pts[11, ] <- c(11, 323318, 5105104)
-    expect_warning(res2 <- ds$get_pixel_line(pts[, -1]))
-    res <- rbind(res, c(NA, NA))
+    # point on exactly right edge should be treated as inside
+    bb <- ds$bbox()
+    num_cols <- ds$getRasterXSize()
+    x <- bb[3]
+    y <- bb[4] - 0.1
+    pts[11, ] <- c(11, x, y)
+    # add point to res and use it as expected
+    res <- rbind(res, c(num_cols - 1, 0))
+    expect_no_error(res2 <- ds$get_pixel_line(pts[, -1]))
     expect_equal(res2, res)
 
-    # one coordinate as vector input
+    # point on exactly bottom edge should be treated as inside
+    num_rows <- ds$getRasterYSize()
+    x <- bb[1] + 0.1
+    y <- bb[2]
+    pts[12, ] <- c(12, x, y)
+    # add point to res and use it as expected
+    res <- rbind(res, c(0, num_rows - 1))
+    expect_no_error(res2 <- ds$get_pixel_line(pts[, -1]))
+    expect_equal(res2, res)
+
+    # point outside
+    x <- bb[3] + 0.0001
+    y <- bb[4] - 0.1
+    pts[13, ] <- c(13, x, y)
+    # add point to res and use it as expected
+    res <- rbind(res, c(NA, NA))
+    expect_warning(res2 <- ds$get_pixel_line(pts[, -1]))
+    expect_equal(res2, res)
+
+    # only one input coordinate, given as vector
     res <- get_pixel_line(c(pts[1, 2], pts[1, 3]), gt)  # col 2 x, col 3 y
     expect_equal(as.vector(res), c(pix_line[1], pix_line[11]))
 
     # NA input
     res <- get_pixel_line(c(NA, NA), gt)
     expect_true(all(is.na(res)))
-
     res <- ds$get_pixel_line(c(NA, NA))
     expect_true(all(is.na(res)))
-
-    ds$close()
 })
 
 test_that("fillNodata writes correct output", {
