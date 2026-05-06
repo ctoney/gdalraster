@@ -1,3 +1,7 @@
+# gdalraster 2.6.0.9000 (dev)
+
+* (internal) fix clang warning in `srs_get_axes()` [-Wdangling-assignment-gsl] (#972) (2026-05-05)
+
 # gdalraster 2.6.0
 
 ## Dependencies
