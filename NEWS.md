@@ -1,4 +1,6 @@
-# gdalraster 2.6.0.9000 (dev)
+# gdalraster 2.6.0.9001 (dev)
+
+* `get_pixel_line()`: treat points "exactly" on the right or bottom raster edge as inside (#973) (2026-05-06)
 
 * (internal) fix clang warning in `srs_get_axes()` [-Wdangling-assignment-gsl] (#972) (2026-05-05)
 
