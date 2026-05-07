@@ -2257,6 +2257,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// equal_within_ulps_r_
+bool equal_within_ulps_r_(double x, double y, int n);
+RcppExport SEXP _gdalraster_equal_within_ulps_r_(SEXP xSEXP, SEXP ySEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(equal_within_ulps_r_(x, y, n));
+    return rcpp_result_gen;
+END_RCPP
+}
 // epsg_to_wkt
 std::string epsg_to_wkt(int epsg, bool pretty);
 RcppExport SEXP _gdalraster_epsg_to_wkt(SEXP epsgSEXP, SEXP prettySEXP) {
@@ -2829,6 +2842,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_progress_bar_cleanup", (DL_FUNC) &_gdalraster_progress_bar_cleanup, 0},
     {"_gdalraster_rasterize_polygon", (DL_FUNC) &_gdalraster_rasterize_polygon, 8},
     {"_gdalraster_get_data_ptr", (DL_FUNC) &_gdalraster_get_data_ptr, 1},
+    {"_gdalraster_equal_within_ulps_r_", (DL_FUNC) &_gdalraster_equal_within_ulps_r_, 3},
     {"_gdalraster_epsg_to_wkt", (DL_FUNC) &_gdalraster_epsg_to_wkt, 2},
     {"_gdalraster_srs_to_wkt", (DL_FUNC) &_gdalraster_srs_to_wkt, 3},
     {"_gdalraster_srs_to_projjson", (DL_FUNC) &_gdalraster_srs_to_projjson, 4},

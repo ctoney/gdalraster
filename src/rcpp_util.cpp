@@ -338,3 +338,13 @@ void cli_cat_line_() {
     Rcpp::Function fn = pkg["cat_line"];
     fn();
 }
+
+// expose equal_within_ulps_() in R for unit tests
+//' @noRd
+// [[Rcpp::export(name = ".equal_within_ulps")]]
+bool equal_within_ulps_r_(double x, double y, int n = 4) {
+    if (n < 0)
+        Rcpp::stop("`n` must be >= 0");
+
+    return equal_within_ulps_(x, y, n);
+}
