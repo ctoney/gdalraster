@@ -1307,10 +1307,10 @@ fid <- poi$getLastWriteFID()
 #> [1] Information
 #> 
 #> $createdate
-#> [1] 2026-05-06
+#> [1] 2026-05-07
 #> 
 #> $editdate
-#> [1] 2026-05-06
+#> [1] 2026-05-07
 #> 
 #> $geom
 #> [1] WKB POINT: raw 01 01 00 00 ...
@@ -1398,7 +1398,7 @@ poi$syncToDisk()
 #> [1] 2016-02-03
 #> 
 #> $editdate
-#> [1] 2026-05-06
+#> [1] 2026-05-07
 #> 
 #> $geom
 #> [1] WKB POINT: raw 01 01 00 00 ...
@@ -1434,10 +1434,10 @@ poi$getFeature(fid)
 #> [1] Information
 #> 
 #> $createdate
-#> [1] 2026-05-06
+#> [1] 2026-05-07
 #> 
 #> $editdate
-#> [1] 2026-05-06
+#> [1] 2026-05-07
 #> 
 #> $geom
 #> [1] WKB POINT: raw 01 01 00 00 ...
@@ -1517,10 +1517,11 @@ d$geom <- pts_geom
 # write the batch (no transaction)
 system.time(res <- lyr$batchCreateFeature(d))
 #>  ■                                  0% |  ETA:  2m
-#> ✔ Done (1.4s)
+#>  ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■     94% |  ETA:  0s
+#> ✔ Done (2s)
 #> 
 #>    user  system elapsed 
-#>   1.447   0.002   1.449
+#>   2.005   0.006   2.011
 
 (all(res))
 #> [1] TRUE
@@ -1552,7 +1553,7 @@ system.time({
     lyr$rollbackTransaction()
 })
 #>    user  system elapsed 
-#>   0.780   0.008   0.788
+#>   1.040   0.004   1.045
 
 (all(res2))
 #> [1] TRUE
@@ -1565,22 +1566,22 @@ d_out <- lyr$fetch(-1)
 head(d_out)
 #> OGR feature set
 #>   FID               pt_desc         create_time                           geom
-#> 1   1 random points batch 1 2026-05-06 00:18:38 WKB POINT: raw 01 01 00 00 ...
-#> 2   2 random points batch 1 2026-05-06 00:18:38 WKB POINT: raw 01 01 00 00 ...
-#> 3   3 random points batch 1 2026-05-06 00:18:38 WKB POINT: raw 01 01 00 00 ...
-#> 4   4 random points batch 1 2026-05-06 00:18:38 WKB POINT: raw 01 01 00 00 ...
-#> 5   5 random points batch 1 2026-05-06 00:18:38 WKB POINT: raw 01 01 00 00 ...
-#> 6   6 random points batch 1 2026-05-06 00:18:38 WKB POINT: raw 01 01 00 00 ...
+#> 1   1 random points batch 1 2026-05-07 04:47:58 WKB POINT: raw 01 01 00 00 ...
+#> 2   2 random points batch 1 2026-05-07 04:47:58 WKB POINT: raw 01 01 00 00 ...
+#> 3   3 random points batch 1 2026-05-07 04:47:58 WKB POINT: raw 01 01 00 00 ...
+#> 4   4 random points batch 1 2026-05-07 04:47:58 WKB POINT: raw 01 01 00 00 ...
+#> 5   5 random points batch 1 2026-05-07 04:47:58 WKB POINT: raw 01 01 00 00 ...
+#> 6   6 random points batch 1 2026-05-07 04:47:58 WKB POINT: raw 01 01 00 00 ...
 
 tail(d_out)
 #> OGR feature set
 #>           FID               pt_desc         create_time
-#> 199995 199995 random points batch 2 2026-05-06 00:18:40
-#> 199996 199996 random points batch 2 2026-05-06 00:18:40
-#> 199997 199997 random points batch 2 2026-05-06 00:18:40
-#> 199998 199998 random points batch 2 2026-05-06 00:18:40
-#> 199999 199999 random points batch 2 2026-05-06 00:18:40
-#> 200000 200000 random points batch 2 2026-05-06 00:18:40
+#> 199995 199995 random points batch 2 2026-05-07 04:48:01
+#> 199996 199996 random points batch 2 2026-05-07 04:48:01
+#> 199997 199997 random points batch 2 2026-05-07 04:48:01
+#> 199998 199998 random points batch 2 2026-05-07 04:48:01
+#> 199999 199999 random points batch 2 2026-05-07 04:48:01
+#> 200000 200000 random points batch 2 2026-05-07 04:48:01
 #>                                  geom
 #> 199995 WKB POINT: raw 01 01 00 00 ...
 #> 199996 WKB POINT: raw 01 01 00 00 ...
@@ -1720,9 +1721,6 @@ lyr_out <- ogr_proc(mode = "Intersection",
                     out_lyr_name = "north_fork_reburned",
                     out_geom_type = "MULTIPOLYGON",
                     mode_opt = opt)
-#>  ■■                                 4% |  ETA:  0s
-#> ✔ Done (17ms)
-#> 
 
 # the output layer has attributes of both the input and method layers
 (reburn_feat_set <- lyr_out$fetch(-1))
