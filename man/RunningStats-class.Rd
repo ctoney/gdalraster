@@ -146,7 +146,9 @@ var(chunk)
 rs$get_sd()
 sd(chunk)
 
+# not needed to count this number of values, but for demonstration:
 rs$returnCountAsInteger64 <- TRUE
+
 \donttest{
 ## 10^9 values read in 10,000 chunks
 ## should take under 1 minute on typical hardware
