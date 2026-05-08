@@ -6,6 +6,9 @@
 #include "running_stats.h"
 
 #include <Rcpp.h>
+#include <RcppInt64>
+
+#include <vector>
 
 #include "rcpp_util.h"
 
@@ -18,12 +21,11 @@ RunningStats::RunningStats()
 RunningStats::RunningStats(bool na_rm)
         : m_na_rm(na_rm), m_count(0) {}
 
-void RunningStats::update(const Rcpp::NumericVector& newvalues) {
-    for (auto const& n : newvalues) {
-        if (m_na_rm) {
-            if (Rcpp::NumericVector::is_na(n))
-                continue;
-        }
+void RunningStats::update(const Rcpp::NumericVector &newvalues) {
+    for (auto const &n : newvalues) {
+        if (m_na_rm && Rcpp::NumericVector::is_na(n))
+            continue;
+
         m_count += 1;
         if (m_count == 1) {
             m_mean = m_min = m_max = m_sum = n;
@@ -47,9 +49,15 @@ void RunningStats::reset() {
     m_count = 0;
 }
 
-double RunningStats::get_count() const {
-    // return as double in R (no native int64)
-    return static_cast<double>(m_count);
+Rcpp::NumericVector RunningStats::get_count() const {
+    if (returnCountAsInteger64) {
+        // return as numeric vector carrying the integer64 class attribute
+        const std::vector<int64_t> ret = {m_count};
+        return Rcpp::wrap(ret);
+    }
+    else {
+        return Rcpp::wrap(static_cast<double>(m_count));
+    }
 }
 
 double RunningStats::get_mean() const {
@@ -118,6 +126,9 @@ RCPP_MODULE(mod_running_stats) {
         ("Default constructor initialized with na_rm = TRUE.")
     .constructor<bool>
         ("Initialize with na_rm = TRUE or FALSE")
+
+    // read/write fields
+    .field("returnCountAsInteger64", &RunningStats::returnCountAsInteger64)
 
     .method("update", &RunningStats::update,
         "Add new values from a numeric vector")

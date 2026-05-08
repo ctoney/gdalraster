@@ -1,5 +1,5 @@
 test_that("RunningStats works", {
-    set.seed(42)
+    set.seed(1)
     rs <- new(RunningStats, na_rm=TRUE)
     expect_no_error(show(rs))
     chunk <- runif(1000)
@@ -15,10 +15,11 @@ test_that("RunningStats works", {
     expect_equal(rs$get_count(), 2000)
     chunk3 <- (c(rep(NA, 10), runif(10)))
     rs$update(chunk3)
-    expect_equal(rs$get_count(), 2010)
+    rs$returnCountAsInteger64 <- TRUE
+    expect_equal(rs$get_count(), bit64::as.integer64(2010))
     expect_equal(rs$get_mean(), mean(c(chunk,chunk2,chunk3), na.rm=TRUE))
     rs$reset()
-    expect_equal(rs$get_count(), 0)
+    expect_equal(rs$get_count(), bit64::as.integer64(0))
     expect_equal(rs$get_sum(), 0)
     expect_true(is.na(rs$get_mean()))
     expect_true(is.na(rs$get_var()))
