@@ -1,4 +1,6 @@
-# gdalraster 2.6.0.9001 (dev)
+# gdalraster 2.6.0.9002 (dev)
+
+* `RunningStats` class: support optionally returning count as `bit64::integer64` (#975) (2026-05-07)
 
 * `get_pixel_line()`: treat points "exactly" on the right or bottom raster edge as inside (#973) (2026-05-06)
 
