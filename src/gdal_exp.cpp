@@ -4,7 +4,6 @@
 */
 
 #include <gdal.h>
-#include <gdal_priv.h>
 #include <cpl_port.h>
 #include <cpl_conv.h>
 #include <cpl_http.h>
@@ -2203,12 +2202,13 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
 
     const R_xlen_t num_pts = ptsB_in.nrow();
 
-    Rcpp::NumericVector inv_gt = inv_geotransform(ds->getGeoTransform());
+    const Rcpp::NumericVector inv_gt = inv_geotransform(ds->getGeoTransform());
     if (Rcpp::any(Rcpp::is_na(inv_gt)))
         Rcpp::stop("failed to get inverse geotransform");
 
     const double raster_xsize = ds->getRasterXSize();
     const double raster_ysize = ds->getRasterYSize();
+    const Rcpp::NumericVector bbox = ds->bbox();
     GDALRasterBandH hBand = ds->getBand_(band);
     Rcpp::LogicalVector out = Rcpp::no_init(num_pts);
     R_xlen_t pts_outside = 0;
@@ -2261,9 +2261,9 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
         double grid_xA = inv_gt[0] + inv_gt[1] * geo_xA + inv_gt[2] * geo_yA;
         double grid_yA = inv_gt[3] + inv_gt[4] * geo_xA + inv_gt[5] * geo_yA;
 
-        if (ARE_REAL_EQUAL(grid_xA, raster_xsize))
+        if (equal_within_ulps_(geo_xA, bbox[2]))
             grid_xA -= 0.25;
-        if (ARE_REAL_EQUAL(grid_yA, raster_ysize))
+        if (equal_within_ulps_(geo_yA, bbox[1]))
             grid_yA -= 0.25;
 
         if ((grid_xA < 0 || grid_xA > raster_xsize ||
@@ -2278,9 +2278,9 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
         double grid_xB = inv_gt[0] + inv_gt[1] * geo_xB + inv_gt[2] * geo_yB;
         double grid_yB = inv_gt[3] + inv_gt[4] * geo_xB + inv_gt[5] * geo_yB;
 
-        if (ARE_REAL_EQUAL(grid_xB, raster_xsize))
+        if (equal_within_ulps_(geo_xB, bbox[2]))
             grid_xB -= 0.25;
-        if (ARE_REAL_EQUAL(grid_yB, raster_ysize))
+        if (equal_within_ulps_(geo_yB, bbox[1]))
             grid_yB -= 0.25;
 
         if ((grid_xB < 0 || grid_xB > raster_xsize ||
@@ -2335,6 +2335,9 @@ Rcpp::LogicalVector isLineOfSightVisible(const GDALRaster* const &ds,
 
         if (!quiet)
             pfnProgress((i + 1.0) / num_pts, nullptr, nullptr);
+
+        if (i % 1000 == 0)
+            Rcpp::checkUserInterrupt();
     }
 
     if (!quiet && pts_outside > 0) {

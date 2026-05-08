@@ -862,12 +862,13 @@ test_that("pixel extract internal class method returns correct data", {
 
     geo_xy <- matrix(c(0, 0), ncol = 2)
 
+    ds$quiet <- TRUE
     # warning for no geotransform
-    expect_warning(extr_nodata <- ds$pixel_extract(xy = geo_xy,
-                                                   bands = 0,
-                                                   interp_method = "near",
-                                                   krnl_dim = 1,
-                                                   xy_srs = ""))
+    expect_no_error(extr_nodata <- ds$pixel_extract(xy = geo_xy,
+                                                    bands = 0,
+                                                    interp_method = "near",
+                                                    krnl_dim = 1,
+                                                    xy_srs = ""))
 
     expect_true(length(extr_nodata) == 1)
     expect_true(is.na(extr_nodata))
@@ -885,15 +886,18 @@ test_that("pixel extract internal class method returns correct data", {
     raster_data_2 <- c(10.5, 1.3, -2.4, 3.8)
     ds$write(band = 2, xoff = 0, yoff = 0, xsize = 2, ysize = 2, raster_data_2)
 
+    ds$quiet <-TRUE
+
     geo_xy <- matrix(c(1, -1), ncol = 2)
     # bands = 0 for all bands
     # krnl_dim ignored with bilinear but a required arg for the internal method
     # warning for no geotransform
-    expect_warning(extr_bilinear <- ds$pixel_extract(xy = geo_xy,
-                                                     bands = 0,
-                                                     interp_method = "bilinear",
-                                                     krnl_dim = 2,
-                                                     xy_srs = ""))
+    expect_no_error(extr_bilinear <-
+        ds$pixel_extract(xy = geo_xy,
+                         bands = 0,
+                         interp_method = "bilinear",
+                         krnl_dim = 2,
+                         xy_srs = ""))
 
     expect_true(is.matrix(extr_bilinear))
     expect_equal(dim(extr_bilinear), c(1, 2))

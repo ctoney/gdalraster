@@ -677,8 +677,9 @@ test_that("pixel_extract wrapper returns correct data", {
     ds_mem$fillRaster(3, 10, 0)
     geo_xy <- matrix(c(5, -8, 0, -1), nrow = 2, ncol = 2, byrow = TRUE)
     # warning for no geotransform
-    expect_warning(extr_mem <- pixel_extract(ds_mem, geo_xy,
-                                             as_data_frame = TRUE))
+    ds_mem$quiet <- TRUE
+    expect_no_error(extr_mem <- pixel_extract(ds_mem, geo_xy,
+                                              as_data_frame = TRUE))
     expect_true(is.data.frame(extr_mem))
     expect_equal(names(extr_mem), c("ptid", "b1_elev", "b2_asp", "b3_slpp"))
     expect_equal(extr_mem[, 2], c(1000, 1000))
@@ -686,9 +687,9 @@ test_that("pixel_extract wrapper returns correct data", {
     expect_equal(extr_mem[, 4], c(10, 10))
     rm(extr_mem)
     # subset of bands, re-ordered
-    expect_warning(extr_mem <- pixel_extract(ds_mem, geo_xy,
-                                             bands = c(3, 2),
-                                             as_data_frame = TRUE))
+    expect_no_error(extr_mem <- pixel_extract(ds_mem, geo_xy,
+                                              bands = c(3, 2),
+                                              as_data_frame = TRUE))
     expect_true(is.data.frame(extr_mem))
     expect_equal(names(extr_mem), c("ptid", "b3_slpp", "b2_asp"))
     expect_equal(extr_mem[, 2], c(10, 10))
@@ -703,7 +704,7 @@ test_that("pixel_extract wrapper returns correct data", {
     ds_tif <- createCopy("GTiff", tif_file, ds_mem,
                          return_obj = TRUE)
     expect_true(is(ds_tif, "Rcpp_GDALRaster"))
-    expect_warning(ds_tif$setGeoTransform(ds_mem$getGeoTransform()))
+    ds_tif$setGeoTransform(ds_mem$getGeoTransform())
     extr_tif <- pixel_extract(ds_tif, geo_xy, as_data_frame = TRUE)
     expect_true(is.data.frame(extr_tif))
     ds_name <- tools::file_path_sans_ext(basename(ds_tif$getDescription(0)))

@@ -24,4 +24,9 @@ test_that("equal_within_ulps_ behaves as expected", {
 
     skip_on_cran()
     expect_true(.equal_within_ulps(1.0, 0.99999999999999999));
+    x <- 0.1 + 0.2
+    y <- 0.3
+    expect_false(x == y)
+    expect_true(.equal_within_ulps(x, y))
+    expect_true(.equal_within_ulps(x, y, 1))
 })
