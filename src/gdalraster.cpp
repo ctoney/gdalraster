@@ -840,7 +840,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
 
     checkAccess_(GA_ReadOnly);
 
-    constexpr int KRNL_DIM_MAX_ = 1000;
+    constexpr int KRNL_DIM_MAX_ = 100;
 
     Rcpp::NumericMatrix xy_in;
     if (Rcpp::is<Rcpp::NumericVector>(xy) ||
@@ -940,6 +940,7 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
     const int krnl_size = krnl_dim * krnl_dim;
     const int raster_xsize = GDALGetRasterXSize(m_hDataset);
     const int raster_ysize = GDALGetRasterYSize(m_hDataset);
+    const Rcpp::NumericVector bb = bbox();
 
     GDALProgressFunc pfnProgress = GDALTermProgressR;
     uint64_t pts_outside = 0;
@@ -985,10 +986,8 @@ Rcpp::NumericMatrix GDALRaster::pixel_extract(const Rcpp::RObject &xy,
 
             // allow input coordinates exactly on the bottom or right edges
             // match behavior in: https://github.com/OSGeo/gdal/pull/12087
-            const bool pt_is_on_right_edge =
-                ARE_REAL_EQUAL(grid_x, static_cast<double>(raster_xsize));
-            const bool pt_is_on_bottom_edge =
-                ARE_REAL_EQUAL(grid_y, static_cast<double>(raster_ysize));
+            const bool pt_is_on_right_edge = equal_within_ulps_(geo_x, bb[2]);
+            const bool pt_is_on_bottom_edge = equal_within_ulps_(geo_y, bb[1]);
 
             if ((grid_x < 0 || grid_x > static_cast<double>(raster_xsize) ||
                  grid_y < 0 || grid_y > static_cast<double>(raster_ysize)) &&
@@ -2030,10 +2029,11 @@ SEXP GDALRaster::read(int band, int xoff, int yoff, int xsize, int ysize,
 
             if (has_nodata_value && !std::isnan(dfNoDataValue)) {
                 if (GDALDataTypeIsFloating(eDT)) {
+                    // assume float nodata value should equal exactly
                     for (double &val : v) {
                         if (std::isnan(val))
                             val = NA_REAL;
-                        else if (ARE_REAL_EQUAL(val, dfNoDataValue))
+                        else if (val == dfNoDataValue)
                             val = NA_REAL;
                     }
                 }
