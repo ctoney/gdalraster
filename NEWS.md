@@ -1,4 +1,6 @@
-# gdalraster 2.6.0.9002 (dev)
+# gdalraster 2.6.0.9003 (dev)
+
+* (internal) replace `ARE_REAL_EQUAL()` with `equal_within_ulps_()` (#974) (2026-05-08)
 
 * `RunningStats` class: support optionally returning count as `bit64::integer64` (#975) (2026-05-07)
 
