@@ -85,6 +85,7 @@ lyr$promoteToMulti
 lyr$convertToLinear
 lyr$wkbByteOrder
 lyr$arrowStreamOptions
+lyr$writeArrowBatchOptions
 lyr$quiet
 lyr$transactionsForce
 
@@ -129,6 +130,7 @@ lyr$fetch(n)
 
 lyr$getArrowStream()
 lyr$releaseArrowStream()
+lyr$writeArrowBatch(df)
 
 lyr$setFeature(feature)
 lyr$createFeature(feature)
@@ -236,17 +238,42 @@ listed below. For more information about options for Arrow stream, see
 the GDAL API documentation for
 \href{https://gdal.org/en/stable/api/vector_c_api.html#_CPPv420OGR_L_GetArrowStream9OGRLayerHP16ArrowArrayStreamPPc}{OGR_L_GetArrowStream()}.
 \itemize{
-\item INCLUDE_FID=YES/NO. Defaults to YES.
-\item MAX_FEATURES_IN_BATCH=integer. Maximum number of features to retrieve in
-an ArrowArray batch. Defaults to 65536.
-\item TIMEZONE=unknown/UTC/(+|:)HH:MM or any other value supported by
+\item \code{INCLUDE_FID=YES/NO}. Defaults to \code{YES}.
+\item \code{MAX_FEATURES_IN_BATCH=integer}. Maximum number of features to retrieve in
+an ArrowArray batch. Defaults to \code{65536}.
+\item \verb{TIMEZONE=unknown/UTC/(+|:)HH:MM} or any other value supported by
 Arrow (GDAL >= 3.8).
-\item GEOMETRY_METADATA_ENCODING=OGC/GEOARROW (GDAL >= 3.8). The GDAL default is
-OGC if not specified.
-\item GEOMETRY_ENCODING=WKB (Arrow/Parquet drivers). To force a fallback to the
+\item \code{GEOMETRY_METADATA_ENCODING=OGC/GEOARROW} (GDAL >= 3.8). The GDAL default is
+\code{OGC} if not specified.
+\item \code{GEOMETRY_ENCODING=WKB} (Arrow/Parquet drivers). To force a fallback to the
 generic implementation when the native geometry encoding is not WKB.
 Otherwise the geometry will be returned with its native Arrow encoding
 (possibly using GeoArrow encoding).
+}
+
+\code{$writeArrowBatchOptions}\cr
+Character vector of \code{"NAME=VALUE"} pairs giving options used by the
+\code{$writeArrowBatch()} method (see below). The available options may be
+driver and GDAL version specific. For more information, see the GDAL API
+documentation for
+\href{https://gdal.org/en/latest/api/vector_c_api.html#_CPPv421OGR_L_WriteArrowBatch9OGRLayerHPK11ArrowSchemaP10ArrowArray12CSLConstList}{OGR_L_WriteArrowBatch()}.
+\itemize{
+\item \code{FID=name}. Name of the FID column in the data frame. If not provided,
+\code{GetFIDColumn()} is used to determine it. The column must be of type
+\code{integer} or \code{integer64}.
+\item \code{IF_FID_NOT_PRESERVED=NOTHING/ERROR/WARNING}. Action to perform when the
+input FID is not preserved in the output layer. The default is \code{NOTHING}.
+Setting it to \code{ERROR} will cause the function to error out. Setting it to
+\code{WARNING} will cause the function to emit a warning but continue its
+processing.
+\item \code{IF_FIELD_NOT_PRESERVED=ERROR/WARNING}. (since GDAL 3.9) Action to perform
+when the input field value is not preserved in the output layer. The default
+is \code{WARNING}, which will cause the function to emit a warning but continue
+its processing. Setting it to \code{ERROR} will cause the function to error out if
+a lossy conversion is detected.
+\item \code{GEOMETRY_NAME=name}. Name of the geometry column. If not provided,
+\code{GetGeometryColumn()} is used. The corresponding data frame column must be
+a list column containing \code{raw} vectors of WKB.
 }
 
 \code{$quiet}\cr
@@ -606,6 +633,18 @@ Releases the Arrow C stream returned by \code{$getArrowStream()} and clears
 the \code{nanoarrow_array_stream} object (if GDAL >= 3.6, otherwise does nothing).
 This is equivalent to calling the \code{$release()} method on the
 \code{nanoarrow_array_stream} object. No return value, called for side effects.
+
+\code{$writeArrowBatch(df)}\cr
+Writes a batch of rows from a data frame. This is similar to the
+\verb{$batchCreateFeature()} method described below, but uses GDAL's Arrow C
+stream interface for column oriented write when supported by the format
+driver. The column names and data types of the input data frame must be
+compatible with the layer schema. Geometry columns must be list columns
+containing \code{raw} vectors of WKB. The writable field
+\verb{$writeArrowBatchOptions} can be used to set options before calling this
+method (see above). Returns a \code{logical} value, \code{TRUE} indicating success.
+This method and \verb{$createFeature()} / \verb{$batchCreateFeature()} are mutually
+exclusive in the same session.
 
 \code{$setFeature(feature)}\cr
 Rewrites/replaces an existing feature. This method writes a feature based on

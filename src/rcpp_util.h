@@ -85,6 +85,8 @@ void cli_li_(const std::string &text);
 void cli_end_();
 void cli_cat_line_();
 
+SEXP as_nanoarrow_array_stream_(const Rcpp::DataFrame &df);
+
 // case-insensitive comparator for std::map
 // https://stackoverflow.com/questions/1801892/how-can-i-make-the-mapfind-operation-case-insensitive
 struct _ci_less {
