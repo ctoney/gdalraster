@@ -1802,18 +1802,19 @@ SEXP GDALVector::getArrowStream() {
 #else
     checkAccess_(GA_ReadOnly);
 
-    std::vector<char *> opt{};
+    CPLStringList opt;
     if (this->arrowStreamOptions.size() > 0) {
         for (R_xlen_t i = 0; i < this->arrowStreamOptions.size(); ++i) {
-            if (!EQUAL(this->arrowStreamOptions[i], ""))
-                opt.push_back((char *) this->arrowStreamOptions[i]);
+            Rcpp::String opt_str(this->arrowStreamOptions[i]);
+            if (opt_str == "") continue;
+            opt.AddString(opt_str.get_cstring());
         }
     }
-    opt.push_back(nullptr);
 
-    if (!OGR_L_GetArrowStream(m_hLayer, &m_stream, opt.data())) {
+    bool res = OGR_L_GetArrowStream(m_hLayer, &m_stream,
+                                    opt.empty() ? nullptr : opt.List());
+    if (!res)
         Rcpp::stop("OGR_L_GetArrowStream() failed");
-    }
 
     m_stream_xptrs.push_back(nanoarrow_array_stream_owning_xptr());
     size_t i = m_stream_xptrs.size() - 1;
@@ -1852,6 +1853,95 @@ void GDALVector::releaseArrowStream() {
         }
     }
 
+#endif
+}
+
+bool GDALVector::writeArrowBatch(const Rcpp::DataFrame &df) {
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 8, 0)
+    Rcpp::stop("writeArrowBatch() requires GDAL >= 3.8");
+
+#else
+    checkAccess_(GA_Update);
+
+    CPLStringList opt;
+    bool has_fid_opt = false;
+    if (this->writeArrowBatchOptions.size() > 0) {
+        for (R_xlen_t i = 0; i < this->writeArrowBatchOptions.size(); ++i) {
+            Rcpp::String opt_str(this->writeArrowBatchOptions[i]);
+            if (opt_str == "") continue;
+            opt.AddString(opt_str.get_cstring());
+            if (STARTS_WITH_CI(opt_str.get_cstring(), "fid"))
+                has_fid_opt = true;
+        }
+    }
+
+    // if FID option not given, check for FID column name in the data frame
+    if (!has_fid_opt) {
+        Rcpp::CharacterVector col_names = df.names();
+        if (contains_str_(col_names, "FID"))
+            opt.AddString("FID=FID");
+        else if (contains_str_(col_names, "fid"))
+            opt.AddString("FID=fid");
+    }
+
+    auto stream = reinterpret_cast<struct ArrowArrayStream*>(
+        R_ExternalPtrAddr(as_nanoarrow_array_stream_(df)));
+
+    if (!stream) {
+        if (!quiet) {
+            cli_alert_danger_(
+                "failed to get ArrowArrayStream on the input data frame");
+        }
+        return false;
+    }
+
+    struct ArrowSchema schema;
+    if (stream->get_schema(stream, &schema) != 0) {
+        if (!quiet) {
+            cli_alert_danger_(
+                "failed to get ArrowSchema for the input data frame");
+        }
+        return false;
+    }
+
+    if (!OGR_L_IsArrowSchemaSupported(m_hLayer, &schema, nullptr, nullptr)) {
+        schema.release(&schema);
+        if (!quiet) {
+            cli_alert_danger_(
+                "the inferred ArrowSchema is not supported for write");
+        }
+        return false;
+    }
+
+    bool ret = true;
+    while (true) {
+        struct ArrowArray array;
+        // Look for an error (get_next() returning a non-zero code), or
+        // end of iteration (array.release == nullptr).
+        // TODO: Should probably separate error vs end of stream.
+        //       If error, multi-batch streams potentially could be partially
+        //       written.
+        if (stream->get_next(stream, &array) != 0 ||
+            array.release == NULL ) {
+
+            break;
+        }
+        bool res = OGR_L_WriteArrowBatch(m_hLayer, &schema, &array,
+                                         opt.empty() ? nullptr : opt.List());
+        array.release(&array);
+        if (!res) {
+            ret = false;
+            if (!quiet)
+                cli_alert_danger_("OGR_L_WriteArrowBatch() failed");
+            break;
+        }
+    }
+
+    schema.release(&schema);
+    stream->release(stream);
+
+    return ret;
 #endif
 }
 
@@ -4020,6 +4110,7 @@ RCPP_MODULE(mod_GDALVector) {
     .field("returnGeomAs", &GDALVector::returnGeomAs)
     .field("wkbByteOrder", &GDALVector::wkbByteOrder)
     .field("arrowStreamOptions", &GDALVector::arrowStreamOptions)
+    .field("writeArrowBatchOptions", &GDALVector::writeArrowBatchOptions)
     .field("quiet", &GDALVector::quiet)
     .field("transactionsForce", &GDALVector::transactionsForce)
 
@@ -4094,6 +4185,8 @@ RCPP_MODULE(mod_GDALVector) {
         "Expose an Arrow C stream on the layer")
     .method("releaseArrowStream", &GDALVector::releaseArrowStream,
         "Release the Arrow C stream on the layer")
+    .method("writeArrowBatch", &GDALVector::writeArrowBatch,
+        "Write rows from a data frame exposed as an ArrowArray")
     .method("setFeature", &GDALVector::setFeature,
         "Rewrite/replace an existing feature within the layer")
     .method("createFeature", &GDALVector::createFeature,

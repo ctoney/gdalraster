@@ -73,6 +73,7 @@
 #' lyr$convertToLinear
 #' lyr$wkbByteOrder
 #' lyr$arrowStreamOptions
+#' lyr$writeArrowBatchOptions
 #' lyr$quiet
 #' lyr$transactionsForce
 #'
@@ -117,6 +118,7 @@
 #'
 #' lyr$getArrowStream()
 #' lyr$releaseArrowStream()
+#' lyr$writeArrowBatch(df)
 #'
 #' lyr$setFeature(feature)
 #' lyr$createFeature(feature)
@@ -217,17 +219,40 @@
 #' listed below. For more information about options for Arrow stream, see
 #' the GDAL API documentation for
 #' [OGR_L_GetArrowStream()](https://gdal.org/en/stable/api/vector_c_api.html#_CPPv420OGR_L_GetArrowStream9OGRLayerHP16ArrowArrayStreamPPc).
-#' * INCLUDE_FID=YES/NO. Defaults to YES.
-#' * MAX_FEATURES_IN_BATCH=integer. Maximum number of features to retrieve in
-#' an ArrowArray batch. Defaults to 65536.
-#' * TIMEZONE=unknown/UTC/(+|:)HH:MM or any other value supported by
+#' * `INCLUDE_FID=YES/NO`. Defaults to `YES`.
+#' * `MAX_FEATURES_IN_BATCH=integer`. Maximum number of features to retrieve in
+#' an ArrowArray batch. Defaults to `65536`.
+#' * `TIMEZONE=unknown/UTC/(+|:)HH:MM` or any other value supported by
 #' Arrow (GDAL >= 3.8).
-#' * GEOMETRY_METADATA_ENCODING=OGC/GEOARROW (GDAL >= 3.8). The GDAL default is
-#' OGC if not specified.
-#' * GEOMETRY_ENCODING=WKB (Arrow/Parquet drivers). To force a fallback to the
+#' * `GEOMETRY_METADATA_ENCODING=OGC/GEOARROW` (GDAL >= 3.8). The GDAL default is
+#' `OGC` if not specified.
+#' * `GEOMETRY_ENCODING=WKB` (Arrow/Parquet drivers). To force a fallback to the
 #' generic implementation when the native geometry encoding is not WKB.
 #' Otherwise the geometry will be returned with its native Arrow encoding
 #' (possibly using GeoArrow encoding).
+#'
+#' \code{$writeArrowBatchOptions}\cr
+#' Character vector of `"NAME=VALUE"` pairs giving options used by the
+#' \code{$writeArrowBatch()} method (see below). The available options may be
+#' driver and GDAL version specific. For more information, see the GDAL API
+#' documentation for
+#' [OGR_L_WriteArrowBatch()](https://gdal.org/en/latest/api/vector_c_api.html#_CPPv421OGR_L_WriteArrowBatch9OGRLayerHPK11ArrowSchemaP10ArrowArray12CSLConstList).
+#' * `FID=name`. Name of the FID column in the data frame. If not provided,
+#' `GetFIDColumn()` is used to determine it. The column must be of type
+#' `integer` or `integer64`.
+#' * `IF_FID_NOT_PRESERVED=NOTHING/ERROR/WARNING`. Action to perform when the
+#' input FID is not preserved in the output layer. The default is `NOTHING`.
+#' Setting it to `ERROR` will cause the function to error out. Setting it to
+#' `WARNING` will cause the function to emit a warning but continue its
+#' processing.
+#' * `IF_FIELD_NOT_PRESERVED=ERROR/WARNING`. (since GDAL 3.9) Action to perform
+#' when the input field value is not preserved in the output layer. The default
+#' is `WARNING`, which will cause the function to emit a warning but continue
+#' its processing. Setting it to `ERROR` will cause the function to error out if
+#' a lossy conversion is detected.
+#' * `GEOMETRY_NAME=name`. Name of the geometry column. If not provided,
+#' `GetGeometryColumn()` is used. The corresponding data frame column must be
+#' a list column containing `raw` vectors of WKB.
 #'
 #' \code{$quiet}\cr
 #' A logical value, `FALSE` by default. Set to `TRUE` to suppress various
@@ -583,6 +608,18 @@
 #' the `nanoarrow_array_stream` object (if GDAL >= 3.6, otherwise does nothing).
 #' This is equivalent to calling the \code{$release()} method on the
 #' `nanoarrow_array_stream` object. No return value, called for side effects.
+#'
+#' \code{$writeArrowBatch(df)}\cr
+#' Writes a batch of rows from a data frame. This is similar to the
+#' `$batchCreateFeature()` method described below, but uses GDAL's Arrow C
+#' stream interface for column oriented write when supported by the format
+#' driver. The column names and data types of the input data frame must be
+#' compatible with the layer schema. Geometry columns must be list columns
+#' containing `raw` vectors of WKB. The writable field
+#' `$writeArrowBatchOptions` can be used to set options before calling this
+#' method (see above). Returns a `logical` value, `TRUE` indicating success.
+#' This method and `$createFeature()` / `$batchCreateFeature()` are mutually
+#' exclusive in the same session.
 #'
 #' \code{$setFeature(feature)}\cr
 #' Rewrites/replaces an existing feature. This method writes a feature based on

@@ -1929,7 +1929,7 @@ test_that("info() prints output to the console", {
 })
 
 test_that("ArrowArrayStream is readable", {
-    skip_if(gdal_version_num() < 3060000)
+    skip_if(gdal_version_num() < gdal_compute_version(3, 6, 0))
 
     f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
     dsn <- file.path(tempfile(fileext = ".tif"))
@@ -1964,7 +1964,7 @@ test_that("ArrowArrayStream is readable", {
 })
 
 test_that("nanoarrow_array_stream implicit release works", {
-    skip_if(gdal_version_num() < 3060000)
+    skip_if(gdal_version_num() < gdal_compute_version(3, 6, 0))
 
     # dataset/layer closed without explicit release
     f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
@@ -1996,4 +1996,78 @@ test_that("nanoarrow_array_stream implicit release works", {
 
     lyr2$close()
     unlink(dsn2)
+})
+
+test_that("writeArrowBatch works", {
+    skip_if(gdal_version_num() < gdal_compute_version(3, 8, 0))
+
+    f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
+    dsn <- file.path(tempdir(), basename(f))
+    file.copy(f, dsn)
+    lyr <- new(GDALVector, dsn, "mtbs_perims", FALSE)
+    on.exit(lyr$close(), add = TRUE)
+    on.exit(deleteDataset(dsn), add = TRUE)
+
+    d <- lyr$fetch(-1)
+    feat_count <- nrow(d)
+    expect_equal(feat_count, lyr$getFeatureCount())
+
+    # give NULL options, FID column name should be auto-detected
+    # FID column in the layer is "fid", but "FID" in the data frame
+    d$FID <- d$FID + 1000
+    expect_true(lyr$writeArrowBatch(d))
+    expect_equal(lyr$getFeatureCount(), feat_count * 2)
+    lyr$setAttributeFilter("incid_name = 'POLECAT'")
+    expect_equal(lyr$getFeatureCount(), 2)
+    polecat <- lyr$fetch(-1)
+    expect_true(g_equals(polecat[1, "geom"], polecat[2, "geom"]))
+    lyr$setAttributeFilter("")
+
+    # test with options, give FID column name explicitly
+    d$FID <- d$FID + 1000
+    lyr$writeArrowBatchOptions <- "FID=fid"
+    expect_false(lyr$writeArrowBatch(d))
+    lyr$writeArrowBatchOptions <- "FID=FID"
+    expect_true(lyr$writeArrowBatch(d))
+    expect_equal(lyr$getFeatureCount(), feat_count * 3)
+    lyr$setAttributeFilter("incid_name = 'POLECAT'")
+    expect_equal(lyr$getFeatureCount(), 3)
+    polecat <- lyr$fetch(-1)
+    expect_true(g_equals(polecat[1, "geom"], polecat[2, "geom"]))
+    expect_true(g_equals(polecat[1, "geom"], polecat[3, "geom"]))
+    lyr$setAttributeFilter("")
+
+    # invalidate the schema
+    d$FID <- d$FID + 1000
+    d_mod <- d
+    names(d_mod) <- LETTERS[seq_along(names(d_mod))]
+    expect_false(lyr$writeArrowBatch(d_mod))
+    expect_equal(lyr$getFeatureCount(), feat_count * 3)  # no change
+    d_mod <- d
+    d_mod$geom <- g_wk2wk(d_mod$geom)
+    expect_false(lyr$writeArrowBatch(d_mod))
+    expect_equal(lyr$getFeatureCount(), feat_count * 3)  # no change
+
+    # test writing to Parquet if the driver is available
+	skip_if_not(isTRUE(gdal_formats("Parquet")$vector))
+
+    f_parquet <- system.file("extdata/poly.parquet", package = "gdalraster")
+    dsn_parquet <- file.path(tempdir(), basename(f_parquet))
+    file.copy(f_parquet, dsn_parquet)
+    lyr_parquet <- new(GDALVector, dsn_parquet, "poly", FALSE)
+    on.exit(lyr_parquet$close(), add = TRUE)
+    on.exit(deleteDataset(dsn_parquet), add = TRUE)
+
+    d <- lyr_parquet$fetch(-1)
+    feat_count <- nrow(d)
+    expect_equal(feat_count, lyr_parquet$getFeatureCount())
+
+    d$FID <- d$FID + 1000
+    expect_true(lyr_parquet$writeArrowBatch(d))
+    expect_equal(lyr_parquet$getFeatureCount(), feat_count * 2)
+    lyr_parquet$setAttributeFilter("EAS_ID = 168")
+    expect_equal(lyr_parquet$getFeatureCount(), 2)
+    eas168 <- lyr_parquet$fetch(-1)
+    expect_true(g_equals(eas168[1, "geometry"], eas168[2, "geometry"]))
+    lyr_parquet$setAttributeFilter("")
 })

@@ -348,3 +348,10 @@ bool equal_within_ulps_r_(double x, double y, int n = 4) {
 
     return equal_within_ulps_(x, y, n);
 }
+
+// wrapper for nanoarrow::as_nanoarrow_array_stream() on a data frame
+SEXP as_nanoarrow_array_stream_(const Rcpp::DataFrame &df) {
+    Rcpp::Environment pkg = Rcpp::Environment::namespace_env("nanoarrow");
+    Rcpp::Function fn = pkg["as_nanoarrow_array_stream"];
+    return fn(df);
+}

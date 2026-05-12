@@ -61,6 +61,7 @@ class GDALVector {
     std::string returnGeomAs {"WKB"};
     std::string wkbByteOrder {"LSB"};
     Rcpp::CharacterVector arrowStreamOptions {""};
+    Rcpp::CharacterVector writeArrowBatchOptions {""};
     bool quiet {false};
     bool transactionsForce {false};
 
@@ -108,6 +109,7 @@ class GDALVector {
 
     SEXP getArrowStream();
     void releaseArrowStream();
+    bool writeArrowBatch(const Rcpp::DataFrame &df);
 
     bool setFeature(const Rcpp::List &feature);
     bool createFeature(const Rcpp::List &feature);
