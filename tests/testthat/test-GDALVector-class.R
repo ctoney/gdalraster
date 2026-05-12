@@ -2047,4 +2047,27 @@ test_that("writeArrowBatch works", {
     d_mod$geom <- g_wk2wk(d_mod$geom)
     expect_false(lyr$writeArrowBatch(d_mod))
     expect_equal(lyr$getFeatureCount(), feat_count * 3)  # no change
+
+    # test writing to Parquet if the driver is available
+	skip_if_not(isTRUE(gdal_formats("Parquet")$vector))
+
+    f_parquet <- system.file("extdata/poly.parquet", package = "gdalraster")
+    dsn_parquet <- file.path(tempdir(), basename(f_parquet))
+    file.copy(f_parquet, dsn_parquet)
+    lyr_parquet <- new(GDALVector, dsn_parquet, "poly", FALSE)
+    on.exit(lyr_parquet$close(), add = TRUE)
+    on.exit(deleteDataset(dsn_parquet), add = TRUE)
+
+    d <- lyr_parquet$fetch(-1)
+    feat_count <- nrow(d)
+    expect_equal(feat_count, lyr_parquet$getFeatureCount())
+
+    d$FID <- d$FID + 1000
+    expect_true(lyr_parquet$writeArrowBatch(d))
+    expect_equal(lyr_parquet$getFeatureCount(), feat_count * 2)
+    lyr_parquet$setAttributeFilter("EAS_ID = 168")
+    expect_equal(lyr_parquet$getFeatureCount(), 2)
+    eas168 <- lyr_parquet$fetch(-1)
+    expect_true(g_equals(eas168[1, "geometry"], eas168[2, "geometry"]))
+    lyr_parquet$setAttributeFilter("")
 })
