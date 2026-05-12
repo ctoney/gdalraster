@@ -1923,6 +1923,133 @@ bool ogr_field_create(const std::string &dsn, const std::string &layer,
     return ret;
 }
 
+//' Create attribute fields from an ArrowSchema
+//'
+//' @noRd
+// [[Rcpp::export(name = ".ogr_create_fields_from_arrow_schema")]]
+std::vector<std::string> ogr_create_fields_from_arrow_schema(
+    const std::string &dsn, const std::string &layer, const SEXP schema_obj,
+    const Rcpp::List &field_options) {
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 8, 0)
+    Rcpp::stop("ogr_create_fields_from_arrow_schema() requires GDAL >= 3.8");
+#else
+
+    std::vector<std::string> fields_created = {};
+
+    auto schema = reinterpret_cast<struct ArrowSchema*>(
+        R_ExternalPtrAddr(schema_obj));
+
+    if (!schema) {
+        cli_alert_danger_(
+            "failed to get ArrowSchema from the input object");
+        return fields_created;
+    }
+
+    const std::string dsn_in = Rcpp::as<std::string>(check_gdal_filename(dsn));
+    GDALDatasetH hDS = nullptr;
+    OGRLayerH hLayer = nullptr;
+
+    CPLPushErrorHandler(CPLQuietErrorHandler);
+    hDS = GDALOpenEx(dsn_in.c_str(), GDAL_OF_VECTOR | GDAL_OF_UPDATE,
+                     nullptr, nullptr, nullptr);
+
+    if (hDS == nullptr) {
+        CPLPopErrorHandler();
+        return fields_created;
+    }
+
+    if (layer == "")
+        hLayer = GDALDatasetGetLayer(hDS, 0);
+    else
+        hLayer = GDALDatasetGetLayerByName(hDS, layer.c_str());
+    CPLPopErrorHandler();
+
+    if (hLayer == nullptr) {
+        GDALReleaseDataset(hDS);
+        return fields_created;
+    }
+
+    if (!OGR_L_TestCapability(hLayer, OLCCreateField)) {
+        GDALReleaseDataset(hDS);
+        cli_alert_danger_("layer does not have CreateField capability");
+        return fields_created;
+    }
+
+    OGRFeatureDefnH hFDefn = nullptr;
+    hFDefn = OGR_L_GetLayerDefn(hLayer);
+    if (hFDefn == nullptr) {
+        GDALReleaseDataset(hDS);
+        cli_alert_danger_("failed to get layer definition");
+        return fields_created;
+    }
+
+    std::vector<std::string> exclude_col_names =
+        {"FID", "OGC_FID", "wkb_geometry"};
+
+    const std::string fid_col(OGR_L_GetFIDColumn(hLayer));
+    if (fid_col != "")
+        exclude_col_names.push_back(fid_col);
+
+    for (int i = 0; i < OGR_FD_GetGeomFieldCount(hFDefn); ++i) {
+        OGRGeomFieldDefnH hGeomFldDefn = OGR_FD_GetGeomFieldDefn(hFDefn, i);
+        if (hGeomFldDefn == nullptr)
+            continue;
+
+        std::string geom_fld_name(OGR_GFld_GetNameRef(hGeomFldDefn));
+        if (geom_fld_name == "")
+            geom_fld_name = "OGR_GEOMETRY";
+
+        exclude_col_names.push_back(geom_fld_name);
+    }
+
+    for (int i = 0; i < schema->n_children; ++i) {
+        const char *col_name = schema->children[i]->name;
+        auto it = std::find(
+            exclude_col_names.cbegin(), exclude_col_names.cend(), col_name);
+
+        if (it != exclude_col_names.cend()) {
+            cli_alert_warning_("column {.field "s + col_name + "} skipped");
+            continue;
+        }
+
+        Rcpp::CharacterVector fld_opt_names = {};
+        if (field_options.size() > 0)
+            fld_opt_names = field_options.names();
+
+        CPLStringList opt;
+        if (field_options.size() > 0 &&
+            contains_str_(fld_opt_names, Rcpp::String(col_name))) {
+
+            if (!Rcpp::is<Rcpp::CharacterVector>(field_options[col_name])) {
+                cli_alert_danger_("{.arg field_options} element {.field "s +
+                                  col_name + "} is not a character vector");
+            }
+            else {
+                Rcpp::CharacterVector opt_ = field_options[col_name];
+                for (const Rcpp::String s : opt_) {
+                    if (s != "" && s != NA_STRING)
+                        opt.AddString(s.get_cstring());
+                }
+            }
+        }
+
+        bool res = OGR_L_CreateFieldFromArrowSchema(
+            hLayer, schema->children[i], opt.empty() ? nullptr : opt.List());
+
+        if (!res) {
+            cli_alert_danger_(
+                "failed to create field {.field "s + col_name + "}");
+        }
+        else {
+            fields_created.push_back(col_name);
+        }
+    }
+
+    return fields_created;
+#endif
+}
+
 //' Create a new geom field on layer
 //'
 //' @noRd
@@ -2259,3 +2386,4 @@ SEXP ogr_execute_sql(const std::string &dsn, const std::string &sql,
     GDALReleaseDataset(hDS);
     return R_NilValue;
 }
+

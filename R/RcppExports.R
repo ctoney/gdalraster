@@ -3144,6 +3144,13 @@ bbox_to_wkt <- function(bbox, extend_x = 0, extend_y = 0) {
     .Call(`_gdalraster_ogr_field_create`, dsn, layer, fld_name, fld_type, fld_subtype, fld_width, fld_precision, is_nullable, is_unique, default_value, domain_name)
 }
 
+#' Create attribute fields from an ArrowSchema
+#'
+#' @noRd
+.ogr_create_fields_from_arrow_schema <- function(dsn, layer, schema_obj, field_options) {
+    .Call(`_gdalraster_ogr_create_fields_from_arrow_schema`, dsn, layer, schema_obj, field_options)
+}
+
 #' Create a new geom field on layer
 #'
 #' @noRd

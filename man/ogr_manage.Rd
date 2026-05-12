@@ -19,6 +19,7 @@
 \alias{ogr_layer_delete}
 \alias{ogr_field_index}
 \alias{ogr_field_create}
+\alias{ogr_create_fields_from_arrow_schema}
 \alias{ogr_geom_field_create}
 \alias{ogr_field_rename}
 \alias{ogr_field_set_domain_name}
@@ -93,6 +94,8 @@ ogr_field_create(
   default_value = "",
   domain_name = NULL
 )
+
+ogr_create_fields_from_arrow_schema(dsn, layer, df, field_options = NULL)
 
 ogr_geom_field_create(
   dsn,
@@ -196,6 +199,11 @@ Defaults to \code{FALSE}.}
 
 \item{default_value}{Optional default value for the field as a character
 string.}
+
+\item{df}{Data frame from which an ArrowSchema will be inferred.}
+
+\item{field_options}{Optional named list of character vectors containing
+\code{"NAME=VALUE"} pairs of field metadata items (see Details).}
 
 \item{geom_fld_defn}{A geometry field definition as list (see
 \code{\link[=ogr_def_geom_field]{ogr_def_geom_field()}}). Additional arguments in \code{ogr_geom_field_create()}
@@ -343,6 +351,14 @@ not exist.
 \code{ogr_field_create()} creates a new attribute field of specified data type in
 a given DSN/layer. Several optional field properties can be specified in
 addition to the type. Returns a logical value, \code{TRUE} indicating success.
+
+\code{ogr_create_fields_from_arrow_schema()} creates one or more fields from an
+ArrowSchema inferred from a given data frame. A character vector of field
+names created is returned, or empty vector if no fields were created.
+This should only be used for attribute fields. Geometry fields should be
+created with \code{ogr_geom_field_create()} (see below). The FID field should
+also not be passed to this function. The function will skip column names
+in the input data frame that match the FID or geometry fields in \code{layer}.
 
 \code{ogr_geom_field_create()} creates a new geometry field of specified type in
 a given DSN/layer. Returns a logical value, \code{TRUE} indicating success.

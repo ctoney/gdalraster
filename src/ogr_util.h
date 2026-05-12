@@ -11,6 +11,7 @@
 #include <Rcpp.h>
 
 #include <string>
+#include <vector>
 
 #include "gdalvector.h"
 #include "rcpp_util.h"
@@ -96,6 +97,10 @@ bool ogr_field_create(const std::string &dsn, const std::string &layer,
                       int fld_precision, bool is_nullable,
                       bool is_unique, const std::string &default_value,
                       const std::string &domain_name);
+
+std::vector<std::string> ogr_create_fields_from_arrow_schema(
+    const std::string &dsn, const std::string &layer, const SEXP schema_obj,
+    const Rcpp::List &field_options);
 
 bool ogr_geom_field_create(const std::string &dsn, const std::string &layer,
                            const std::string &fld_name,

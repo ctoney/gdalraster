@@ -134,6 +134,14 @@
 #' a given DSN/layer. Several optional field properties can be specified in
 #' addition to the type. Returns a logical value, `TRUE` indicating success.
 #'
+#' `ogr_create_fields_from_arrow_schema()` creates one or more fields from an
+#' ArrowSchema inferred from a given data frame. A character vector of field
+#' names created is returned, or empty vector if no fields were created.
+#' This should only be used for attribute fields. Geometry fields should be
+#' created with `ogr_geom_field_create()` (see below). The FID field should
+#' also not be passed to this function. The function will skip column names
+#' in the input data frame that match the FID or geometry fields in `layer`.
+#'
 #' `ogr_geom_field_create()` creates a new geometry field of specified type in
 #' a given DSN/layer. Returns a logical value, `TRUE` indicating success.
 #'
@@ -208,6 +216,9 @@
 #' Defaults to `FALSE`.
 #' @param default_value Optional default value for the field as a character
 #' string.
+#' @param df Data frame from which an ArrowSchema will be inferred.
+#' @param field_options Optional named list of character vectors containing
+#' `"NAME=VALUE"` pairs of field metadata items (see Details).
 #' @param domain_name Character string specifying the name of the field domain.
 #' @param geom_fld_defn A geometry field definition as list (see
 #' [ogr_def_geom_field()]). Additional arguments in `ogr_geom_field_create()`
@@ -869,6 +880,53 @@ ogr_field_create <- function(dsn, layer, fld_name,
     return(.ogr_field_create(dsn, layer, fld_name, fld_type, fld_subtype,
                              fld_width, fld_precision, is_nullable, is_unique,
                              default_value, domain_name))
+}
+
+#' @name ogr_manage
+#' @export
+ogr_create_fields_from_arrow_schema <- function(dsn, layer, df,
+                                                field_options = NULL) {
+
+    # dsn
+    if (missing(dsn) || is.null(dsn) || all(is.na(dsn)))
+        stop("'dsn' is required", call. = FALSE)
+    if (!(is.character(dsn) && length(dsn) == 1))
+        stop("'dsn' must be a length-1 character vector", call. = FALSE)
+    if (!ogr_ds_exists(dsn, with_update = TRUE))
+        stop("'dsn' does not exist, or no update access", call. = FALSE)
+    # layer
+    if (missing(layer) || is.null(layer) || all(is.na(layer)))
+        layer <- ""
+    if (!(is.character(layer) && length(layer) == 1))
+        stop("'layer' must be a length-1 character vector", call. = FALSE)
+    if (!ogr_layer_exists(dsn, layer))
+        stop("'layer' does not exist", call. = FALSE)
+    # df
+    if (missing(df) || is.null(df) || all(is.na(df)))
+        stop("'df' is required", call. = FALSE)
+    if (!is.data.frame(df))
+        stop("'df' must be a data frame", call. = FALSE)
+    # field_options
+    if (!is.null(field_options)) {
+        if (!is.list(field_options)) {
+            stop("'field_options' must be a list", call. = FALSE)
+        } else {
+            if (length(names(field_options)) != length(field_options))
+                stop("'field_options' must be a named list", call. = FALSE)
+        }
+    } else {
+        field_options = vector("list", 0L)
+    }
+
+    schema <- nanoarrow::infer_nanoarrow_schema(df)
+
+    if (!is(schema, "nanoarrow_schema")) {
+        stop("failed to infer Arrow schema from the input data frame",
+             call. = FALSE)
+    }
+
+    return(
+        .ogr_create_fields_from_arrow_schema(dsn, layer, schema, field_options))
 }
 
 #' @name ogr_manage

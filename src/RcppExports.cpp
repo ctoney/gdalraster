@@ -2148,6 +2148,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ogr_create_fields_from_arrow_schema
+std::vector<std::string> ogr_create_fields_from_arrow_schema(const std::string& dsn, const std::string& layer, const SEXP schema_obj, const Rcpp::List& field_options);
+RcppExport SEXP _gdalraster_ogr_create_fields_from_arrow_schema(SEXP dsnSEXP, SEXP layerSEXP, SEXP schema_objSEXP, SEXP field_optionsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type dsn(dsnSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type layer(layerSEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type schema_obj(schema_objSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type field_options(field_optionsSEXP);
+    rcpp_result_gen = Rcpp::wrap(ogr_create_fields_from_arrow_schema(dsn, layer, schema_obj, field_options));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ogr_geom_field_create
 bool ogr_geom_field_create(const std::string& dsn, const std::string& layer, const std::string& fld_name, const std::string& geom_type, const std::string& srs, bool is_nullable);
 RcppExport SEXP _gdalraster_ogr_geom_field_create(SEXP dsnSEXP, SEXP layerSEXP, SEXP fld_nameSEXP, SEXP geom_typeSEXP, SEXP srsSEXP, SEXP is_nullableSEXP) {
@@ -2834,6 +2848,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_ogr_layer_field_names", (DL_FUNC) &_gdalraster_ogr_layer_field_names, 2},
     {"_gdalraster_ogr_field_index", (DL_FUNC) &_gdalraster_ogr_field_index, 3},
     {"_gdalraster_ogr_field_create", (DL_FUNC) &_gdalraster_ogr_field_create, 11},
+    {"_gdalraster_ogr_create_fields_from_arrow_schema", (DL_FUNC) &_gdalraster_ogr_create_fields_from_arrow_schema, 4},
     {"_gdalraster_ogr_geom_field_create", (DL_FUNC) &_gdalraster_ogr_geom_field_create, 6},
     {"_gdalraster_ogr_field_rename", (DL_FUNC) &_gdalraster_ogr_field_rename, 4},
     {"_gdalraster_ogr_field_set_domain_name", (DL_FUNC) &_gdalraster_ogr_field_set_domain_name, 4},
