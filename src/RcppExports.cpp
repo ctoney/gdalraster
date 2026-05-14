@@ -1733,6 +1733,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// g_point_on_surface
+SEXP g_point_on_surface(const Rcpp::RObject& geom, bool as_iso, const std::string& byte_order, bool quiet);
+RcppExport SEXP _gdalraster_g_point_on_surface(SEXP geomSEXP, SEXP as_isoSEXP, SEXP byte_orderSEXP, SEXP quietSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type geom(geomSEXP);
+    Rcpp::traits::input_parameter< bool >::type as_iso(as_isoSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type byte_order(byte_orderSEXP);
+    Rcpp::traits::input_parameter< bool >::type quiet(quietSEXP);
+    rcpp_result_gen = Rcpp::wrap(g_point_on_surface(geom, as_iso, byte_order, quiet));
+    return rcpp_result_gen;
+END_RCPP
+}
 // g_segmentize
 SEXP g_segmentize(const Rcpp::RObject& geom, double max_length, bool as_iso, const std::string& byte_order, bool quiet);
 RcppExport SEXP _gdalraster_g_segmentize(SEXP geomSEXP, SEXP max_lengthSEXP, SEXP as_isoSEXP, SEXP byte_orderSEXP, SEXP quietSEXP) {
@@ -2803,6 +2817,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_g_convex_hull", (DL_FUNC) &_gdalraster_g_convex_hull, 4},
     {"_gdalraster_g_concave_hull", (DL_FUNC) &_gdalraster_g_concave_hull, 6},
     {"_gdalraster_g_delaunay_triangulation", (DL_FUNC) &_gdalraster_g_delaunay_triangulation, 7},
+    {"_gdalraster_g_point_on_surface", (DL_FUNC) &_gdalraster_g_point_on_surface, 4},
     {"_gdalraster_g_segmentize", (DL_FUNC) &_gdalraster_g_segmentize, 5},
     {"_gdalraster_g_simplify", (DL_FUNC) &_gdalraster_g_simplify, 6},
     {"_gdalraster_g_unary_union", (DL_FUNC) &_gdalraster_g_unary_union, 4},
