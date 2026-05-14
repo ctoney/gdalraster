@@ -2445,6 +2445,69 @@ SEXP g_delaunay_triangulation(const Rcpp::RObject &geom,
 }
 
 //' @noRd
+// [[Rcpp::export(name = ".g_point_on_surface")]]
+SEXP g_point_on_surface(const Rcpp::RObject &geom, bool as_iso = false,
+                        const std::string &byte_order = "LSB",
+                        bool quiet = false) {
+// Returns a point guaranteed to lie on the surface.
+// This method relates to the SFCOM ISurface::get_PointOnSurface() method
+// however the current implementation based on GEOS can operate on other
+// geometry types than the types that are supported by SQL/MM-Part 3:
+// surfaces (polygons) and multisurfaces (multipolygons).
+
+    if (geom.isNULL() || !Rcpp::is<Rcpp::RawVector>(geom))
+        return R_NilValue;
+
+    const Rcpp::RawVector geom_in(geom);
+    if (geom_in.size() == 0)
+        return R_NilValue;
+
+    OGRGeometryH hGeom = createGeomFromWkb_(geom_in);
+    if (hGeom == nullptr) {
+        if (!quiet) {
+            Rcpp::warning(
+                "failed to create geometry object from WKB, NULL returned");
+        }
+        return R_NilValue;
+    }
+
+    OGRGeometryH hPoint = OGR_G_PointOnSurface(hGeom);
+
+    if (!hPoint) {
+        OGR_G_DestroyGeometry(hGeom);
+        if (!quiet) {
+            Rcpp::warning("OGR API call gave NULL geometry");
+        }
+        return R_NilValue;
+    }
+
+    int nWKBSize = OGR_G_WkbSize(hPoint);
+    if (!nWKBSize) {
+        OGR_G_DestroyGeometry(hGeom);
+        OGR_G_DestroyGeometry(hPoint);
+        if (!quiet) {
+            Rcpp::warning("failed to obtain WKB size of output geometry");
+        }
+        return R_NilValue;
+    }
+
+    Rcpp::RawVector wkb = Rcpp::no_init(nWKBSize);
+    bool result = exportGeomToWkb_(hPoint, &wkb[0], as_iso, byte_order);
+
+    OGR_G_DestroyGeometry(hGeom);
+    OGR_G_DestroyGeometry(hPoint);
+    if (!result) {
+        if (!quiet) {
+           Rcpp::warning(
+                "failed to export WKB raw vector for output geometry");
+        }
+        return R_NilValue;
+    }
+
+    return wkb;
+}
+
+//' @noRd
 // [[Rcpp::export(name = ".g_segmentize")]]
 SEXP g_segmentize(const Rcpp::RObject &geom, double max_length, bool as_iso,
                   const std::string &byte_order, bool quiet) {

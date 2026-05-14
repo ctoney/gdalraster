@@ -1194,6 +1194,33 @@ test_that("unary ops return correct values", {
         expect_equal(g_dt, g_expect)
     }
 
+    # g_point_on_surface
+    g1 <- "POLYGON ((130 120, 120 190, 30 140, 50 20, 190 20, 170 100, 90 60, 90 130, 130 120))"
+    g_pos <- g_point_on_surface(g1, as_wkb = FALSE)
+    g_expect <- "POINT (62.5 110.0)"
+    expect_equal(g_pos, g_expect)
+    # wkb input
+    g_pos <- g_point_on_surface(g_wk2wk(g1), as_wkb = FALSE)
+    expect_equal(g_pos, g_expect)
+    # same but testing defaults in case optional arguments are nulled out
+    g_pos <- g_point_on_surface(g_wk2wk(g1), as_wkb = FALSE, as_iso = NULL,
+                                byte_order = NULL, quiet = NULL)
+    expect_equal(g_pos, g_expect)
+    # empty raw vector
+    expect_true(is.null(g_point_on_surface(raw(0))))
+    # vector/list input
+    g_expect <- c(g_expect, g_expect, NA)
+    # character vector of wkt input
+    expect_warning(
+        g_pos <- g_point_on_surface(c(g1, g1, NA), as_wkb = FALSE)) |>
+            expect_warning()  # for as_wkb = FALSE
+    expect_equal(g_pos, g_expect)
+    # list of wkb input
+    expect_warning(
+        g_pos <- g_point_on_surface(g_wk2wk(c(g1, g1, NA)), as_wkb = FALSE)) |>
+            expect_warning()  # for as_wkb = FALSE
+    expect_equal(g_pos, g_expect)
+
     # g_segmentize
     g1 <- "LINESTRING (0 0,0 10)"
     g_seg <- g_segmentize(g1, max_length = 5, as_wkb = FALSE)

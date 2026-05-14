@@ -128,6 +128,8 @@ SEXP g_delaunay_triangulation(const Rcpp::RObject &geom, bool constrained,
                               double tolerance, bool only_edges, bool as_iso,
                               const std::string &byte_order, bool quiet);
 
+SEXP g_point_on_surface(const Rcpp::RObject &geom, bool quiet = false);
+
 SEXP g_segmentize(const Rcpp::RObject &geom, double max_length, bool as_iso,
                   const std::string &byte_order, bool quiet);
 
