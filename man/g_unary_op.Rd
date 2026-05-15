@@ -190,6 +190,12 @@ vertices of the given polygon(s). For non-polygonal inputs, silently returns
 an empty geometry collection. Requires GDAL >= 3.12 and GEOS >= 3.10.
 }
 
+\code{g_point_on_surface()} returns a point guaranteed to lie on the surface.
+Applies to surface and multisurface geometry types (e.g., POLYGON,
+MULTIPOLYGON, CURVEPOLYGON), otherwise \code{NULL} is returned. The point returned
+by this function is guaranteed to lie within polygons, whereas the centroid
+may be outside. Wrapper of \code{OGR_G_PointOnSurface()} in the GDAL API.
+
 \code{g_segmentize()} modifies a geometry such that it has no segment longer then
 the given \code{max_length}. Interpolated points will have Z and M values
 (if needed) set to \code{0}. Distance computation is performed in 2D only.
@@ -229,12 +235,6 @@ of the space between the polygons, until the target criterion parameter is
 reached. This can be expressed as a ratio between the lengths of the longest
 and shortest edges. \code{1} produces the convex hull; \code{0} produces a hull with
 maximum concaveness.
-
-\code{g_point_on_surface()} returns a point guaranteed to lie on the surface.
-Applies to surface and multisurface geometry types (e.g., POLYGON,
-MULTIPOLYGON, CURVEPOLYGON), otherwise \code{NULL} is returned. The point returned
-by this function is guaranteed to lie within polygons, whereas the centroid
-may be outside.
 
 \code{g_simplify()}:
 \itemize{
