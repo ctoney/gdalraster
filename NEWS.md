@@ -1,4 +1,4 @@
-# gdalraster 2.6.0.9005 (dev)
+# gdalraster 2.6.1.9000 (dev)
 
 * add `g_point_on_surface()`: wrapper of `OGR_G_PointOnSurface()` in the GDAL API (2026-05-13)
 
@@ -10,7 +10,14 @@
 
 * `get_pixel_line()`: treat points "exactly" on the right or bottom raster edge as inside (#973) (2026-05-06)
 
-* (internal) fix clang warning in `srs_get_axes()` [-Wdangling-assignment-gsl] (#972) (2026-05-05)
+# gdalraster 2.6.1
+
+## Maintenance release
+
+* fix clang warning `[-Wdangling-assignment-gsl]` in `srs_get_axes()`
+* avoid GDAL issue [12934](https://github.com/OSGeo/gdal/issues/12934) in the vignette code for [Vector API Overview](https://firelab.github.io/gdalraster/articles/vector-api-overview.html) if GDAL < 3.11.4 on some platforms
+* add a configuration option in the example code for `ogr_reproject()` to avoid the potential GDAL issue 12934
+* condition tests of `ogr_reproject()` on GDAL 3.11.4 and add the `OGR_GPKG_STREAM_BASE_IMPL=YES` configuration option
 
 # gdalraster 2.6.0
 
