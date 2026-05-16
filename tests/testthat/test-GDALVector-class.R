@@ -2049,7 +2049,12 @@ test_that("writeArrowBatch works", {
     expect_equal(lyr$getFeatureCount(), feat_count * 3)  # no change
 
     # test writing to Parquet if the driver is available
-    skip_if(gdal_version_num() < gdal_compute_version(3, 10, 0))
+    # skip_if(gdal_version_num() < gdal_compute_version(3, 10, 0))
+    expect_equal(nrow(gdal_formats("Parquet")), 1)
+    fmt_short_name <- gdal_formats("Parquet")$short_name
+    expect_true(is.na(fmt_short_name) || fmt_short_name == "Parquet")
+    fmt_is_vector <- gdal_formats("Parquet")$vector
+    expect_true(is.na(fmt_is_vector) || fmt_is_vector)
 	skip_if_not(isTRUE(gdal_formats("Parquet")$vector))
 
     f_parquet <- system.file("extdata/poly.parquet", package = "gdalraster")

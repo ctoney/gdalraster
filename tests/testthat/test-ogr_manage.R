@@ -516,6 +516,11 @@ test_that("ogr_create_fields_from_arrow_schema works", {
     expect_equal(lyr_gpkg$getFeatureCount(), 10)
 
     ## Parquet
+    expect_equal(nrow(gdal_formats("Parquet")), 1)
+    fmt_short_name <- gdal_formats("Parquet")$short_name
+    expect_true(is.na(fmt_short_name) || fmt_short_name == "Parquet")
+    fmt_is_vector <- gdal_formats("Parquet")$vector
+    expect_true(is.na(fmt_is_vector) || fmt_is_vector)
     skip_if_not(isTRUE(gdal_formats("Parquet")$vector))
 
     f_parquet <- file.path(tempdir(), "test.parquet")
