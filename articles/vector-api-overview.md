@@ -752,7 +752,7 @@ YNP boundary polygon has background R color 'wheat'. The locations of
 geothermal features are solid circles with R color 'steelblue1. The
 x-axis label is 'longitude' and the y-axis label is 'latitude'. The plot
 title is 'YNP Geothermal
-Features.](vector-api-overview_files/figure-html/unnamed-chunk-9-1.png)
+Features.](vector-api-overview_files/figure-html/unnamed-chunk-10-1.png)
 
 For clean up, the `$close()` method should be called on the layer object
 opened with
@@ -987,7 +987,7 @@ boundary polygon has background R color 'wheat', and the road features
 are shown as double-width lines with R color 'slategray'. The x-axis
 label is 'longitude' and the y-axis label is 'latitude'. The plot title
 is 'YNP Public
-Roads'.](vector-api-overview_files/figure-html/unnamed-chunk-13-1.png)
+Roads'.](vector-api-overview_files/figure-html/unnamed-chunk-14-1.png)
 
 ``` r
 
@@ -1246,7 +1246,7 @@ perimeter is shown as a filled polygon in R color 'orangered'. The three
 points of interest are shown as filled square symbols in R color
 'royalblue'. The x-axis label is 'x' and the y-axis label is 'y'. The
 plot is
-untitled.](vector-api-overview_files/figure-html/unnamed-chunk-16-1.png)
+untitled.](vector-api-overview_files/figure-html/unnamed-chunk-17-1.png)
 
 ``` r
 
@@ -1307,10 +1307,10 @@ fid <- poi$getLastWriteFID()
 #> [1] Information
 #> 
 #> $createdate
-#> [1] 2026-05-15
+#> [1] 2026-05-16
 #> 
 #> $editdate
-#> [1] 2026-05-15
+#> [1] 2026-05-16
 #> 
 #> $geom
 #> [1] WKB POINT: raw 01 01 00 00 ...
@@ -1325,7 +1325,7 @@ single point. The YNP boundary polygon has background R color 'wheat'.
 The centroid point is shown as an R 'circle plus' symbol, a circle with
 a plus sign inside resembling crosshairs. The x-axis label is 'x' and
 the y-axis label is 'y'. The plot is
-untitled.](vector-api-overview_files/figure-html/unnamed-chunk-17-1.png)
+untitled.](vector-api-overview_files/figure-html/unnamed-chunk-18-1.png)
 
 ### Rewrite/replace an existing feature
 
@@ -1398,7 +1398,7 @@ poi$syncToDisk()
 #> [1] 2016-02-03
 #> 
 #> $editdate
-#> [1] 2026-05-15
+#> [1] 2026-05-16
 #> 
 #> $geom
 #> [1] WKB POINT: raw 01 01 00 00 ...
@@ -1434,10 +1434,10 @@ poi$getFeature(fid)
 #> [1] Information
 #> 
 #> $createdate
-#> [1] 2026-05-15
+#> [1] 2026-05-16
 #> 
 #> $editdate
-#> [1] 2026-05-15
+#> [1] 2026-05-16
 #> 
 #> $geom
 #> [1] WKB POINT: raw 01 01 00 00 ...
@@ -1517,10 +1517,10 @@ d$geom <- pts_geom
 # write the batch (no transaction)
 system.time(res <- lyr$batchCreateFeature(d))
 #>  ■                                  0% |  ETA:  2m
-#> ✔ Done (1.9s)
+#> ✔ Done (1.8s)
 #> 
 #>    user  system elapsed 
-#>   1.882   0.010   1.893
+#>   1.813   0.012   1.825
 
 (all(res))
 #> [1] TRUE
@@ -1552,10 +1552,10 @@ system.time({
     lyr$rollbackTransaction()
 })
 #>  ■                                  0% |  ETA:  1m
-#> ✔ Done (332ms)
+#> ✔ Done (335ms)
 #> 
 #>    user  system elapsed 
-#>   1.030   0.009   1.040
+#>   1.043   0.008   1.052
 
 (all(res2))
 #> [1] TRUE
@@ -1568,22 +1568,22 @@ d_out <- lyr$fetch(-1)
 head(d_out)
 #> OGR feature set
 #>   FID               pt_desc         create_time                           geom
-#> 1   1 random points batch 1 2026-05-15 05:55:47 WKB POINT: raw 01 01 00 00 ...
-#> 2   2 random points batch 1 2026-05-15 05:55:47 WKB POINT: raw 01 01 00 00 ...
-#> 3   3 random points batch 1 2026-05-15 05:55:47 WKB POINT: raw 01 01 00 00 ...
-#> 4   4 random points batch 1 2026-05-15 05:55:47 WKB POINT: raw 01 01 00 00 ...
-#> 5   5 random points batch 1 2026-05-15 05:55:47 WKB POINT: raw 01 01 00 00 ...
-#> 6   6 random points batch 1 2026-05-15 05:55:47 WKB POINT: raw 01 01 00 00 ...
+#> 1   1 random points batch 1 2026-05-16 02:14:24 WKB POINT: raw 01 01 00 00 ...
+#> 2   2 random points batch 1 2026-05-16 02:14:24 WKB POINT: raw 01 01 00 00 ...
+#> 3   3 random points batch 1 2026-05-16 02:14:24 WKB POINT: raw 01 01 00 00 ...
+#> 4   4 random points batch 1 2026-05-16 02:14:24 WKB POINT: raw 01 01 00 00 ...
+#> 5   5 random points batch 1 2026-05-16 02:14:24 WKB POINT: raw 01 01 00 00 ...
+#> 6   6 random points batch 1 2026-05-16 02:14:24 WKB POINT: raw 01 01 00 00 ...
 
 tail(d_out)
 #> OGR feature set
 #>           FID               pt_desc         create_time
-#> 199995 199995 random points batch 2 2026-05-15 05:55:50
-#> 199996 199996 random points batch 2 2026-05-15 05:55:50
-#> 199997 199997 random points batch 2 2026-05-15 05:55:50
-#> 199998 199998 random points batch 2 2026-05-15 05:55:50
-#> 199999 199999 random points batch 2 2026-05-15 05:55:50
-#> 200000 200000 random points batch 2 2026-05-15 05:55:50
+#> 199995 199995 random points batch 2 2026-05-16 02:14:26
+#> 199996 199996 random points batch 2 2026-05-16 02:14:26
+#> 199997 199997 random points batch 2 2026-05-16 02:14:26
+#> 199998 199998 random points batch 2 2026-05-16 02:14:26
+#> 199999 199999 random points batch 2 2026-05-16 02:14:26
+#> 200000 200000 random points batch 2 2026-05-16 02:14:26
 #>                                  geom
 #> 199995 WKB POINT: raw 01 01 00 00 ...
 #> 199996 WKB POINT: raw 01 01 00 00 ...
@@ -1764,7 +1764,7 @@ Areas within the North Fork polygon that have re-burned are shown as
 filled polygons in R color 'orangered'. The x-axis label is 'x' and the
 y-axis label is 'y'. The plot title is '1988 North Fork fire perimeter
 showing re-burned areas in
-red'.](vector-api-overview_files/figure-html/unnamed-chunk-24-1.png)
+red'.](vector-api-overview_files/figure-html/unnamed-chunk-25-1.png)
 
 ``` r
 

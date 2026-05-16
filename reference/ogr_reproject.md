@@ -183,6 +183,10 @@ raster reprojection
 ## Examples
 
 ``` r
+# for GDAL < 3.11.4 (see https://github.com/OSGeo/gdal/issues/12934)
+save_opt <- get_config_option("OGR2OGR_USE_ARROW_API")
+set_config_option("OGR2OGR_USE_ARROW_API", "NO")
+
 # MTBS fire perimeters
 f <- system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
 (mtbs <- new(GDALVector, f, "mtbs_perims"))
@@ -205,7 +209,7 @@ ynp_dsn <- file.path(tempdir(), "ynp_features.gpkg")
 (bnd <- new(GDALVector, ynp_dsn, "ynp_bnd"))
 #> C++ object of class <GDALVector>
 #>   • Driver: GeoPackage (GPKG)
-#>   • DSN: "/tmp/Rtmp2Qxj8U/ynp_features.gpkg"
+#>   • DSN: "/tmp/RtmpNVE6fg/ynp_features.gpkg"
 #>   • Layer: ynp_bnd
 #>   • CRS: NAD83 (EPSG:4269)
 #>   • Geometry: POLYGON
@@ -218,7 +222,7 @@ out_dsn <- tempfile(fileext = ".gpkg")
 (bnd_mtsp <- ogr_reproject(ynp_dsn, "ynp_bnd", out_dsn, mtbs$getSpatialRef()))
 #> C++ object of class <GDALVector>
 #>   • Driver: GeoPackage (GPKG)
-#>   • DSN: "/tmp/Rtmp2Qxj8U/file20f7b8c0c1c.gpkg"
+#>   • DSN: "/tmp/RtmpNVE6fg/file20a0577bdc8.gpkg"
 #>   • Layer: ynp_bnd
 #>   • CRS: NAD83 / Montana (EPSG:32100)
 #>   • Geometry: POLYGON
@@ -277,4 +281,7 @@ plot(feat, col = "red", border = NA, add = TRUE)
 mtbs$close()
 bnd$close()
 bnd_mtsp$close()
+
+# reset config option to original
+set_config_option("OGR2OGR_USE_ARROW_API", save_opt)
 ```
