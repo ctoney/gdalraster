@@ -2916,6 +2916,11 @@ has_geos <- function() {
 }
 
 #' @noRd
+.g_point_on_surface <- function(geom, as_iso = FALSE, byte_order = "LSB", quiet = FALSE) {
+    .Call(`_gdalraster_g_point_on_surface`, geom, as_iso, byte_order, quiet)
+}
+
+#' @noRd
 .g_segmentize <- function(geom, max_length, as_iso, byte_order, quiet) {
     .Call(`_gdalraster_g_segmentize`, geom, max_length, as_iso, byte_order, quiet)
 }

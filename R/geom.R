@@ -2825,6 +2825,12 @@ g_geodesic_length <- function(geom, srs, traditional_gis_order = TRUE,
 #' vertices of the given polygon(s). For non-polygonal inputs, silently returns
 #' an empty geometry collection. Requires GDAL >= 3.12 and GEOS >= 3.10.
 #'
+#' `g_point_on_surface()` returns a point guaranteed to lie on the surface.
+#' Applies to surface and multisurface geometry types (e.g., POLYGON,
+#' MULTIPOLYGON, CURVEPOLYGON), otherwise `NULL` is returned. The point returned
+#' by this function is guaranteed to lie within polygons, whereas the centroid
+#' may be outside. Wrapper of `OGR_G_PointOnSurface()` in the GDAL API.
+#'
 #' `g_segmentize()` modifies a geometry such that it has no segment longer then
 #' the given `max_length`. Interpolated points will have Z and M values
 #' (if needed) set to `0`. Distance computation is performed in 2D only.
@@ -2950,6 +2956,14 @@ g_geodesic_length <- function(geom, srs, traditional_gis_order = TRUE,
 #'   g <- "MULTIPOINT(0 0,0 1,1 1,1 0)"
 #'   g_delaunay_triangulation(g, as_wkb = FALSE)
 #' }
+#'
+#' # https://postgis.net/docs/ST_PointOnSurface.html
+#' g <- "POLYGON ((130 120, 120 190, 30 140, 50 20, 190 20, 170 100, 90 60, 90 130, 130 120))"
+#' pt <- g_point_on_surface(g)
+#' plot_geom(g)
+#' plot_geom(pt, pch = 16, add = TRUE)
+#' centroid <- g_create("POINT", g_centroid(g))
+#' plot_geom(centroid, add = TRUE)
 #'
 #' g <- "LINESTRING(0 0,0 10)"
 #' g_segmentize(g, 1) |> g_wk2wk()
@@ -3258,6 +3272,57 @@ g_delaunay_triangulation <- function(geom, constrained = FALSE, tolerance = 0.0,
         } else {
             wkb <- lapply(g_wk2wk(geom), .g_delaunay_triangulation, constrained,
                           tolerance, only_edges, as_iso, byte_order, quiet)
+        }
+    } else {
+        stop("'geom' must be a character vector, raw vector, or list",
+             call. = FALSE)
+    }
+
+    if (as_wkb)
+        return(wkb)
+    else
+        return(g_wk2wk(wkb, as_iso))
+}
+
+#' @name g_unary_op
+#' @export
+g_point_on_surface <- function(geom, as_wkb = TRUE, as_iso = FALSE,
+                               byte_order = "LSB", quiet = FALSE) {
+    # as_wkb
+    if (is.null(as_wkb))
+        as_wkb <- TRUE
+    if (!is.logical(as_wkb) || length(as_wkb) > 1)
+        stop("'as_wkb' must be a single logical value", call. = FALSE)
+    # as_iso
+    if (is.null(as_iso))
+        as_iso <- FALSE
+    if (!is.logical(as_iso) || length(as_iso) > 1)
+        stop("'as_iso' must be a single logical value", call. = FALSE)
+    # byte_order
+    if (is.null(byte_order))
+        byte_order <- "LSB"
+    if (!is.character(byte_order) || length(byte_order) > 1)
+        stop("'byte_order' must be a character string", call. = FALSE)
+    byte_order <- toupper(byte_order)
+    if (byte_order != "LSB" && byte_order != "MSB")
+        stop("invalid 'byte_order'", call. = FALSE)
+    # quiet
+    if (is.null(quiet))
+        quiet <- FALSE
+    if (!is.logical(quiet) || length(quiet) > 1)
+        stop("'quiet' must be a single logical value", call. = FALSE)
+
+    wkb <- NULL
+    if (.is_raw_or_null(geom)) {
+        wkb <- .g_point_on_surface(geom, as_iso, byte_order, quiet)
+    } else if (is.list(geom) && .is_raw_or_null(geom[[1]])) {
+        wkb <- lapply(geom, .g_point_on_surface, as_iso, byte_order, quiet)
+    } else if (is.character(geom)) {
+        if (length(geom) == 1) {
+            wkb <- .g_point_on_surface(g_wk2wk(geom), as_iso, byte_order, quiet)
+        } else {
+            wkb <- lapply(g_wk2wk(geom), .g_point_on_surface, as_iso,
+                          byte_order, quiet)
         }
     } else {
         stop("'geom' must be a character vector, raw vector, or list",
