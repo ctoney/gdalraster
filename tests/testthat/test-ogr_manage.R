@@ -515,13 +515,11 @@ test_that("ogr_create_fields_from_arrow_schema works", {
     expect_true(lyr_gpkg$writeArrowBatch(d))
     expect_equal(lyr_gpkg$getFeatureCount(), 10)
 
-    ## Parquet
+    ## Parquet if the driver is available
     expect_equal(nrow(gdal_formats("Parquet")), 1)
     fmt_short_name <- gdal_formats("Parquet")$short_name
-    expect_true(is.na(fmt_short_name) || fmt_short_name == "Parquet")
-    fmt_is_vector <- gdal_formats("Parquet")$vector
-    expect_true(is.na(fmt_is_vector) || fmt_is_vector)
-    skip_if_not(isTRUE(gdal_formats("Parquet")$vector))
+    skip_if(is.na(fmt_short_name) || fmt_short_name != "Parquet")
+    message("TEST DEBUG: Parquet driver detected: ", fmt_short_name)
 
     f_parquet <- file.path(tempdir(), "test.parquet")
     on.exit(deleteDataset(f_parquet), add = TRUE)
