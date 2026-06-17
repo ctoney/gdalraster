@@ -29,9 +29,13 @@ contributors](https://github.com/OSGeo/gdal/graphs/contributors))
 - **Peter Dimov**. Contributor, copyright holder.  
   Boost combine hashes method in src/cmb_table.h
 
-See file
-[`inst/COPYRIGHTS`](https://github.com/firelab/gdalraster/blob/HEAD/inst/COPYRIGHTS)
-for details.
+&nbsp;
+
+- See file
+  [`inst/COPYRIGHTS`](https://github.com/firelab/gdalraster/blob/HEAD/inst/COPYRIGHTS)
+  for details.
+
+- ***gdalraster*** logo designed by: Sylvain Beorchia
 
 ## Citation
 
