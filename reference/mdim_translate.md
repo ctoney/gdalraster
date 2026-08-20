@@ -224,8 +224,8 @@ if (isTRUE(gdal_get_driver_md("netCDF")$NETCDF_HAS_NC4 == "YES")) {
 
 f_dst <- tempfile(fileext = ".nc")
 mdim_translate(f_src, f_dst, creation_options = opt)
-#>  ■■■■■■■■                          24% |  ETA: 29s
-#> ✔ Done (9.3s)
+#>  ■■■■■■■■                          24% |  ETA: 31s
+#> ✔ Done (10s)
 #> 
 info <- mdim_info(f_dst, cout = FALSE) |> yyjsonr::read_json_str()
 # str(info)
@@ -294,9 +294,6 @@ ds$close()
 ## subsample along X and Y
 f_dst4 <- tempfile(fileext = ".nc")
 mdim_translate(f_src, f_dst4, scaleaxes_specs = "x(2),y(2)")
-#>  ■■■■■■■■■                         25% |  ETA:  0s
-#> ✔ Done (65ms)
-#> 
 (ds <- mdim_as_classic(f_dst4, "Band1", 1, 0))
 #> C++ object of class <GDALRaster>
 #>   • Driver: (driverless dataset)
