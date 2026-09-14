@@ -2052,6 +2052,8 @@ test_that("writeArrowBatch works", {
     expect_equal(lyr$getFeatureCount(), feat_count * 3)  # no change
 
     # test writing to Parquet if the driver is available
+    # skip on CRAN due to possible issue with the Parquet driver in the Fedora GDAL packages
+    skip_on_cran()
     skip_if(gdal_version_num() < gdal_compute_version(3, 10, 0))
 	skip_if_not(isTRUE(gdal_formats("Parquet")$vector))
 
