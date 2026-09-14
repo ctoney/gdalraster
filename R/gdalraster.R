@@ -49,9 +49,10 @@
 #' # to specify dataset open options:
 #' ds <- new(GDALRaster, filename, read_only = TRUE|FALSE, open_options)
 #' # to open without using shared mode:
-#' new(GDALRaster, filename, read_only, open_options, shared = FALSE)
+#' ds <- new(GDALRaster, filename, read_only, open_options, shared = FALSE)
 #' # to specify certain allowed driver(s):
-#' new(GDALRaster, filename, read_only, open_options, shared, allowed_drivers)
+#' ds <- new(GDALRaster, filename, read_only, open_options, shared,
+#'           allowed_drivers)
 #'
 #' ## Read/write fields (per-object settings)
 #' ds$infoOptions
