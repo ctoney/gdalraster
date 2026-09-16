@@ -81,32 +81,37 @@ print.OGRFeatureSet <- function(x, ...) {
 
     } else if (geom_format == "WKB" || geom_format == "WKB_ISO") {
         y <- x
-        for (i in seq_along(geom_column)) {
-            geom_name <- g_name(x[, geom_column[i]])
-            geom_name[is.na(geom_name)] <- "NULL geometry"
-            wkb_starts_with <- sapply(x[, geom_column[i]],
-                                      function(g) paste(g[1:4], collapse = " "))
+        try({
+            for (i in seq_along(geom_column)) {
+                geom_name <- g_name(x[, geom_column[i]])
+                geom_name[is.na(geom_name)] <- "NULL geometry"
+                wkb_starts_with <- sapply(
+                    x[, geom_column[i]],
+                    function(g) paste(g[1:4], collapse = " "))
 
-            geom_col_print <- paste0(geom_format, " ",
-                                     geom_name, ": ", "raw ",
-                                     wkb_starts_with, " ...")
-            y[geom_column[i]] <- geom_col_print
-        }
+                geom_col_print <- paste0(geom_format, " ",
+                                         geom_name, ": ", "raw ",
+                                         wkb_starts_with, " ...")
+                y[geom_column[i]] <- geom_col_print
+            }
+        }, silent = TRUE)
         attr(y, "gis") <- NULL
         print.data.frame(y, ...)
 
     } else if (geom_format == "WKT" || geom_format == "WKT_ISO") {
         y <- x
-        for (i in seq_along(geom_column)) {
-            wkt <- x[[geom_column[i]]]
-            wkt_starts_with <- substring(wkt, 1, 28)
-            y[geom_column[i]] <- paste0(geom_format, ": chr \"",
-                                        wkt_starts_with, " ...\"")
-            y[is.na(wkt), geom_column[i]] <- paste0("WKT NULL geometry",
-                                                    ": chr \"",
-                                                    wkt_starts_with,
-                                                    " ...\"")
-        }
+        try({
+            for (i in seq_along(geom_column)) {
+                wkt <- x[[geom_column[i]]]
+                wkt_starts_with <- substring(wkt, 1, 28)
+                y[geom_column[i]] <- paste0(geom_format, ": chr \"",
+                                            wkt_starts_with, " ...\"")
+                y[is.na(wkt), geom_column[i]] <- paste0("WKT NULL geometry",
+                                                        ": chr \"",
+                                                        wkt_starts_with,
+                                                        " ...\"")
+            }
+        }, silent = TRUE)
         attr(y, "gis") <- NULL
         print.data.frame(y, ...)
 
