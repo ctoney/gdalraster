@@ -43,9 +43,8 @@ The package supports:
 * virtual raster (VRT) for virtual cropping, resampling, kernel filtering, mosaicing
 * [raster utilities](https://firelab.github.io/gdalraster/reference/index.html#raster-utilities)
 * GDAL multidimensional raster ([`mdim_as_classic()`](https://firelab.github.io/gdalraster/reference/mdim_as_classic.html), [`mdim_info()`](https://firelab.github.io/gdalraster/reference/mdim_info.html), [`mdim_translate()`](https://firelab.github.io/gdalraster/reference/mdim_translate.html))
-* coordinate transformation
-* spatial reference systems
-* [geometry API](https://firelab.github.io/gdalraster/reference/index.html#geometry) operating on raw vectors of WKB or WKT strings
+* spatial reference systems and coordinate transformation (PROJ via GDAL headers)
+* [geometry API](https://firelab.github.io/gdalraster/reference/index.html#geometry) operating on raw vectors of WKB or WKT strings (GEOS via GDAL headers)
 * [vector utilities](https://firelab.github.io/gdalraster/reference/index.html#vector-utilities)
 * GDAL facilities for [vector geoprocessing](https://firelab.github.io/gdalraster/reference/ogr_proc.html)
 * [dataset management](https://firelab.github.io/gdalraster/reference/index.html#general-data-management) (inspect/copy files/rename/delete)
