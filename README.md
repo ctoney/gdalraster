@@ -246,3 +246,7 @@ See <https://github.com/hypertidy/gdal-r-ci> (thanks to Michael Sumner):
   Ref](https://firelab.github.io/gdalraster/articles/gdal-config-quick-ref.html)
 - [Vector Read
   Benchmarks](https://firelab.github.io/gdalraster/articles/vector-read-benchmarks.html)
+
+------------------------------------------------------------------------
+
+<sub>Logo designed by Sylvain Beorchia</sub>
