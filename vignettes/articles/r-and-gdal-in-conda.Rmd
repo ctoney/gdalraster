@@ -135,7 +135,7 @@ pixi add r-essentials r-gdalraster libgdal-arrow-parquet
 pixi shell
 ```
 
-The last command starts an interactive subshell with the environment activated (use `exit` to leave the shell). You get a digest-level `pixi.lock` lock file automatically, so the environment is fully reproducible as long as the lock file is commited with the rest of the project.
+The last command starts an interactive subshell with the environment activated (use `exit` to leave the shell). You get a digest-level `pixi.lock` lock file automatically, so the environment is fully reproducible as long as the lock file is committed with the rest of the project.
 
 Pixi also supports using tools and libraries [globally](https://pixi.prefix.dev/latest/global_tools/introduction/), similar to conda's base environment without having to use an activate command:
 
