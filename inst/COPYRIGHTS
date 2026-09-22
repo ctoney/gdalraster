@@ -72,10 +72,14 @@ the public domain in the United States of America. Copyright and related rights
 in the work are also waived worldwide through the CC0 1.0 Universal public
 domain dedication.
 
-The software is provided "as is" without warranty of any kind, either expressed
-or implied, including, but not limited to, the implied warranties of
-merchantability and fitness for a particular purpose. In no event shall the
-author be held liable for any damages arising from the use of this software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+USDA FOREST SERVICE, THE UNITED STATES GOVERNMENT, THE AUTHORS, OR THE
+COPYRIGHT HOLDERS (AS APPLICABLE) BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ===============================================================================
 
 This package is licensed under MIT + file LICENSE.
