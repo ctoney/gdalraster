@@ -6,18 +6,6 @@
 \alias{Rcpp_GDALAlg-class}
 \alias{GDALAlg}
 \title{Class encapsulating a GDAL CLI algorithm}
-\arguments{
-\item{cmd}{A character string or character vector containing the path to the
-algorithm, e.g., \code{"raster reproject"} or \code{c("raster", "reproject")}.}
-
-\item{args}{Either a character vector or a named list containing input
-arguments of the algorithm (see section \verb{Algorithm Argument Syntax} below).}
-}
-\value{
-An object of class \code{GDALAlg}, which contains a pointer to the
-algorithm instance. Class methods are described in Details, along with a set
-of writable fields for per-object settings.
-}
 \description{
 \code{GDALAlg} provides bindings to \code{GDALAlgorithm} and related classes
 that implement the \code{gdal} command line interface (CLI) in the GDAL
@@ -33,6 +21,10 @@ the algorithm, and access its output.
 Fields and methods of the class are accessed using the \code{$} operator.
 Arguments to class constructors and class methods must be given in the order
 documented (naming optional).
+
+An object of class \code{GDALAlg} contains a pointer to the algorithm instance.
+Class methods are described in Details, along with a set of writable fields
+for per-object settings.
 }
 \section{Usage (see Details)}{
 
@@ -70,11 +62,14 @@ alg$release()
 \subsection{Constructors}{
 
 \code{new(GDALAlg, cmd)}\cr
-Instantiate an algorithm without specifying input arguments.
+Instantiate an algorithm without specifying input arguments. \code{cmd} is a
+character string or character vector containing the path to the algorithm,
+e.g., \code{"raster reproject"} or \code{c("raster", "reproject")}.
 
 \code{new(GDALAlg, cmd, args)}\cr
 Instantiate an algorithm giving input arguments as a character vector or
-named list. See the section \verb{Algorithm Argument Syntax} for details.
+named list in \code{args}. See the section \verb{Algorithm Argument Syntax} for
+details.
 }
 
 \subsection{Read/write fields (per-object settings)}{

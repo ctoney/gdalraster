@@ -32,25 +32,9 @@ SEEK_END <- "SEEK_END"
 #' `VSIFile` is a C++ class exposed directly to \R (via `RCPP_EXPOSED_CLASS`).
 #' Fields and methods of the class are accessed using the `$` operator.
 #'
-#' @param filename Character string containing the filename to open. It may be
-#' a file in a regular local filesystem, or a filename with a GDAL /vsiPREFIX/
-#' (see \url{https://gdal.org/en/stable/user/virtual_file_systems.html}).
-#' @param access Character string containing the access requested (i.e., `"r"`,
-#' `"r+"`, `"w"`, `"w+`). Defaults to `"r"`. Binary access is always implied
-#' and the "b" does not need to be included in `access`.
-#' \tabular{lll}{
-#'  **Access** \tab **Explanation**             \tab **If file exists**\cr
-#'  `"r"`      \tab open file for reading       \tab read from start\cr
-#'  `"r+"`     \tab open file for read/write    \tab read from start\cr
-#'  `"w"`      \tab create file for writing     \tab destroy contents\cr
-#'  `"w+"`     \tab create file for read/write  \tab destroy contents
-#' }
-#' @param options Optional character vector of `NAME=VALUE` pairs specifying
-#' filesystem-dependent options. These are the options provided by
-#' `VSIFOpenEx2L()` in the GDAL API (GDAL >= 3.3, see Details).
-#' @returns An object of class `VSIFile` which contains a pointer to a
-#' `VSIVirtualHandle`. Class methods are described in Details, along with a set
-#' of writable fields for per-object settings.
+#' An object of class `VSIFile` contains a pointer to a `VSIVirtualHandle`.
+#' Class methods are described in Details, along with a set of writable fields
+#' for per-object settings.
 #'
 #' @section Usage (see Details):
 #' ```
@@ -85,17 +69,28 @@ SEEK_END <- "SEEK_END"
 #' ## Constructors
 #'
 #' \code{new(VSIFile, filename)}\cr
+#' `filename` is a character string containing the filename to open. It may be
+#' a file in a regular local filesystem, or a filename with a GDAL /vsiPREFIX/
+#' (see \url{https://gdal.org/en/stable/user/virtual_file_systems.html}).
 #' Returns an object of class `VSIFile`, or an error is raised if a file
 #' handle cannot be obtained.
 #'
 #' \code{new(VSIFile, filename, access)}\cr
 #' Alternate constructor for passing `access` as a character string
-#' (e.g., `"r"`, `"r+"`, `"w"`, `"w+"`).
+#' (e.g., `"r"`, `"r+"`, `"w"`, `"w+"`). Defaults to `"r"`. Binary access is
+#' always implied and the "b" does not need to be included.
+#' \tabular{lll}{
+#'  **Access** \tab **Explanation**             \tab **If file exists**\cr
+#'  `"r"`      \tab open file for reading       \tab read from start\cr
+#'  `"r+"`     \tab open file for read/write    \tab read from start\cr
+#'  `"w"`      \tab create file for writing     \tab destroy contents\cr
+#'  `"w+"`     \tab create file for read/write  \tab destroy contents
+#' }
 #' Returns an object of class `VSIFile` with an open file handle, or an error
 #' is raised if a file handle cannot be obtained.
 #'
 #' \code{new(VSIFile, filename, access, options)}\cr
-#' Alternate constructor for passing `access` as a character string, and
+#' Alternate constructor for passing `access` as a character string and
 #' `options` as a character vector of "NAME=VALUE" pairs (all arguments
 #' required, GDAL >= 3.3 required for `options` support).
 #'

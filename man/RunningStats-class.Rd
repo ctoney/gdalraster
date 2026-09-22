@@ -6,18 +6,6 @@
 \alias{Rcpp_RunningStats-class}
 \alias{RunningStats}
 \title{Class to calculate mean and variance in one pass}
-\arguments{
-\item{na_rm}{Logical scalar. \code{TRUE} to remove \code{NA} from the input data (the
-default) or \code{FALSE} to retain \code{NA}.}
-}
-\value{
-An object of class \code{RunningStats}. A \code{RunningStats} object
-maintains the current minimum, maximum, mean, variance, sum and count of
-values that have been read from the stream. It can be updated repeatedly
-with new values (i.e., chunks of data read from the input stream), but its
-memory footprint is negligible. Class methods for updating with new values,
-and retrieving the current values of statistics, are described in Details.
-}
 \description{
 \code{RunningStats} computes summary statistics on a data stream efficiently.
 Mean and variance are calculated with Welford's online algorithm
@@ -29,6 +17,13 @@ large data streams.
 \code{RunningStats} is a C++ class exposed directly to \R (via
 \code{RCPP_EXPOSED_CLASS}). Fields and methods and of the class are accessed
 using the \code{$} operator.
+
+An object of class \code{RunningStats} maintains the current minimum, maximum,
+mean, variance, sum and count of values that have been read from the stream.
+It can be updated repeatedly with new values (i.e., chunks of data read from
+the input stream), but its memory footprint is negligible. Class methods for
+updating with new values, and retrieving the current values of statistics,
+are described in Details.
 }
 \note{
 The intended use is computing summary statistics for specific subsets or
@@ -69,8 +64,9 @@ rs$reset()
 \subsection{Constructor}{
 
 \code{new(RunningStats, na_rm)}\cr
-Returns an object of class \code{RunningStats}. The \code{na_rm} argument
-defaults to \code{TRUE} if omitted.
+\code{na_rm} is a logical value, \code{TRUE} to remove \code{NA} from the input data (the
+default) or \code{FALSE} to retain \code{NA}.
+Returns an object of class \code{RunningStats}.
 }
 
 \subsection{Read/write fields (per-object settings)}{

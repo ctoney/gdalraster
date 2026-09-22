@@ -6,37 +6,6 @@
 \alias{Rcpp_GDALVector-class}
 \alias{GDALVector}
 \title{Class encapsulating a vector layer in a GDAL dataset}
-\arguments{
-\item{dsn}{Character string containing the data source name (DSN), usually a
-filename or database connection string.}
-
-\item{layer}{Character string containing the name of a layer within the
-data source. May also be given as an SQL SELECT statement to be executed
-against the data source, defining a layer as the result set.}
-
-\item{read_only}{Logical scalar. \code{TRUE} to open the layer read-only (the
-default), or \code{FALSE} to open with write access.}
-
-\item{open_options}{Optional character vector of \code{NAME=VALUE} pairs
-specifying dataset open options.}
-
-\item{spatial_filter}{Optional character string containing a geometry in
-Well Known Text (WKT) format which represents a spatial filter.}
-
-\item{dialect}{Optional character string to control the statement dialect
-when SQL is used to define the layer. By default, the OGR SQL engine will
-be used, except for RDBMS drivers that will use their dedicated SQL engine,
-unless \code{"OGRSQL"} is explicitly passed as the dialect. The \code{"SQLITE"}
-dialect can also be used.}
-}
-\value{
-An object of class \code{GDALVector}, which contains pointers to the
-opened layer and the GDAL dataset that owns it. Class methods that operate
-on the layer are described in Details, along with a set of writable fields
-for per-object settings. Values may be assigned to the class fields as
-needed during the lifetime of the object (i.e., by regular \code{<-} or
-\code{=} assignment).
-}
 \description{
 \code{GDALVector} provides an interface for accessing a vector layer in a GDAL
 dataset and calling methods on the underlying \code{OGRLayer} object.
@@ -62,6 +31,12 @@ that all arguments to class methods are required and must be given in the
 order documented.} Most \code{GDALVector} methods take zero or one argument, so
 this is usually not an issue. Class constructors are the main exception.
 Naming the arguments is optional but may be preferred for readability.
+
+An object of class \code{GDALVector} contains pointers to the opened layer and
+the GDAL dataset that owns it. Class methods that operate on the layer are
+described in Details, along with a set of writable fields for per-object
+settings. Values may be assigned to the class fields as needed during the
+lifetime of the object (i.e., by regular \code{<-} or \code{=} assignment).
 }
 \section{Usage (see Details)}{
 
@@ -157,14 +132,17 @@ lyr$close()
 \subsection{Constructors}{
 
 \code{new(GDALVector, dsn)}\cr
-The first layer by index is assumed if the \code{layer} argument is omitted, so
-this form of the constructor might be used for single-layer formats like
-shapefile.
+\code{dsn} is a character string containing the data source name (DSN), usually a
+filename or database connection string.
+The first layer by index is assumed if a \code{layer} argument is not given (see
+below), so this form of the constructor might be used for single-layer
+formats like shapefile.
 
 \code{new(GDALVector, dsn, layer)}\cr
-Constructor specifying the name of a layer to open. The \code{layer} argument
-may also be given as an SQL SELECT statement to define a layer as the result
-set.
+Constructor specifying the name of a layer to open. \code{layer} is a character
+string containing the name of a layer within the data source. It may also be
+given as a SQL SELECT statement to be executed against the data source,
+defining a layer as the result set.
 
 \code{new(GDALVector, dsn, layer, read_only)}\cr
 Constructor specifying read/write access (\code{read_only = TRUE|FALSE}).
@@ -173,13 +151,19 @@ given as empty string (\code{""}), in which case the first layer by index will b
 assumed.
 
 \code{new(GDALVector, dsn, layer, read_only, open_options)}\cr
-Constructor specifying dataset open options as a character vector of
+Constructor specifying dataset \code{open_options} as a character vector of
 \code{NAME=VALUE} pairs.
 
 \code{new(GDALVector, dsn, layer, read_only, open_options, spatial_filter, dialect))}\cr
-Constructor to specify a spatial filter and/or SQL dialect. All arguments
-are required in this form of the constructor, but \code{open_options} may be
-\code{NULL}, and \code{spatial_filter} or \code{dialect} may be an empty string (\code{""}).
+Constructor to specify a spatial filter and/or SQL dialect. \code{spatial_filter}
+is a character string containing a geometry in Well Known Text (WKT) format.
+\code{dialect} ia a character string to control the statement dialect when SQL is
+used to define the layer. By default, the OGR SQL engine will be used, except
+for RDBMS drivers that will use their dedicated SQL engine, unless \code{"OGRSQL"}
+is explicitly passed as the dialect. The \code{"SQLITE"} dialect can also be used.
+All arguments are required in this form of the constructor, but
+\code{open_options} may be \code{NULL}, and \code{spatial_filter} or \code{dialect} may be an
+empty string (\code{""}).
 }
 
 \subsection{Read/write fields}{

@@ -6,31 +6,6 @@
 \alias{Rcpp_VSIFile-class}
 \alias{VSIFile}
 \title{Class wrapping the GDAL VSIVirtualHandle API for binary file I/O}
-\arguments{
-\item{filename}{Character string containing the filename to open. It may be
-a file in a regular local filesystem, or a filename with a GDAL /vsiPREFIX/
-(see \url{https://gdal.org/en/stable/user/virtual_file_systems.html}).}
-
-\item{access}{Character string containing the access requested (i.e., \code{"r"},
-\code{"r+"}, \code{"w"}, \verb{"w+}). Defaults to \code{"r"}. Binary access is always implied
-and the "b" does not need to be included in \code{access}.
-\tabular{lll}{
-\strong{Access} \tab \strong{Explanation}             \tab \strong{If file exists}\cr
-\code{"r"}      \tab open file for reading       \tab read from start\cr
-\code{"r+"}     \tab open file for read/write    \tab read from start\cr
-\code{"w"}      \tab create file for writing     \tab destroy contents\cr
-\code{"w+"}     \tab create file for read/write  \tab destroy contents
-}}
-
-\item{options}{Optional character vector of \code{NAME=VALUE} pairs specifying
-filesystem-dependent options. These are the options provided by
-\code{VSIFOpenEx2L()} in the GDAL API (GDAL >= 3.3, see Details).}
-}
-\value{
-An object of class \code{VSIFile} which contains a pointer to a
-\code{VSIVirtualHandle}. Class methods are described in Details, along with a set
-of writable fields for per-object settings.
-}
 \description{
 \code{VSIFile} provides bindings to the GDAL VSIVirtualHandle API. Encapsulates a
 \code{VSIVirtualHandle}
@@ -43,6 +18,10 @@ appear as files.
 
 \code{VSIFile} is a C++ class exposed directly to \R (via \code{RCPP_EXPOSED_CLASS}).
 Fields and methods of the class are accessed using the \code{$} operator.
+
+An object of class \code{VSIFile} contains a pointer to a \code{VSIVirtualHandle}.
+Class methods are described in Details, along with a set of writable fields
+for per-object settings.
 }
 \note{
 File offsets are given as \R \code{numeric} (i.e., \code{double} type), optionally
@@ -102,17 +81,28 @@ vf$set_access(access)
 \subsection{Constructors}{
 
 \code{new(VSIFile, filename)}\cr
+\code{filename} is a character string containing the filename to open. It may be
+a file in a regular local filesystem, or a filename with a GDAL /vsiPREFIX/
+(see \url{https://gdal.org/en/stable/user/virtual_file_systems.html}).
 Returns an object of class \code{VSIFile}, or an error is raised if a file
 handle cannot be obtained.
 
 \code{new(VSIFile, filename, access)}\cr
 Alternate constructor for passing \code{access} as a character string
-(e.g., \code{"r"}, \code{"r+"}, \code{"w"}, \code{"w+"}).
+(e.g., \code{"r"}, \code{"r+"}, \code{"w"}, \code{"w+"}). Defaults to \code{"r"}. Binary access is
+always implied and the "b" does not need to be included.
+\tabular{lll}{
+\strong{Access} \tab \strong{Explanation}             \tab \strong{If file exists}\cr
+\code{"r"}      \tab open file for reading       \tab read from start\cr
+\code{"r+"}     \tab open file for read/write    \tab read from start\cr
+\code{"w"}      \tab create file for writing     \tab destroy contents\cr
+\code{"w+"}     \tab create file for read/write  \tab destroy contents
+}
 Returns an object of class \code{VSIFile} with an open file handle, or an error
 is raised if a file handle cannot be obtained.
 
 \code{new(VSIFile, filename, access, options)}\cr
-Alternate constructor for passing \code{access} as a character string, and
+Alternate constructor for passing \code{access} as a character string and
 \code{options} as a character vector of "NAME=VALUE" pairs (all arguments
 required, GDAL >= 3.3 required for \code{options} support).
 

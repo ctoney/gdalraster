@@ -21,13 +21,9 @@
 #' Arguments to class constructors and class methods must be given in the order
 #' documented (naming optional).
 #'
-#' @param cmd A character string or character vector containing the path to the
-#' algorithm, e.g., `"raster reproject"` or `c("raster", "reproject")`.
-#' @param args Either a character vector or a named list containing input
-#' arguments of the algorithm (see section `Algorithm Argument Syntax` below).
-#' @returns An object of class `GDALAlg`, which contains a pointer to the
-#' algorithm instance. Class methods are described in Details, along with a set
-#' of writable fields for per-object settings.
+#' An object of class `GDALAlg` contains a pointer to the algorithm instance.
+#' Class methods are described in Details, along with a set of writable fields
+#' for per-object settings.
 #'
 #' @inheritSection gdal_cli Algorithm Argument Syntax
 #'
@@ -65,11 +61,14 @@
 #' ## Constructors
 #'
 #' \code{new(GDALAlg, cmd)}\cr
-#' Instantiate an algorithm without specifying input arguments.
+#' Instantiate an algorithm without specifying input arguments. `cmd` is a
+#' character string or character vector containing the path to the algorithm,
+#' e.g., `"raster reproject"` or `c("raster", "reproject")`.
 #'
 #' \code{new(GDALAlg, cmd, args)}\cr
 #' Instantiate an algorithm giving input arguments as a character vector or
-#' named list. See the section `Algorithm Argument Syntax` for details.
+#' named list in `args`. See the section `Algorithm Argument Syntax` for
+#' details.
 #'
 #' ## Read/write fields (per-object settings)
 #'

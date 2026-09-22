@@ -6,18 +6,6 @@
 \alias{Rcpp_CmbTable-class}
 \alias{CmbTable}
 \title{Class for counting unique combinations of integers}
-\arguments{
-\item{keyLen}{The number of integer values comprising each combination.}
-
-\item{varNames}{Optional character vector of names for the variables in the
-combination.}
-}
-\value{
-An object of class \code{CmbTable}. Contains a hash table having a
-vector of \code{keyLen} integers as the key, and the count of occurrences of each
-unique integer combination as the value. Class methods that operate on the
-hash table are described in Details.
-}
 \description{
 \code{CmbTable} implements a hash table having a vector of integers as the key,
 and the count of occurrences of each unique integer combination as the
@@ -28,13 +16,18 @@ Methods of the class are accessed using the \code{$} operator. \strong{Note that
 arguments to class methods are required and must be given in the
 order documented.} Naming the arguments is optional but may be preferred
 for readability.
+
+An object of class \code{CmbTable} contains a hash table having a vector of
+integers as the key, and the count of occurrences of each unique integer
+combination as the value. Class methods that operate on the hash table are
+described in Details.
 }
 \section{Usage (see Details)}{
 
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{## Constructors
 cmb <- new(CmbTable, keyLen)
-# or, giving the variable names:
+# or, giving explicit variable names:
 cmb <- new(CmbTable, keyLen, varNames)
 
 ## Methods
@@ -51,11 +44,13 @@ cmb$asMatrix()
 \subsection{Constructors}{
 
 \code{new(CmbTable, keyLen)}\cr
+\code{keyLen} specifies the number of integer values comprising each combination.
 Default variable names will be assigned as \code{V1}, \code{V2}, ....
 Returns an object of class \code{CmbTable}.
 
 \code{new(CmbTable, keyLen, varNames)}\cr
-Alternate constructor to specify variable names.
+Alternate constructor to specify names of the variables in the combination
+as a character vector given in \code{varNames}.
 Returns an object of class \code{CmbTable}.
 }
 

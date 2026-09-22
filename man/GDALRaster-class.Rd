@@ -6,35 +6,6 @@
 \alias{Rcpp_GDALRaster-class}
 \alias{GDALRaster}
 \title{Class encapsulating a raster dataset and associated band objects}
-\arguments{
-\item{filename}{Character string containing the file name of a raster
-dataset to open, as full path or relative to the current working directory.
-In some cases, \code{filename} may not refer to a local file system, but instead
-contain format-specific information on how to access a dataset such
-as database connection string, URL, /vsiPREFIX/, etc. (see GDAL
-raster format descriptions:
-\url{https://gdal.org/en/stable/drivers/raster/index.html}).}
-
-\item{read_only}{Logical. \code{TRUE} to open the dataset read-only (the default),
-or \code{FALSE} to open with write access.}
-
-\item{open_options}{Optional character vector of \code{NAME=VALUE} pairs
-specifying dataset open options.}
-
-\item{shared}{Logical. \code{FALSE} to open the dataset without using shared
-mode. Default is \code{TRUE} (see Note).}
-
-\item{allowed_drivers}{Optional character vector of driver short names that
-must be considered. By default, all known raster drivers are considered.}
-}
-\value{
-An object of class \code{GDALRaster}, which contains a pointer to the
-opened dataset.
-Class methods that operate on the dataset are described in Details, along
-with a set of writable fields for per-object settings. Values may be
-assigned to the class fields as needed during the lifetime of the object
-(i.e., by regular \code{<-} or \code{=} assignment).
-}
 \description{
 \code{GDALRaster} provides an interface for accessing a raster dataset via GDAL
 and calling methods on the underlying \code{GDALDataset}, \code{GDALDriver} and
@@ -46,6 +17,12 @@ for details of the GDAL Raster API.
 the \code{$} operator. \strong{Note that all arguments to class methods are required
 and must be given in the order documented.} Naming the arguments is
 optional but may be preferred for readability.
+
+An object of class \code{GDALRaster} contains a pointer to the opened dataset.
+Class methods that operate on the dataset are described in Details, along
+with a set of writable fields for per-object settings. Values may be
+assigned to the class fields as needed during the lifetime of the object
+(i.e., by regular \code{<-} or \code{=} assignment).
 }
 \note{
 If a dataset object is opened with update access (\code{read_only = FALSE}), it
@@ -198,8 +175,16 @@ ds$close()
 \subsection{Constructors}{
 
 \code{new(GDALRaster, filename, read_only)}\cr
-Returns an object of class \code{GDALRaster}. The \code{read_only} argument defaults
-to \code{TRUE} if not specified.
+\code{filename} is a character string containing the file name of a raster
+dataset to open, as full path or relative to the current working directory.
+In some cases, \code{filename} may not refer to a local file system, but instead
+contain format-specific information on how to access a dataset such
+as database connection string, URL, /vsiPREFIX/, etc. (see GDAL
+raster format descriptions:
+\url{https://gdal.org/en/stable/drivers/raster/index.html}).
+\code{read_only} is a logical value, \code{TRUE} to open the dataset read-only (the
+default if not given), or \code{FALSE} to open with write access.
+Returns an object of class \code{GDALRaster}.
 
 \code{new(GDALRaster, filename, read_only, open_options)}\cr
 Alternate constructor for passing dataset \code{open_options}, a character
@@ -210,17 +195,18 @@ Returns an object of class \code{GDALRaster}.
 
 \code{new(GDALRaster, filename, read_only, open_options, shared)}\cr
 Alternate constructor for specifying the \code{shared} mode for dataset opening.
-The \code{shared} argument defaults to \code{TRUE} but can be set to \code{FALSE} with this
-constructor (see Note).
+\code{shared} is a logical value, \code{FALSE} to open the dataset without using shared
+mode. Default is \code{TRUE} (see Note).
 All arguments are required with this form of the constructor, but
 \code{open_options} can be \code{NULL}. Returns an object of class \code{GDALRaster}.
 
 \code{new(GDALRaster, filename, read_only, open_options, shared, allowed_drivers)}\cr
 Alternate constructor for specifying the driver(s) allowed for dataset
-opening as a character vector of driver short names.
+opening as a character vector of driver short names. By default, all known
+raster drivers are considered.
 All arguments are required with this form of the constructor, but
-\code{open_options} and/or \code{allowed_drivers} can be \code{NULL}. Returns an object of class
-\code{GDALRaster}.
+\code{open_options} and/or \code{allowed_drivers} can be \code{NULL}. Returns an object of
+class \code{GDALRaster}.
 }
 
 \subsection{Read/write fields}{

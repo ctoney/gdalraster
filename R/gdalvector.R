@@ -29,28 +29,11 @@
 #' this is usually not an issue. Class constructors are the main exception.
 #' Naming the arguments is optional but may be preferred for readability.
 #'
-#' @param dsn Character string containing the data source name (DSN), usually a
-#' filename or database connection string.
-#' @param layer Character string containing the name of a layer within the
-#' data source. May also be given as an SQL SELECT statement to be executed
-#' against the data source, defining a layer as the result set.
-#' @param read_only Logical scalar. `TRUE` to open the layer read-only (the
-#' default), or `FALSE` to open with write access.
-#' @param open_options Optional character vector of `NAME=VALUE` pairs
-#' specifying dataset open options.
-#' @param spatial_filter Optional character string containing a geometry in
-#' Well Known Text (WKT) format which represents a spatial filter.
-#' @param dialect Optional character string to control the statement dialect
-#' when SQL is used to define the layer. By default, the OGR SQL engine will
-#' be used, except for RDBMS drivers that will use their dedicated SQL engine,
-#' unless `"OGRSQL"` is explicitly passed as the dialect. The `"SQLITE"`
-#' dialect can also be used.
-#' @returns An object of class `GDALVector`, which contains pointers to the
-#' opened layer and the GDAL dataset that owns it. Class methods that operate
-#' on the layer are described in Details, along with a set of writable fields
-#' for per-object settings. Values may be assigned to the class fields as
-#' needed during the lifetime of the object (i.e., by regular \code{<-} or
-#' \code{=} assignment).
+#' An object of class `GDALVector` contains pointers to the opened layer and
+#' the GDAL dataset that owns it. Class methods that operate on the layer are
+#' described in Details, along with a set of writable fields for per-object
+#' settings. Values may be assigned to the class fields as needed during the
+#' lifetime of the object (i.e., by regular \code{<-} or \code{=} assignment).
 #'
 #' @section Usage (see Details):
 #' ```
@@ -142,14 +125,17 @@
 #' ## Constructors
 #'
 #' \code{new(GDALVector, dsn)}\cr
-#' The first layer by index is assumed if the `layer` argument is omitted, so
-#' this form of the constructor might be used for single-layer formats like
-#' shapefile.
+#' `dsn` is a character string containing the data source name (DSN), usually a
+#' filename or database connection string.
+#' The first layer by index is assumed if a `layer` argument is not given (see
+#' below), so this form of the constructor might be used for single-layer
+#' formats like shapefile.
 #'
 #' \code{new(GDALVector, dsn, layer)}\cr
-#' Constructor specifying the name of a layer to open. The `layer` argument
-#' may also be given as an SQL SELECT statement to define a layer as the result
-#' set.
+#' Constructor specifying the name of a layer to open. `layer` is a character
+#' string containing the name of a layer within the data source. It may also be
+#' given as a SQL SELECT statement to be executed against the data source,
+#' defining a layer as the result set.
 #'
 #' \code{new(GDALVector, dsn, layer, read_only)}\cr
 #' Constructor specifying read/write access (`read_only = TRUE|FALSE`).
@@ -158,13 +144,19 @@
 #' assumed.
 #'
 #' \code{new(GDALVector, dsn, layer, read_only, open_options)}\cr
-#' Constructor specifying dataset open options as a character vector of
+#' Constructor specifying dataset `open_options` as a character vector of
 #' `NAME=VALUE` pairs.
 #'
 #' \code{new(GDALVector, dsn, layer, read_only, open_options, spatial_filter, dialect))}\cr
-#' Constructor to specify a spatial filter and/or SQL dialect. All arguments
-#' are required in this form of the constructor, but `open_options` may be
-#' `NULL`, and `spatial_filter` or `dialect` may be an empty string (`""`).
+#' Constructor to specify a spatial filter and/or SQL dialect. `spatial_filter`
+#' is a character string containing a geometry in Well Known Text (WKT) format.
+#' `dialect` ia a character string to control the statement dialect when SQL is
+#' used to define the layer. By default, the OGR SQL engine will be used, except
+#' for RDBMS drivers that will use their dedicated SQL engine, unless `"OGRSQL"`
+#' is explicitly passed as the dialect. The `"SQLITE"` dialect can also be used.
+#' All arguments are required in this form of the constructor, but
+#' `open_options` may be `NULL`, and `spatial_filter` or `dialect` may be an
+#' empty string (`""`).
 #'
 #' ## Read/write fields
 #'
