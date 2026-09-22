@@ -174,5 +174,6 @@ docker pull ghcr.io/hypertidy/gdal-r-full:latest
 * [Vector Read Benchmarks](https://firelab.github.io/gdalraster/articles/vector-read-benchmarks.html)
 
 ---
-
+<div class="pkgdown-hide">
 <sub>Logo designed by Sylvain Beorchia</sub>
+</div>
