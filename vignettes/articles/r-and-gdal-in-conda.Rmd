@@ -24,12 +24,12 @@ These days, the most known community-driven distribution is [conda-forge](https:
 
 Conda offers features potentially of interest to R users who work with geospatial data:
 
-* install different versions of binary packages with their required dependencies on multiple platforms
+* install different versions of binary packages with dependencies on multiple platforms
 * assemble sets of packages in isolation using environments
 * manage and switch between environments that use various packages for different projects
-* access R and a large number of CRAN packages, along with current GDAL and its dependencies
+* access R and many CRAN packages, along with current GDAL and its dependencies
 * benefit from lightweight [modular GDAL packaging](https://quansight.com/post/introducing-lightweight-versions-of-gdal-and-pdal/) based on deferred plugin loading
-* available plugins include format drivers that sometimes are unavailable in other package managers, such as the Arrow and Parquet vector drivers
+* plugins are available for format drivers that are sometimes unavailable in other package managers, such as the Arrow and Parquet vector drivers
 
 Conda-forge provides pre-compiled binary packages for **gdalraster** that track CRAN releases, for the following platforms:
 
