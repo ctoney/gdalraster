@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-Last updated: 2026-09-20
+Last updated: 2026-09-26
 
 Conda is an open-source, cross-platform, language-agnostic package manager and environment management system. The conda package format is general purpose and covers a wide selection of programming languages, including C, C++, Fortran, Rust, Go, Python, and R. Conda uses the concept of channels as the base for hosting and managing packages.
 
@@ -24,7 +24,7 @@ These days, the most known community-driven distribution is [conda-forge](https:
 
 Conda offers features potentially of interest to R users who work with geospatial data:
 
-* install different versions of binary packages with dependencies on multiple platforms
+* install different versions of binary packages and their dependencies on multiple platforms
 * assemble sets of packages in isolation using environments
 * manage and switch between environments that use various packages for different projects
 * access R and many CRAN packages, along with current GDAL and its dependencies
