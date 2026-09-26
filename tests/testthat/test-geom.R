@@ -1352,6 +1352,40 @@ test_that("unary ops return correct values", {
     # error for required args
     expect_error(g_hull <- g_concave_hull(g1, ratio = 0.5))
     expect_error(g_hull <- g_concave_hull(g1))
+
+    # g_concave_hull_of_polygons() requires GEOS >= 3.11 (as above)
+    # and GDAL >= 3.13
+    skip_if(gdal_version_num() < gdal_compute_version(3, 13, 0))
+
+    g <- "MULTIPOLYGON(((0 0,0 1,1 1,1 0.9,0.1 0.9,0.1 0.1,1 0.1,1 0,0 0)),
+          ((1.1 1,2 1,2 0,1.1 0,1.1 0.1,1.9 0.1,1.9 0.9, 1.1 0.9,1.1 1)))"
+
+    expect_no_error(
+        g_hull <- g_concave_hull_of_polygons(g, 0.5, FALSE, FALSE))
+
+    # wkb input
+    expect_no_error(
+        g_hull <- g_concave_hull_of_polygons(g_wk2wk(g), 0.5, FALSE, FALSE))
+
+    # empty raw vector
+    expect_true(is.null(
+        g_concave_hull_of_polygons(raw(0), 0.5, FALSE, FALSE)))
+    # vector/list input
+    # character vector of wkt input
+    expect_warning(
+        g_hull <- g_concave_hull_of_polygons(c(g, NA), 0.5, FALSE, FALSE,
+                                             as_wkb = FALSE)) |>
+            expect_warning()  # for as_wkb = FALSE
+    # list of wkb input
+    expect_warning(
+        g_hull <- g_concave_hull_of_polygons(g_wk2wk(c(g, NA)), 0.5, FALSE,
+                                             FALSE, as_wkb = FALSE)) |>
+            expect_warning()  # for as_wkb = FALSE
+
+    # error for required args
+    expect_error(g_hull <- g_concave_hull_of_polygons(g, 0.5, FALSE))
+    expect_error(g_hull <- g_concave_hull_of_polygons(g, 0.5))
+    expect_error(g_hull <- g_concave_hull(g))
 })
 
 test_that("geometry measures are correct", {

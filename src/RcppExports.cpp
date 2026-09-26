@@ -1716,6 +1716,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// g_concave_hull_of_polygons
+SEXP g_concave_hull_of_polygons(const Rcpp::RObject& geom, double length_ratio, bool is_tight, bool allow_holes, bool as_iso, const std::string& byte_order, bool quiet);
+RcppExport SEXP _gdalraster_g_concave_hull_of_polygons(SEXP geomSEXP, SEXP length_ratioSEXP, SEXP is_tightSEXP, SEXP allow_holesSEXP, SEXP as_isoSEXP, SEXP byte_orderSEXP, SEXP quietSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type geom(geomSEXP);
+    Rcpp::traits::input_parameter< double >::type length_ratio(length_ratioSEXP);
+    Rcpp::traits::input_parameter< bool >::type is_tight(is_tightSEXP);
+    Rcpp::traits::input_parameter< bool >::type allow_holes(allow_holesSEXP);
+    Rcpp::traits::input_parameter< bool >::type as_iso(as_isoSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type byte_order(byte_orderSEXP);
+    Rcpp::traits::input_parameter< bool >::type quiet(quietSEXP);
+    rcpp_result_gen = Rcpp::wrap(g_concave_hull_of_polygons(geom, length_ratio, is_tight, allow_holes, as_iso, byte_order, quiet));
+    return rcpp_result_gen;
+END_RCPP
+}
 // g_delaunay_triangulation
 SEXP g_delaunay_triangulation(const Rcpp::RObject& geom, bool constrained, double tolerance, bool only_edges, bool as_iso, const std::string& byte_order, bool quiet);
 RcppExport SEXP _gdalraster_g_delaunay_triangulation(SEXP geomSEXP, SEXP constrainedSEXP, SEXP toleranceSEXP, SEXP only_edgesSEXP, SEXP as_isoSEXP, SEXP byte_orderSEXP, SEXP quietSEXP) {
@@ -2816,6 +2833,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_g_buffer", (DL_FUNC) &_gdalraster_g_buffer, 6},
     {"_gdalraster_g_convex_hull", (DL_FUNC) &_gdalraster_g_convex_hull, 4},
     {"_gdalraster_g_concave_hull", (DL_FUNC) &_gdalraster_g_concave_hull, 6},
+    {"_gdalraster_g_concave_hull_of_polygons", (DL_FUNC) &_gdalraster_g_concave_hull_of_polygons, 7},
     {"_gdalraster_g_delaunay_triangulation", (DL_FUNC) &_gdalraster_g_delaunay_triangulation, 7},
     {"_gdalraster_g_point_on_surface", (DL_FUNC) &_gdalraster_g_point_on_surface, 4},
     {"_gdalraster_g_segmentize", (DL_FUNC) &_gdalraster_g_segmentize, 5},

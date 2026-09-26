@@ -2911,6 +2911,11 @@ has_geos <- function() {
 }
 
 #' @noRd
+.g_concave_hull_of_polygons <- function(geom, length_ratio, is_tight, allow_holes, as_iso, byte_order, quiet) {
+    .Call(`_gdalraster_g_concave_hull_of_polygons`, geom, length_ratio, is_tight, allow_holes, as_iso, byte_order, quiet)
+}
+
+#' @noRd
 .g_delaunay_triangulation <- function(geom, constrained = FALSE, tolerance = 0.0, only_edges = FALSE, as_iso = FALSE, byte_order = "LSB", quiet = FALSE) {
     .Call(`_gdalraster_g_delaunay_triangulation`, geom, constrained, tolerance, only_edges, as_iso, byte_order, quiet)
 }

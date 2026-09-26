@@ -2353,6 +2353,108 @@ SEXP g_concave_hull(const Rcpp::RObject &geom, double ratio, bool allow_holes,
 }
 
 //' @noRd
+// [[Rcpp::export(name = ".g_concave_hull_of_polygons")]]
+SEXP g_concave_hull_of_polygons(const Rcpp::RObject &geom, double length_ratio,
+                                bool is_tight, bool allow_holes, bool as_iso,
+                                const std::string &byte_order, bool quiet) {
+// Compute the concave hull of a set of polygons, respecting the polygons as
+// constraints.
+
+// A concave hull is a (possibly) non-convex polygon containing all the input
+// polygons. The computed hull "fills the gap" between the polygons, and does
+// not intersect their interior. A set of polygons has a sequence of hulls of
+// increasing concaveness, determined by a numeric target parameter.
+//
+// The concave hull is constructed by removing the longest outer edges of the
+// Delaunay Triangulation of the space between the polygons, until the target
+// criterion parameter is reached. The "Maximum Edge Length" parameter limits
+// the length of the longest edge between polygons to be no larger than this
+// value. This can be expressed as a ratio between the lengths of the longest
+// and shortest edges.
+
+//  See:
+// https://lin-ear-th-inking.blogspot.com/2022/05/concave-hulls-of-polygons.html
+// and
+// https://lin-ear-th-inking.blogspot.com/2022/05/algorithm-for-concave-hull-of-polygons.html
+// for more details.
+
+// The input geometry must be a valid Polygon or MultiPolygon (i.e. they must be
+// non-overlapping).
+
+// A new geometry object is created and returned containing the concave hull of
+// the geometry on which the method is invoked.
+
+// Requires GDAL >= 3.6. This function is built on the GEOS >= 3.11 library. If
+// OGR is built without the GEOS >= 3.11 library, this function will always
+// fail, issuing a CPLE_NotSupported error.
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3, 13, 0)
+    Rcpp::stop("g_concave_hull_of_polygons() requires GDAL >= 3.13");
+#else
+
+    std::vector<int> geos_ver = getGEOSVersion();
+    int geos_maj_ver = geos_ver[0];
+    int geos_min_ver = geos_ver[1];
+    if (!(geos_maj_ver > 3 || (geos_maj_ver == 3 && geos_min_ver >= 11)))
+        Rcpp::stop("g_concave_hull() requires GEOS >= 3.11");
+
+    if (geom.isNULL() || !Rcpp::is<Rcpp::RawVector>(geom))
+        return R_NilValue;
+
+    const Rcpp::RawVector geom_in(geom);
+    if (geom_in.size() == 0)
+        return R_NilValue;
+
+    if (length_ratio < 0 || length_ratio > 1)
+        Rcpp::stop("'length_ratio' must be a numeric value >= 0 and <= 1");
+
+    OGRGeometryH hGeom = createGeomFromWkb_(geom_in);
+    if (hGeom == nullptr) {
+        if (!quiet) {
+            Rcpp::warning(
+                "failed to create geometry object from WKB, NULL returned");
+        }
+        return R_NilValue;
+    }
+
+    OGRGeometryH hHullGeom =
+        OGR_G_ConcaveHullOfPolygons(hGeom, length_ratio, is_tight, allow_holes);
+
+    if (hHullGeom == nullptr) {
+        OGR_G_DestroyGeometry(hGeom);
+        if (!quiet) {
+            Rcpp::warning("OGR_G_ConcaveHullOfPolygons() gave NULL geometry");
+        }
+        return R_NilValue;
+    }
+
+    int nWKBSize = OGR_G_WkbSize(hHullGeom);
+    if (!nWKBSize) {
+        OGR_G_DestroyGeometry(hGeom);
+        OGR_G_DestroyGeometry(hHullGeom);
+        if (!quiet) {
+            Rcpp::warning("failed to obtain WKB size of output geometry");
+        }
+        return R_NilValue;
+    }
+
+    Rcpp::RawVector wkb = Rcpp::no_init(nWKBSize);
+    bool result = exportGeomToWkb_(hHullGeom, &wkb[0], as_iso, byte_order);
+    OGR_G_DestroyGeometry(hGeom);
+    OGR_G_DestroyGeometry(hHullGeom);
+    if (!result) {
+        if (!quiet) {
+           Rcpp::warning(
+                "failed to export WKB raw vector for output geometry");
+        }
+        return R_NilValue;
+    }
+
+    return wkb;
+#endif
+}
+
+//' @noRd
 // [[Rcpp::export(name = ".g_delaunay_triangulation")]]
 SEXP g_delaunay_triangulation(const Rcpp::RObject &geom,
                               bool constrained = false,
