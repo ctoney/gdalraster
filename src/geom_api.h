@@ -124,6 +124,10 @@ SEXP g_convex_hull(const Rcpp::RObject &geom, bool as_iso,
 SEXP g_concave_hull(const Rcpp::RObject &geom, double ratio, bool allow_holes,
                     bool as_iso, const std::string &byte_order, bool quiet);
 
+SEXP g_concave_hull_of_polygons(const Rcpp::RObject &geom, double length_ratio,
+                                bool is_tight, bool allow_holes, bool as_iso,
+                                const std::string &byte_order, bool quiet);
+
 SEXP g_delaunay_triangulation(const Rcpp::RObject &geom, bool constrained,
                               double tolerance, bool only_edges, bool as_iso,
                               const std::string &byte_order, bool quiet);

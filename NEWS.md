@@ -1,3 +1,7 @@
+# gdalraster 2.7.0.9000 (dev)
+
+* add `g_concave_hull_of_polygons()` wrapping `OGR_G_ConcaveHullOfPolygons()` in GDAL >= 3.13 (2026-09-26)
+
 # gdalraster 2.7.0
 
 * add `GDALVector$writeArrowBatch()`: write a batch of rows from a data frame using GDAL Arrow C stream interface (#976)
