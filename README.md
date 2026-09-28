@@ -244,10 +244,15 @@ See <https://github.com/hypertidy/gdal-r-ci> (thanks to Michael Sumner):
   Caching](https://firelab.github.io/gdalraster/articles/gdal-block-cache.html)
 - [GDAL Config Quick
   Ref](https://firelab.github.io/gdalraster/articles/gdal-config-quick-ref.html)
+- [Using R and GDAL from
+  conda-forge](https://firelab.github.io/gdalraster/articles/r-and-gdal-in-conda.html)
 - [Vector Read
   Benchmarks](https://firelab.github.io/gdalraster/articles/vector-read-benchmarks.html)
 
----
+------------------------------------------------------------------------
+
 <div class="pkgdown-hide">
+
 <sub>Logo designed by Sylvain Beorchia</sub>
+
 </div>
