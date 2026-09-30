@@ -1307,10 +1307,10 @@ fid <- poi$getLastWriteFID()
 #> [1] Information
 #> 
 #> $createdate
-#> [1] 2026-09-27
+#> [1] 2026-09-30
 #> 
 #> $editdate
-#> [1] 2026-09-27
+#> [1] 2026-09-30
 #> 
 #> $geom
 #> [1] WKB POINT: raw 01 01 00 00 ...
@@ -1398,7 +1398,7 @@ poi$syncToDisk()
 #> [1] 2016-02-03
 #> 
 #> $editdate
-#> [1] 2026-09-27
+#> [1] 2026-09-30
 #> 
 #> $geom
 #> [1] WKB POINT: raw 01 01 00 00 ...
@@ -1434,10 +1434,10 @@ poi$getFeature(fid)
 #> [1] Information
 #> 
 #> $createdate
-#> [1] 2026-09-27
+#> [1] 2026-09-30
 #> 
 #> $editdate
-#> [1] 2026-09-27
+#> [1] 2026-09-30
 #> 
 #> $geom
 #> [1] WKB POINT: raw 01 01 00 00 ...
@@ -1518,10 +1518,10 @@ d$geom <- pts_geom
 system.time(res <- lyr$batchCreateFeature(d))
 #>  ■                                  0% |  ETA:  2m
 #>  ■■■■■■■■■■■■■■■■■■■■■■            70% |  ETA:  1s
-#> ✔ Done (2.3s)
+#> ✔ Done (2.4s)
 #> 
 #>    user  system elapsed 
-#>   2.285   0.004   2.290
+#>   2.447   0.006   2.453
 
 (all(res))
 #> [1] TRUE
@@ -1553,7 +1553,7 @@ system.time({
     lyr$rollbackTransaction()
 })
 #>    user  system elapsed 
-#>   1.033   0.009   1.041
+#>   1.036   0.011   1.046
 
 (all(res2))
 #> [1] TRUE
@@ -1566,22 +1566,22 @@ d_out <- lyr$fetch(-1)
 head(d_out)
 #> OGR feature set
 #>   FID               pt_desc         create_time                           geom
-#> 1   1 random points batch 1 2026-09-27 02:40:56 WKB POINT: raw 01 01 00 00 ...
-#> 2   2 random points batch 1 2026-09-27 02:40:56 WKB POINT: raw 01 01 00 00 ...
-#> 3   3 random points batch 1 2026-09-27 02:40:56 WKB POINT: raw 01 01 00 00 ...
-#> 4   4 random points batch 1 2026-09-27 02:40:56 WKB POINT: raw 01 01 00 00 ...
-#> 5   5 random points batch 1 2026-09-27 02:40:56 WKB POINT: raw 01 01 00 00 ...
-#> 6   6 random points batch 1 2026-09-27 02:40:56 WKB POINT: raw 01 01 00 00 ...
+#> 1   1 random points batch 1 2026-09-30 20:40:37 WKB POINT: raw 01 01 00 00 ...
+#> 2   2 random points batch 1 2026-09-30 20:40:37 WKB POINT: raw 01 01 00 00 ...
+#> 3   3 random points batch 1 2026-09-30 20:40:37 WKB POINT: raw 01 01 00 00 ...
+#> 4   4 random points batch 1 2026-09-30 20:40:37 WKB POINT: raw 01 01 00 00 ...
+#> 5   5 random points batch 1 2026-09-30 20:40:37 WKB POINT: raw 01 01 00 00 ...
+#> 6   6 random points batch 1 2026-09-30 20:40:37 WKB POINT: raw 01 01 00 00 ...
 
 tail(d_out)
 #> OGR feature set
 #>           FID               pt_desc         create_time
-#> 199995 199995 random points batch 2 2026-09-27 02:40:58
-#> 199996 199996 random points batch 2 2026-09-27 02:40:58
-#> 199997 199997 random points batch 2 2026-09-27 02:40:58
-#> 199998 199998 random points batch 2 2026-09-27 02:40:58
-#> 199999 199999 random points batch 2 2026-09-27 02:40:58
-#> 200000 200000 random points batch 2 2026-09-27 02:40:58
+#> 199995 199995 random points batch 2 2026-09-30 20:40:40
+#> 199996 199996 random points batch 2 2026-09-30 20:40:40
+#> 199997 199997 random points batch 2 2026-09-30 20:40:40
+#> 199998 199998 random points batch 2 2026-09-30 20:40:40
+#> 199999 199999 random points batch 2 2026-09-30 20:40:40
+#> 200000 200000 random points batch 2 2026-09-30 20:40:40
 #>                                  geom
 #> 199995 WKB POINT: raw 01 01 00 00 ...
 #> 199996 WKB POINT: raw 01 01 00 00 ...
