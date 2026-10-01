@@ -156,9 +156,6 @@ cmb_file <- file.path(tempdir(), "fbfm_cov_cmbid.tif")
 opt <- c("COMPRESS=LZW")
 tbl <- combine(rasterfiles, var.names, bands, cmb_file, options = opt)
 #> → combining 2 rasters...
-#>  ■                                  1% |  ETA:  0s
-#> ✔ Done (27ms)
-#> 
 head(tbl)
 #>   cmbid count fbfm tree_cov
 #> 1    26    98  122       25
@@ -170,7 +167,7 @@ head(tbl)
 ds <- new(GDALRaster, cmb_file)
 ds$info()
 #> Driver: GTiff/GeoTIFF
-#> Files: /tmp/Rtmpf3G8oq/fbfm_cov_cmbid.tif
+#> Files: /tmp/Rtmp4edCou/fbfm_cov_cmbid.tif
 #> Size is 143, 107
 #> Coordinate System is:
 #> PROJCRS["NAD83 / UTM zone 12N",
