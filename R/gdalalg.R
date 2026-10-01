@@ -177,6 +177,14 @@
 #' output (`NULL` if the argument is not a dataset type)
 #' * `mutual_exclusion_group`: character string, the name of the mutual
 #' exclusion group to which this argument belongs
+#' * `mutual_dependency_group`: character string, the name of the mutual
+#' dependency group to which this argument belongs (GDAL >= 3.13)
+#' * `depends_on`: character vector of argument names that this argument depends
+#' on, including both regular dependencies and mutual dependencies
+#' (GDAL >= 3.13)
+#' * `available_in_pipeline_step`: logical, `TRUE` if the argument is available
+#' in a pipeline step, or`FALSE` if it is only available in standalone mode
+#' (GDAL >= 3.13)
 #'
 #' \code{$usage()}\cr
 #' Print a help message for the algorithm to the console. No return value.

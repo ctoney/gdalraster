@@ -599,6 +599,18 @@ Rcpp::List GDALAlg::argInfo(const Rcpp::String &arg_name) const {
     arg_info.push_back(GDALAlgorithmArgGetMutualExclusionGroup(hArg),
                        "mutual_exclusion_group");
 
+    #if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3, 13, 0)
+    arg_info.push_back(GDALAlgorithmArgGetMutualDependencyGroup(hArg),
+                       "mutual_dependency_group");
+
+    const CPLStringList aosValue(
+        GDALAlgorithmGetArgDependencies(m_hAlg, GDALAlgorithmArgGetName(hArg)));
+    arg_info.push_back(wrap_gdal_string_list_(aosValue), "depends_on");
+
+    arg_info.push_back(GDALAlgorithmArgIsAvailableInPipelineStep(hArg),
+                       "available_in_pipeline_step");
+    #endif
+
     GDALAlgorithmArgRelease(hArg);
 
     return arg_info;
