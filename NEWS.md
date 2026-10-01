@@ -1,8 +1,10 @@
-# gdalraster 2.7.0.9001 (dev)
+# gdalraster 2.7.0.9002 (dev)
 
-* class `GDALAlg`: add argument information for "not available in a pipeline step", and mutual / unidirectional dependencies (GDAL >= 3.13) (2026-09-30)
+* adds `g_export_to_json()`: convert WKB/WKT geometries into GeoJSON-style format using `OGR_G_ExportToJsonEx()` in the GDAL Vector C API (#1017) (2026-10-01)
 
-* add `g_concave_hull_of_polygons()` wrapping `OGR_G_ConcaveHullOfPolygons()` in GDAL >= 3.13 (2026-09-26)
+* class `GDALAlg`: add argument information for "not available in a pipeline step", and mutual / unidirectional dependencies (GDAL >= 3.13) (#1011) (2026-09-30)
+
+* add `g_concave_hull_of_polygons()` wrapping `OGR_G_ConcaveHullOfPolygons()` in GDAL >= 3.13 (#1010) (2026-09-26)
 
 # gdalraster 2.7.0
 
