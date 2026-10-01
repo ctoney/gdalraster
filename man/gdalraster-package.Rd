@@ -119,6 +119,7 @@
   \code{\link[=g_measures]{g_measures}},
   \code{\link[=g_coords]{g_coords()}},
   \code{\link[=g_envelope]{g_envelope()}},
+  \code{\link[=g_export_to_json]{g_export_to_json()}},
   \code{\link[=g_transform]{g_transform()}},
   \code{\link[=geos_version]{geos_version()}},
   \code{\link[=plot_geom]{plot_geom()}}

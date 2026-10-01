@@ -1708,3 +1708,28 @@ test_that("g_coords returns a data frame of vertices", {
     lyr$close()
     unlink(dsn)
 })
+
+test_that("export to JSON works", {
+    skip_if(gdal_version_num() < gdal_compute_version(3, 9, 0))
+
+    g <- "POINT (-114.0 47.0)"
+    expect_no_error(g_export_to_json(g))
+    expect_no_error(g_export_to_json(g, "WGS84", "COORDINATE_PRECISION=1"))
+    json <- g_export_to_json(g)
+    expect_vector(json, character(), 1)
+    # wkb input
+    json <- g_export_to_json(g_wk2wk(g))
+    expect_vector(json, character(), 1)
+    # vector/list input
+    # character vector of wkt input
+    expect_warning(json <- g_export_to_json(c(g, g, NA_character_)))
+    expect_vector(json, character(), 3)
+    # list of wkb input
+    expect_warning(json <- g_export_to_json(g_wk2wk(c(g, g, NA_character_))))
+    expect_vector(json, character(), 3)
+
+    expect_error(g_export_to_json(c(g, g), c("WGS84", "WGS84")))
+    expect_no_error(g_export_to_json(g, NA))
+    opts <- c("COORDINATE_PRECISION=1", NA_character_)
+    expect_error(g_export_to_json(g, "WGS84", opts))
+})

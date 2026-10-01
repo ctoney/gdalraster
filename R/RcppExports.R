@@ -2851,6 +2851,11 @@ has_geos <- function() {
 }
 
 #' @noRd
+.g_export_to_json <- function(geom, srs, options) {
+    .Call(`_gdalraster_g_export_to_json`, geom, srs, options)
+}
+
+#' @noRd
 .g_intersects <- function(this_geom, other_geom, quiet = FALSE) {
     .Call(`_gdalraster_g_intersects`, this_geom, other_geom, quiet)
 }

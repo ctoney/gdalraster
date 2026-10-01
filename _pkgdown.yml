@@ -147,6 +147,7 @@ reference:
   - g_measures
   - g_coords
   - g_envelope
+  - g_export_to_json
   - g_transform
   - geos_version
   - has_geos
