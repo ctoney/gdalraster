@@ -1514,6 +1514,64 @@ Rcpp::NumericVector g_envelope(const Rcpp::RObject &geom, bool as_3d = false,
     return ret;
 }
 
+//' @noRd
+// [[Rcpp::export(name = ".g_export_to_json")]]
+Rcpp::CharacterVector g_export_to_json(const Rcpp::RObject &geom,
+                                       const std::string &srs,
+                                       const Rcpp::CharacterVector &options) {
+// Convert a geometry into GeoJSON-style format.
+
+    if (geom.isNULL() || !Rcpp::is<Rcpp::RawVector>(geom))
+        return NA_STRING;
+
+    const Rcpp::RawVector geom_in(geom);
+    if (geom_in.size() == 0)
+        return NA_STRING;
+
+    OGRGeometryH hGeom = createGeomFromWkb_(geom_in);
+    if (hGeom == nullptr) {
+        Rcpp::warning("failed to create geometry object from WKB, NA returned");
+        return NA_STRING;
+    }
+
+    OGRSpatialReferenceH hSRS = OSRNewSpatialReference(nullptr);
+    if (!srs.empty()) {
+        const std::string srs_in = srs_to_wkt(srs, false);
+
+        char *pszWKT = const_cast<char*>(srs_in.c_str());
+        if (OSRImportFromWkt(hSRS, &pszWKT) != OGRERR_NONE) {
+            if (hSRS != nullptr)
+                OSRDestroySpatialReference(hSRS);
+            Rcpp::stop("error importing 'srs' from user input");
+        }
+
+        OGR_G_AssignSpatialReference(hGeom, hSRS);
+    }
+
+    CPLStringList opt;
+    if (options.size() > 0) {
+        for (R_xlen_t i = 0; i < options.size(); ++i) {
+            Rcpp::String opt_str(options[i]);
+            if (opt_str == "") continue;
+            opt.AddString(opt_str.get_cstring());
+        }
+    }
+
+    char *pszJSON = nullptr;
+    std::string json = "";
+    pszJSON = OGR_G_ExportToJsonEx(hGeom, opt.List());
+    if (pszJSON) {
+        json = std::string(pszJSON);
+        CPLFree(pszJSON);
+    }
+
+    OGR_G_DestroyGeometry(hGeom);
+    if (hSRS)
+        OSRDestroySpatialReference(hSRS);
+
+    return json;
+}
+
 
 // *** binary predicates ***
 

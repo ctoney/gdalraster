@@ -3631,6 +3631,74 @@ g_unary_union <- function(geom, as_wkb = TRUE, as_iso = FALSE,
         return(g_wk2wk(wkb, as_iso))
 }
 
+#' Convert WKB/WKT geometries into GeoJSON-style format
+#'
+#' `g_export_to_json()` exports input geometries to GeoJSON strings. Interface
+#' to `OGR_G_ExportToJsonEx()` in the GDAL API.
+#'
+#' @details
+#' Available `options` are the ones supported by `OGR_G_ExportToJsonEx()`. See
+#' \url{https://gdal.org/en/latest/api/vector_c_api.html}.
+#'
+#' If there is a SRS attached to the geometry, and the geometry is aimed at
+#' being stored in the "place" member of JSON-FG features, then
+#' `COORDINATE_ORDER=AUTHORITY_COMPLIANT` option must be set (added in GDAL
+#' 3.12.1). When a SRS is attached to the geometry, and `AUTHORITY_COMPLIANT`
+#' is used, the coordinates will be emitted in the order of the official SRS
+#' definition. When using `TRADITIONAL_GIS_ORDER` (the default), coordinates
+#' are emitted in longitude/easting first, then latitude/northing second. When
+#' no SRS is attached, coordinates are emitted in the order they are set in the
+#' geometry.
+#'
+#' @param geom Either a raw vector of WKB or list of raw vectors, or a
+#' character vector containing one or more WKT strings.
+#' @param srs Optional character string specifying the spatial reference system
+#' for the geometries given in `geom`. May be in WKT format or any of the
+#' formats supported by [srs_to_wkt()].
+#' @param options Optional character vector of `NAME=VALE` pairs. May include
+#' any of the options supported by `OGR_G_ExportToJsonEx()` in the GDAL API
+#' (see Details).
+#' @return
+#' A character vector of GeoJSON strings the same length as the number of input
+#' geometries.
+#'
+#' @examples
+#' g_export_to_json("POINT (-114.0 47.0)")
+#' @export
+g_export_to_json <- function(geom, srs = NULL, options = NULL) {
+    # srs
+    if (is.null(srs) || is.na(srs) || missing(srs))
+        srs <- ""
+    if (!is.character(srs) || length(srs) > 1)
+        stop("'srs' must be a single character string", call. = FALSE)
+
+    # options
+    if (is.null(options) || missing(options))
+        options <- ""
+    if (any(is.na(options)))
+        stop("'options' has missing value(s)", call. = FALSE)
+    if (!is.character(options))
+        stop("'options' must be a character vector", call. = FALSE)
+
+    ret <- NULL
+    if (.is_raw_or_null(geom)) {
+        ret <- .g_export_to_json(geom, srs, options)
+    } else if (is.list(geom) && .is_raw_or_null(geom[[1]])) {
+        ret <- sapply(geom, .g_export_to_json, srs, options)
+    } else if (is.character(geom)) {
+        if (length(geom) == 1) {
+            ret <- .g_export_to_json(g_wk2wk(geom), srs, options)
+        } else {
+            ret <- sapply(g_wk2wk(geom), .g_export_to_json, srs, options)
+        }
+    } else {
+        stop("'geom' must be a character vector, raw vector, or list",
+             call. = FALSE)
+    }
+
+    return(ret)
+}
+
 #' Apply a coordinate transformation to a WKB/WKT geometry
 #'
 #' `g_transform()` will transform the coordinates of a geometry from their

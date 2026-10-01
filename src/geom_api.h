@@ -80,6 +80,10 @@ Rcpp::String g_summary(const Rcpp::RObject &geom, bool quiet);
 Rcpp::NumericVector g_envelope(const Rcpp::RObject &geom, bool as_3d,
                                bool quiet);
 
+Rcpp::CharacterVector g_export_to_json(const Rcpp::RObject &geom,
+                                       const std::string &srs,
+                                       const Rcpp::CharacterVector &options);
+
 Rcpp::LogicalVector g_intersects(const Rcpp::List &this_geom,
                                  const Rcpp::List &other_geom,
                                  bool quiet);

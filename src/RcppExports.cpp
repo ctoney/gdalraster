@@ -1552,6 +1552,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// g_export_to_json
+Rcpp::CharacterVector g_export_to_json(const Rcpp::RObject& geom, const std::string& srs, const Rcpp::CharacterVector& options);
+RcppExport SEXP _gdalraster_g_export_to_json(SEXP geomSEXP, SEXP srsSEXP, SEXP optionsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::RObject& >::type geom(geomSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type srs(srsSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type options(optionsSEXP);
+    rcpp_result_gen = Rcpp::wrap(g_export_to_json(geom, srs, options));
+    return rcpp_result_gen;
+END_RCPP
+}
 // g_intersects
 Rcpp::LogicalVector g_intersects(const Rcpp::List& this_geom, const Rcpp::List& other_geom, bool quiet);
 RcppExport SEXP _gdalraster_g_intersects(SEXP this_geomSEXP, SEXP other_geomSEXP, SEXP quietSEXP) {
@@ -2821,6 +2834,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gdalraster_g_name", (DL_FUNC) &_gdalraster_g_name, 2},
     {"_gdalraster_g_summary", (DL_FUNC) &_gdalraster_g_summary, 2},
     {"_gdalraster_g_envelope", (DL_FUNC) &_gdalraster_g_envelope, 3},
+    {"_gdalraster_g_export_to_json", (DL_FUNC) &_gdalraster_g_export_to_json, 3},
     {"_gdalraster_g_intersects", (DL_FUNC) &_gdalraster_g_intersects, 3},
     {"_gdalraster_g_equals", (DL_FUNC) &_gdalraster_g_equals, 3},
     {"_gdalraster_g_disjoint", (DL_FUNC) &_gdalraster_g_disjoint, 3},
