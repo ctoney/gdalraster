@@ -185,6 +185,14 @@ object (\code{"OBJECT"}), or both (\verb{"NAME", "OBJECT"}) when it is used as a
 output (\code{NULL} if the argument is not a dataset type)
 \item \code{mutual_exclusion_group}: character string, the name of the mutual
 exclusion group to which this argument belongs
+\item \code{mutual_dependency_group}: character string, the name of the mutual
+dependency group to which this argument belongs (GDAL >= 3.13)
+\item \code{depends_on}: character vector of argument names that this argument depends
+on, including both regular dependencies and mutual dependencies
+(GDAL >= 3.13)
+\item \code{available_in_pipeline_step}: logical, \code{TRUE} if the argument is available
+in a pipeline step, or\code{FALSE} if it is only available in standalone mode
+(GDAL >= 3.13)
 }
 
 \code{$usage()}\cr

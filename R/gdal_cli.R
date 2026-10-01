@@ -854,6 +854,17 @@ gdal_global_reg_names <- function() {
                 cat("]\n")
             }
         }
+
+        if (gdal_version_num() >= gdal_compute_version(3, 13, 0)) {
+            if (length(this_arg$depends_on) > 0) {
+                cat("    [depends on: ")
+                cat(paste(this_arg$depends_on, collapse = ", "))
+                cat("]\n")
+            }
+            if (!this_arg$available_in_pipeline_step) {
+                cat("    [not available in pipeline step]\n")
+            }
+        }
     }
 
     if (length(positional_args) > 0) {

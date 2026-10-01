@@ -234,6 +234,10 @@ test_that("gdal_usage works", {
     expect_output(gdal_usage(cmd), "For more details:")
 
     expect_no_error(gdal_usage("pipeline"))
+
+    skip_if(gdal_version_num() < gdal_compute_version(3, 13, 0))
+
+    expect_no_error(gdal_usage("raster scale"))
 })
 
 test_that("gdal_global_reg_names returns a character vector", {

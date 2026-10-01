@@ -183,6 +183,15 @@ test_that("algorithm and argument properties are returned correctly", {
 
     expect_error(alg$info(), "algorithm not instantiated")
     expect_error(alg$argInfo("output"), "algorithm not instantiated")
+
+    skip_if(gdal_version_num() < gdal_compute_version(3, 13, 0))
+
+    alg <- new(GDALAlg, "raster scale")
+    arginfo <- alg$argInfo("input-max")
+    expect_true(length(arginfo$depends_on) > 0)
+    expect_true(length(arginfo$mutual_dependency_group) > 0)
+    expect_true(arginfo$available_in_pipeline_step)
+    alg$release()
 })
 
 test_that("algorithm usage is returned", {
