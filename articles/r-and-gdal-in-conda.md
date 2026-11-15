@@ -1,6 +1,6 @@
 # Using R and GDAL from conda-forge
 
-Last updated: 2026-09-26
+Last updated: 2026-11-13
 
 Conda is an open-source, cross-platform, language-agnostic package
 manager and environment management system. The conda package format is
@@ -152,7 +152,7 @@ dependencies. The plugin system for `conda` was developed by
 [Quansight](https://quansight.com/) and [Hobu](https://hobu.co/), with
 more details at:
 
-<https://quansight.com/post/introducing-lightweight-versions-of-gdal-and-pdal/>
+<https://www.quansight.com/blog/introducing-lightweight-versions-of-gdal-and-pdal>
 
 The following packages are available from conda-forge.
 
