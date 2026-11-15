@@ -485,3 +485,57 @@ test_that("GeoJSON layer and field names are correct", {
 
     deleteDataset(dsn2)
 })
+
+test_that("ogr_create_fields_from_arrow_schema works", {
+    skip_if(gdal_version_num() < gdal_compute_version(3, 8, 0))
+
+    f_src <-
+        system.file("extdata/ynp_fires_1984_2022.gpkg", package = "gdalraster")
+
+    lyr <- new(GDALVector, f_src, "mtbs_perims")
+    src_srs <- lyr$getSpatialRef()
+    d <- lyr$fetch(10)
+    lyr$close()
+
+    ## GeoPackage
+    f_gpkg <- tempfile(fileext = ".gpkg")
+    on.exit(deleteDataset(f_gpkg), add = TRUE)
+    expect_true(ogr_ds_create("GPKG", f_gpkg, "test",
+                              geom_type = "MULTIPOLYGON",
+                              srs = src_srs))
+
+    # "geom" should be skipped here since it is the geom col name in the layer
+    created_fields <- ogr_create_fields_from_arrow_schema(f_gpkg, "test", d)
+    expect_equal(length(created_fields), 9)
+    expect_equal(ogr_layer_field_names(f_gpkg, "test"),
+                 ogr_layer_field_names(f_src, "mtbs_perims"))
+
+    lyr_gpkg <- new(GDALVector, f_gpkg, "test", FALSE)
+    on.exit(lyr_gpkg$close())
+    expect_true(lyr_gpkg$writeArrowBatch(d))
+    expect_equal(lyr_gpkg$getFeatureCount(), 10)
+
+    ## Parquet
+    skip_if_not(isTRUE(gdal_formats("Parquet")$vector))
+
+    f_parquet <- file.path(tempdir(), "test.parquet")
+    on.exit(deleteDataset(f_parquet), add = TRUE)
+    expect_true(ogr_ds_create("Parquet", f_parquet, "test",
+                              geom_type = "MULTIPOLYGON",
+                              srs = src_srs,
+                              overwrite = TRUE))
+
+    # Parquet default geom col name is "geometry" so don't give "geom" in the
+    # input schema (i.e., since it will not be detected for skip).
+    d$geom <- NULL
+    created_fields <- ogr_create_fields_from_arrow_schema(f_parquet, "test", d)
+    expect_equal(length(created_fields), 9)
+    expect_equal(ogr_layer_field_names(f_parquet, "test"),
+                 ogr_layer_field_names(f_src, "mtbs_perims"))
+
+    lyr_parquet <- new(GDALVector, f_parquet, "test", FALSE)
+    on.exit(lyr_parquet$close())
+    expect_true(lyr_parquet$writeArrowBatch(d))
+    expect_equal(lyr_parquet$getFeatureCount(), 10)
+
+})
