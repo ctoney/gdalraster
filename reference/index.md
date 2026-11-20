@@ -23,6 +23,17 @@
   [`Rcpp_GDALVector-class`](https://firelab.github.io/gdalraster/reference/GDALVector-class.md)
   [`GDALVector`](https://firelab.github.io/gdalraster/reference/GDALVector-class.md)
   : Class encapsulating a vector layer in a GDAL dataset
+- [`GDALMultiDimRaster-class`](https://firelab.github.io/gdalraster/reference/GDALMultiDimRaster-class.md)
+  [`Rcpp_GDALMultiDimRaster`](https://firelab.github.io/gdalraster/reference/GDALMultiDimRaster-class.md)
+  [`Rcpp_GDALMultiDimRaster-class`](https://firelab.github.io/gdalraster/reference/GDALMultiDimRaster-class.md)
+  [`GDALMultiDimRaster`](https://firelab.github.io/gdalraster/reference/GDALMultiDimRaster-class.md)
+  : Class encapsulating a multidimensional raster dataset (experimental)
+- [`GDALMDArray-class`](https://firelab.github.io/gdalraster/reference/GDALMDArray-class.md)
+  [`Rcpp_GDALMDArray`](https://firelab.github.io/gdalraster/reference/GDALMDArray-class.md)
+  [`Rcpp_GDALMDArray-class`](https://firelab.github.io/gdalraster/reference/GDALMDArray-class.md)
+  [`GDALMDArray`](https://firelab.github.io/gdalraster/reference/GDALMDArray-class.md)
+  : Class encapsulating an array in a multidimensional dataset
+  (experimental)
 - [`CmbTable-class`](https://firelab.github.io/gdalraster/reference/CmbTable-class.md)
   [`Rcpp_CmbTable`](https://firelab.github.io/gdalraster/reference/CmbTable-class.md)
   [`Rcpp_CmbTable-class`](https://firelab.github.io/gdalraster/reference/CmbTable-class.md)
@@ -147,6 +158,9 @@
   : Return a view of an MDArray as a "classic" GDALDataset (i.e., 2D)
 - [`mdim_info()`](https://firelab.github.io/gdalraster/reference/mdim_info.md)
   : Report structure and content of a multidimensional dataset
+- [`mdim_read()`](https://firelab.github.io/gdalraster/reference/mdim_read.md)
+  : Read an MDArray from a multidimensional raster, with dimension
+  information
 - [`mdim_translate()`](https://firelab.github.io/gdalraster/reference/mdim_translate.md)
   : Convert multidimensional data between different formats, and subset
 

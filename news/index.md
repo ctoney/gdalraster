@@ -1,6 +1,21 @@
 # Changelog
 
-## gdalraster 2.7.0.9003 (dev)
+## gdalraster 2.7.0.9005 (dev)
+
+- add class `GDALMDArray` (experimental), returned by the new method
+  `GDALMultiDimRaster$openMDArray()`: describe an array (dimensions,
+  data type, attributes, nodata, scale, offset, unit, spatial reference,
+  block size, coordinate values) and read a hyperslab with
+  `$read(start, count, step)`; add
+  [`mdim_read()`](https://firelab.github.io/gdalraster/reference/mdim_read.md)
+  returning the values with a `"gis"` attribute of dimension and
+  coordinate information (GDAL \>= 3.2) (2026-11-16)
+
+- add class `GDALMultiDimRaster` (experimental): read-only navigation of
+  a multidimensional raster dataset by full path, with methods
+  `$getGroupNames()`, `$getMDArrayNames()`, `$getDimensions()`,
+  `$getAttributes()`, `$getGroupInfo()` and `$info()` (GDAL \>= 3.2);
+  add test dataset `inst/extdata/mdim_small.nc` (2026-11-14)
 
 - add web article “Draft Bindings to the GDAL Multidimensional Raster
   API”: proposed interface for classes `GDALMultiDimRaster` and
