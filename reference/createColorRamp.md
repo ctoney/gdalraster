@@ -92,7 +92,7 @@ tcc_file <- calc(expr = "ifelse(CANCOV == -9999, 255, CANCOV)",
                  dtName = "Byte",
                  nodata_value = 255,
                  setRasterNodataValue = TRUE)
-#> ℹ output written to: "/tmp/RtmpJ9eS4n/rastcalc213a2f2b9dc8.tif"
+#> ℹ output written to: "/tmp/Rtmpqj8lqL/rastcalc220a5d0dd93b.tif"
 
 ds_tcc <- new(GDALRaster, tcc_file, read_only=FALSE)
 
