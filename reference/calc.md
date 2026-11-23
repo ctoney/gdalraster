@@ -204,7 +204,7 @@ hi_file <- calc(expr = expr,
                 dtName = "Int16",
                 nodata_value = -32767,
                 setRasterNodataValue = TRUE)
-#> ℹ output written to: "/tmp/Rtmp6KSsXG/rastcalc21f911f1c582.tif"
+#> ℹ output written to: "/tmp/RtmpyALkcz/rastcalc216f499445d6.tif"
 
 ds <- new(GDALRaster, hi_file)
 # min, max, mean, sd
@@ -228,10 +228,10 @@ expr <- "((B5 * 0.0000275 - 0.2) - (B4 * 0.0000275 - 0.2)) /
 (ndvi <- calc(expr, list(b4, b5), var.names = c("B4", "B5"), fmt = "MEM",
               dtName = "Float32", setRasterNodataValue = TRUE,
               return_obj = TRUE))
-#> ℹ output written to: "calc21f966f8ed87"
+#> ℹ output written to: "calce216f735d9ec"
 #> C++ object of class <GDALRaster>
 #>   • Driver: In Memory raster, vector and multidimensional raster (MEM)
-#>   • DSN: "calc21f966f8ed87"
+#>   • DSN: "calce216f735d9ec"
 #>   • Dimensions: 149, 112, 1
 #>   • CRS: NAD83 / UTM zone 12N (EPSG:26912)
 #>   • Pixel resolution: 30.000000, 30.000000
@@ -271,9 +271,6 @@ var.names <- c("SLP", "FBFM")
 bands <- c(2, 4)
 tbl <- combine(rasterfiles, var.names, bands)
 #> → combining 2 rasters...
-#>  ■                                  1% |  ETA:  0s
-#> ✔ Done (21ms)
-#> 
 nrow(tbl)
 #> [1] 449
 tbl_subset <- subset(tbl, SLP >= 40 & FBFM %in% c(101,102))
@@ -308,7 +305,7 @@ calc(expr = expr,
      dstfile = tif_file,
      out_band = 4,
      write_mode = "update")
-#> ℹ output written to: "/tmp/Rtmp6KSsXG/storml_lndscp.tif"
+#> ℹ output written to: "/tmp/RtmpyALkcz/storml_lndscp.tif"
 
 # verify the ouput
 rasterfiles <- c(tif_file, tif_file)

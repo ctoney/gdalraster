@@ -30,7 +30,7 @@ vsi_mkdir(tmp_dir)
 #> [1] 0
 vsi_get_disk_free_space(tmp_dir)
 #> integer64
-#> [1] 16759422976
+#> [1] 16759418880
 vsi_rmdir(tmp_dir)
 #> [1] 0
 ```

@@ -16,8 +16,12 @@ object of class `GDALMDArray` is returned by
 - read a hyperslab of the array (start, count and optional step per
   dimension)
 
+- advise an upcoming read, get a chunk size for processing, and compute
+  statistics
+
 - derive new arrays without copying data: a view given a slicing
-  expression, a transposed view, an unscaled view and a mask
+  expression, a transposed view, an unscaled view, a mask, a resampled
+  or reprojected view, and a gridded view of scattered points
 
 - expose a 2D view of the array as a classic raster, an object of class
   [`GDALRaster`](https://firelab.github.io/gdalraster/reference/GDALRaster-class.md).
@@ -71,6 +75,14 @@ slowest varying first (e.g., `time, lat, lon`).
     arr$transpose(axes)
     arr$getUnscaled()
     arr$getMask(options)
+    arr$getResampled(new_dim_sizes, resample_alg, target_srs, options)
+    arr$getGridded(grid_options, x_array, y_array, options)
+
+    arr$adviseRead(start, count, options)
+    arr$getProcessingChunkSize(max_chunk_memory)
+    arr$getStatistics(approx_ok, force)
+    arr$computeStatistics(approx_ok, options)
+    arr$cache(options)
     arr$asClassicDataset(idx_xdim, idx_ydim, options)
 
     arr$close()
@@ -93,7 +105,7 @@ vectors. Defaults to `FALSE` (Byte is read as `integer`).
 
 `$quiet`  
 A logical value, `TRUE` to suppress console output from class methods.
-Defaults to `FALSE`. Reserved for methods added in later releases.
+Defaults to `FALSE` (e.g., a progress bar from `$computeStatistics()`).
 
 ### Methods
 
@@ -231,6 +243,128 @@ floating point types). `options` is a character vector of `NAME=VALUE`
 pairs, or `NULL` (see `GDALMDArray::GetMask()` in the GDAL API
 documentation).
 
+`$getResampled(new_dim_sizes, resample_alg, target_srs, options)`  
+Returns a view of the array resampled to new dimension sizes, and
+optionally reprojected, along its horizontal dimensions (types
+`"HORIZONTAL_X"` and `"HORIZONTAL_Y"`). Values are computed when the new
+array is read, using GDAL's warping engine, so reading a window of the
+new array reads only the part of the source array that it needs.
+Requires GDAL \>= 3.4.
+
+- `new_dim_sizes`: a numeric vector with one value per dimension giving
+  the new size, or `NA` to keep a dimension unchanged (or, for the
+  horizontal dimensions, to have GDAL compute the size). `NULL` is the
+  same as all `NA`. Dimensions that are not horizontal must be `NA`. The
+  new horizontal dimensions are evenly spaced over the extent of the
+  source.
+
+- `resample_alg`: a character string, one of `"nearest"`, `"bilinear"`,
+  `"cubic"`, `"cubicspline"`, `"lanczos"`, `"average"`, `"rms"` or
+  `"mode"`.
+
+- `target_srs`: a character string giving the spatial reference system
+  to reproject to, in a format accepted by
+  [`srs_to_wkt()`](https://firelab.github.io/gdalraster/reference/srs_convert.md)
+  (e.g., `"EPSG:3031"`), or `""` to keep the spatial reference of the
+  array. An error is raised if `target_srs` is given and the array has
+  no spatial reference (a multidimensional VRT can add one, see the
+  examples).
+
+- `options`: a character vector of `NAME=VALUE` pairs, or `NULL` (see
+  `GDALMDArray::GetResampled()` in the GDAL API documentation).
+
+The new horizontal dimensions are named `dimX` and `dimY`, with indexing
+variables of the same names holding the coordinates of the cell centres
+in the target spatial reference.
+
+`$getGridded(grid_options, x_array, y_array, options)`  
+Returns a gridded view of an array of scattered points, i.e., an array
+whose last dimension indexes the points, interpolated onto a regular
+grid using the GDAL gridding algorithms (as for `gdal_grid`). Requires
+GDAL \>= 3.7.
+
+- `grid_options`: a character string giving the gridding algorithm and
+  its parameters, as for the `gdal_grid` `-a` argument, e.g.,
+  `"invdist:power=2.0:smoothing=1.0"`, `"nearest"`, `"average"` or
+  `"linear"`.
+
+- `x_array`, `y_array`: objects of class `GDALMDArray` with the X and Y
+  coordinates of the points (one dimension, the same as the last
+  dimension of this array), or `NULL` for both to use the arrays named
+  in the `coordinates` attribute of this array.
+
+- `options`: a character vector of `NAME=VALUE` pairs, or `NULL`, e.g.,
+  `"RESOLUTION=0.5"` for the grid spacing, and `"XMIN=..."`,
+  `"XMAX=..."`, `"YMIN=..."`, `"YMAX=..."` for its extent (see
+  `GDALMDArray::GetGridded()` in the GDAL API documentation).
+
+The new dimensions are named `dimX` and `dimY`, with indexing variables
+of the same names.
+
+### Chunk-aware I/O and statistics
+
+`$adviseRead(start, count, options)`  
+Advises the driver of an upcoming read of the hyperslab given by `start`
+and `count` (as for `$read()`, both `NULL` for the whole array). Many
+drivers ignore the advice, but it can greatly accelerate access with
+some. The Zarr driver fetches and decodes the blocks that intersect the
+hyperslab using multiple threads and keeps them in memory for the reads
+that follow on this array object (the call returns when that is done).
+`options` is a character vector of driver-specific `NAME=VALUE` pairs,
+or `NULL` (requires GDAL \>= 3.4 when not empty). For Zarr these are
+`"CACHE_SIZE=<bytes>"`, the maximum memory to use (by default half of
+the remaining GDAL block cache), and `"NUM_THREADS=<integer>|ALL_CPUS"`
+(by default from the `GDAL_NUM_THREADS` configuration option). Returns
+logical `TRUE` on success (ignoring the advice is a success).
+
+`$getProcessingChunkSize(max_chunk_memory)`  
+Returns a numeric vector with a chunk size along each dimension,
+suitable for processing the array piece by piece. The chunk is a
+multiple of the block size (see `$getBlockSize()`) along each dimension,
+within `max_chunk_memory` bytes, or one block if a block is larger than
+that. For an array with no block size, the chunk is built up from the
+last dimension. See
+[`mdim_chunk_index()`](https://firelab.github.io/gdalraster/reference/mdim_chunk_index.md)
+for the index of chunks of a given size.
+
+`$getStatistics(approx_ok, force)`  
+Returns a named numeric vector of statistics of the array values: `min`,
+`max`, `mean`, `sd` (standard deviation) and `valid_count` (the number
+of values that are not nodata). Statistics already stored for the array
+are returned if there are any. Otherwise, they are computed if `force`
+is `TRUE`, or `NA` values are returned if `force` is `FALSE`.
+`approx_ok` is a logical value, `TRUE` to allow statistics computed from
+a subset of the values (currently ignored by GDAL, which always uses all
+of the values). Statistics are of the values as stored (scale and offset
+not applied).
+
+`$computeStatistics(approx_ok, options)`  
+Computes statistics of the array values and returns them as a named
+numeric vector, as for `$getStatistics()`. The array is read one
+processing chunk at a time, so memory use is bounded for arrays of any
+size. A progress bar is shown unless `$quiet` is `TRUE`. `options` is a
+character vector of `NAME=VALUE` pairs, or `NULL` (requires GDAL \>= 3.8
+when not empty, e.g., `"UPDATE_METADATA=YES"` to store the minimum and
+maximum in the `actual_range` attribute of a netCDF or Zarr array opened
+for update). Once computed, the statistics are generally saved by GDAL
+for later calls to `$getStatistics()`, in a file `pam.aux.xml` or
+`<filename>.aux.xml` next to the dataset, written when the dataset is
+closed. If that location is not writable (e.g., a remote dataset), GDAL
+reports a failure to write the file at that time, which can be ignored.
+
+`$cache(options)`  
+Caches the content of the array in a file named as the dataset filename
+with the extension `.gmac` added (a netCDF dataset), or in the directory
+given by the `GDAL_PAM_PROXY_DIR` configuration option if that file
+cannot be written. Reads of the array then use the cache automatically,
+also in later sessions. The main purpose is to cache a view that is
+expensive to compute, such as a transposed array. The cache is not
+checked against the source: it must be deleted manually if the source
+array changes. `options` is a character vector of `NAME=VALUE` pairs, or
+`NULL`. Currently the only option is `"BLOCKSIZE=bs0,bs1,...,bsN"`, the
+block size of the cached array. Returns logical `TRUE` on success.
+Requires GDAL \>= 3.4.
+
 ### Classic raster view
 
 `$asClassicDataset(idx_xdim, idx_ydim, options)`  
@@ -261,6 +395,7 @@ Closes the array and releases the reference to its dataset.
 [GDALMultiDimRaster](https://firelab.github.io/gdalraster/reference/GDALMultiDimRaster-class.md),
 [GDALRaster](https://firelab.github.io/gdalraster/reference/GDALRaster-class.md),
 [`mdim_read()`](https://firelab.github.io/gdalraster/reference/mdim_read.md),
+[`mdim_chunk_index()`](https://firelab.github.io/gdalraster/reference/mdim_chunk_index.md),
 [`mdim_info()`](https://firelab.github.io/gdalraster/reference/mdim_info.md),
 [`mdim_as_classic()`](https://firelab.github.io/gdalraster/reference/mdim_as_classic.md)
 
@@ -320,6 +455,10 @@ arr$read(c(0, 2, 3), c(4, 1, 1), NULL) * arr$getScale() + arr$getOffset()
 arr$getUnscaled()$read(c(0, 2, 3), c(4, 1, 1), NULL)
 #> [1] 14.45 15.45 16.45 17.45
 
+# a chunk size for processing within 120 bytes (60 values of Int16)
+arr$getProcessingChunkSize(120)
+#> [1] 2 5 6
+
 # the first time step as a view, and its mask of valid values
 v1 <- arr$getView("[0,...]")
 v1$getDimensions()$size
@@ -347,4 +486,116 @@ r$close()
 
 arr$close()
 ds$close()
+
+## statistics of the stored values, read one processing chunk at a time
+# (on a copy of the file, since GDAL saves the statistics next to it)
+f_tmp <- file.path(tempdir(), "mdim_small.nc")
+file.copy(f, f_tmp)
+#> [1] TRUE
+ds <- new(GDALMultiDimRaster, f_tmp)
+arr <- ds$openMDArray("/t2m")
+arr$quiet <- TRUE
+arr$computeStatistics(FALSE, NULL)
+#>         min         max        mean          sd valid_count 
+#>   1295.0000   1885.0000   1592.3109    139.7098    119.0000 
+arr$close()
+ds$close()
+
+## resampling and reprojection (GDAL >= 3.4)
+if (gdal_version_num() >= gdal_compute_version(3, 4, 0)) {
+  # t2m has no spatial reference: add one with a multidimensional VRT,
+  # which reads from the source file (nothing is copied)
+  vrt <- '<VRTDataset><Group name="/">
+    <Dimension name="time" size="4" indexingVariable="time"/>
+    <Dimension name="lat" type="HORIZONTAL_Y" size="5" indexingVariable="lat"/>
+    <Dimension name="lon" type="HORIZONTAL_X" size="6" indexingVariable="lon"/>
+    <Array name="time"><DataType>Float64</DataType><DimensionRef ref="time"/>
+      <Source><SourceFilename>SRC</SourceFilename>
+      <SourceArray>/time</SourceArray></Source></Array>
+    <Array name="lat"><DataType>Float64</DataType><DimensionRef ref="lat"/>
+      <Source><SourceFilename>SRC</SourceFilename>
+      <SourceArray>/lat</SourceArray></Source></Array>
+    <Array name="lon"><DataType>Float64</DataType><DimensionRef ref="lon"/>
+      <Source><SourceFilename>SRC</SourceFilename>
+      <SourceArray>/lon</SourceArray></Source></Array>
+    <Array name="t2m"><DataType>Int16</DataType>
+      <DimensionRef ref="time"/><DimensionRef ref="lat"/>
+      <DimensionRef ref="lon"/>
+      <SRS dataAxisToSRSAxisMapping="2,1">EPSG:4326</SRS>
+      <NoDataValue>-32767</NoDataValue>
+      <Source><SourceFilename>SRC</SourceFilename>
+      <SourceArray>/t2m</SourceArray></Source></Array>
+  </Group></VRTDataset>'
+  vrt <- gsub("SRC", f, vrt, fixed = TRUE)
+
+  ds <- new(GDALMultiDimRaster, vrt)
+  arr <- ds$openMDArray("/t2m")
+
+  # twice the resolution, bilinear
+  arr2 <- arr$getResampled(c(NA, 10, 12), "bilinear", "", NULL)
+  print(arr2$getDimensions()[, c("name", "size")])
+  print(arr2$getCoordinateValues(2))
+
+  # Antarctic polar stereographic, size computed by GDAL
+  arr3 <- arr$getResampled(NULL, "nearest", "EPSG:3031", NULL)
+  print(arr3$getDimensions()[, c("name", "size")])
+
+  arr3$close()
+  arr2$close()
+  arr$close()
+  ds$close()
+}
+#>   name size
+#> 1 time    4
+#> 2 dimY   10
+#> 3 dimX   12
+#>  [1] 144.9375 145.0625 145.1875 145.3125 145.4375 145.5625 145.6875 145.8125
+#>  [9] 145.9375 146.0625 146.1875 146.3125
+#>   name size
+#> 1 time    4
+#> 2 dimY    8
+#> 3 dimX    8
+
+## gridding scattered points (GDAL >= 3.7)
+if (gdal_version_num() >= gdal_compute_version(3, 7, 0)) {
+  # four points as a multidimensional VRT with inline values
+  pts <- '<VRTDataset><Group name="/">
+    <Dimension name="n" size="4"/>
+    <Array name="x"><DataType>Float64</DataType><DimensionRef ref="n"/>
+      <InlineValuesWithValueElement><Value>0</Value><Value>10</Value>
+      <Value>0</Value><Value>10</Value></InlineValuesWithValueElement>
+    </Array>
+    <Array name="y"><DataType>Float64</DataType><DimensionRef ref="n"/>
+      <InlineValuesWithValueElement><Value>0</Value><Value>0</Value>
+      <Value>10</Value><Value>10</Value></InlineValuesWithValueElement>
+    </Array>
+    <Array name="v"><DataType>Float64</DataType><DimensionRef ref="n"/>
+      <InlineValuesWithValueElement><Value>1</Value><Value>2</Value>
+      <Value>3</Value><Value>4</Value></InlineValuesWithValueElement>
+    </Array>
+  </Group></VRTDataset>'
+
+  ds <- new(GDALMultiDimRaster, pts)
+  v <- ds$openMDArray("/v")
+  x <- ds$openMDArray("/x")
+  y <- ds$openMDArray("/y")
+  g <- v$getGridded("invdist:power=2.0", x, y, "RESOLUTION=2.5")
+  print(g$getDimensions()[, c("name", "size")])
+  print(matrix(g$read(NULL, NULL, NULL), nrow = 5, byrow = TRUE))
+
+  g$close()
+  x$close()
+  y$close()
+  v$close()
+  ds$close()
+}
+#>   name size
+#> 1 dimY    5
+#> 2 dimX    5
+#>          [,1]     [,2]     [,3]     [,4]     [,5]
+#> [1,] 1.000000 1.288245 1.833333 2.038461 2.000000
+#> [2,] 1.331461 1.617647 2.055556 2.205883 2.168107
+#> [3,] 2.166667 2.277778 2.500000 2.722222 2.833333
+#> [4,] 2.831893 2.794117 2.944444 3.382353 3.668539
+#> [5,] 3.000000 2.961538 3.166667 3.711754 4.000000
 ```
